@@ -1,6 +1,7 @@
 import { Rider } from "@shared/schema";
 import { Check, Plus } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { safeImageUrl } from "@/lib/utils";
 
 interface RiderCardProps {
   rider: Rider;
@@ -26,7 +27,7 @@ export default function RiderCard({ rider, isSelected, onClick }: RiderCardProps
     >
       <div className="flex items-center">
         <Avatar className={`w-10 h-10 border-2 mr-3 ${isSelected ? 'border-primary' : 'border-transparent'}`}>
-          <AvatarImage src={rider.image} alt={rider.name} className="object-cover" />
+          <AvatarImage src={safeImageUrl(rider.image)} alt={rider.name} className="object-cover" />
           <AvatarFallback className={`${isSelected ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700'}`}>
             {getInitials(rider.name)}
           </AvatarFallback>

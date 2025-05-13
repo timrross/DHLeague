@@ -2,6 +2,7 @@ import { Rider } from "@shared/schema";
 import { X } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { safeImageUrl } from "@/lib/utils";
 
 interface TeamSummaryProps {
   selectedRiders: Rider[];
@@ -77,9 +78,12 @@ export default function TeamSummary({ selectedRiders, toggleRiderSelection }: Te
         {selectedRiders.map((rider) => (
           <div key={rider.id} className="bg-white rounded-md p-3 shadow-sm flex justify-between items-center">
             <div className="flex items-center">
-              <div className={`w-8 h-8 rounded-full ${rider.gender === 'male' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'} flex items-center justify-center overflow-hidden mr-2`}>
-                <span className="font-heading font-bold text-xs">{getInitials(rider.name)}</span>
-              </div>
+              <Avatar className={`w-8 h-8 border-2 mr-2 ${rider.gender === 'male' ? 'border-blue-300' : 'border-pink-300'}`}>
+                <AvatarImage src={rider.image || undefined} alt={rider.name} className="object-cover" />
+                <AvatarFallback className={`${rider.gender === 'male' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'}`}>
+                  {getInitials(rider.name)}
+                </AvatarFallback>
+              </Avatar>
               <div>
                 <h5 className="font-heading font-bold text-secondary text-sm">{rider.name}</h5>
                 <span className={`${rider.gender === 'male' ? 'text-blue-600' : 'text-pink-600'} text-xs font-medium`}>
