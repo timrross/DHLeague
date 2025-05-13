@@ -53,6 +53,8 @@ export default function Admin() {
   const [endDate, setEndDate] = useState('');
   const [status, setStatus] = useState('upcoming');
   const [imageUrl, setImageUrl] = useState('');
+  const [isEditingRace, setIsEditingRace] = useState(false);
+  const [editRaceId, setEditRaceId] = useState<number | null>(null);
   
   // Rider form state
   const [isEditingRider, setIsEditingRider] = useState(false);
@@ -204,6 +206,44 @@ export default function Admin() {
       });
     },
   });
+  
+  // Update a race
+  const updateRaceMutation = useMutation({
+    mutationFn: async (raceData: any) => {
+      const response = await apiRequest(`/api/races/${raceData.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(raceData),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/races'] });
+      toast({
+        title: 'Success',
+        description: 'Race updated successfully',
+      });
+      // Reset form
+      setIsEditingRace(false);
+      setEditRaceId(null);
+      setRaceName('');
+      setLocation('');
+      setCountry('');
+      setStartDate('');
+      setEndDate('');
+      setStatus('upcoming');
+      setImageUrl('');
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: `Failed to update race: ${error}`,
+        variant: 'destructive',
+      });
+    },
+  });
 
   // Delete a race
   const deleteRaceMutation = useMutation({
@@ -256,7 +296,7 @@ export default function Admin() {
   };
   
   // Handle edit rider button click
-  const handleEditRider = (rider: Rider) => {
+  const handleEditRider = (rider: any) => {
     setIsEditingRider(true);
     setEditRiderId(rider.id);
     setRiderName(rider.name);
@@ -306,6 +346,64 @@ export default function Admin() {
     setRiderImage('');
     setRiderCost('');
     setRiderPoints('');
+  };
+  
+  // Handle edit race button click
+  const handleEditRace = (race: any) => {
+    setIsEditingRace(true);
+    setEditRaceId(race.id);
+    setRaceName(race.name);
+    setLocation(race.location);
+    setCountry(race.country);
+    setStatus(race.status);
+    setImageUrl(race.imageUrl || '');
+    
+    // Format dates for input fields (YYYY-MM-DD)
+    const startDateObj = new Date(race.startDate);
+    const endDateObj = new Date(race.endDate);
+    
+    setStartDate(startDateObj.toISOString().split('T')[0]);
+    setEndDate(endDateObj.toISOString().split('T')[0]);
+  };
+  
+  // Handle update race form submission
+  const handleUpdateRace = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!raceName || !location || !country || !startDate || !endDate) {
+      toast({
+        title: 'Error',
+        description: 'Please fill in all required fields',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    const raceData = {
+      id: editRaceId,
+      name: raceName,
+      location,
+      country,
+      startDate: new Date(startDate),
+      endDate: new Date(endDate),
+      status,
+      imageUrl: imageUrl || `https://source.unsplash.com/random/1200x800/?mountain,bike,${location}`,
+    };
+    
+    updateRaceMutation.mutate(raceData);
+  };
+  
+  // Cancel race edit
+  const cancelRaceEdit = () => {
+    setIsEditingRace(false);
+    setEditRaceId(null);
+    setRaceName('');
+    setLocation('');
+    setCountry('');
+    setStartDate('');
+    setEndDate('');
+    setStatus('upcoming');
+    setImageUrl('');
   };
 
   // If not authenticated, show login prompt
