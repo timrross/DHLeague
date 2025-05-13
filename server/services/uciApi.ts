@@ -70,19 +70,44 @@ export class UCIApiService {
    */
   async getMTBDownhillRiders(): Promise<any[]> {
     try {
-      // Get riders from the UCI API
-      const response = await axios.get('https://www.uci.org/api/riders/MTB/2025?page=1');
+      // Get riders from the first page to determine total pages
+      const firstPageResponse = await axios.get('https://www.uci.org/api/riders/MTB/2025?page=1');
       
-      // Filter for downhill riders (DHI)
-      const dhiRiders = response.data.filter((rider: any) => {
-        const disciplines = rider.disciplines || [];
-        return disciplines.some((discipline: any) => 
-          discipline?.abbreviation?.toLowerCase() === 'dhi' || 
-          (discipline?.name && discipline.name.toLowerCase().includes('downhill'))
+      // Extract pagination information
+      const pagination = firstPageResponse.data.pagination || { total: 0, limit: 50 };
+      const totalRiders = pagination.total || 0;
+      const limit = pagination.limit || 50;
+      const totalPages = Math.ceil(totalRiders / limit);
+      
+      console.log(`Total MTB riders: ${totalRiders}, Pages: ${totalPages}`);
+      
+      // Collect all downhill riders across all pages
+      let allDHRiders: any[] = [];
+      
+      // Process first page
+      if (firstPageResponse.data.data && Array.isArray(firstPageResponse.data.data)) {
+        const dhRidersPage1 = firstPageResponse.data.data.filter((rider: any) => 
+          rider.format === 'DH'
         );
-      });
+        allDHRiders = [...dhRidersPage1];
+      }
       
-      return dhiRiders;
+      // Fetch additional pages if needed (limit to 5 pages max to avoid excessive requests)
+      const pagesToFetch = Math.min(totalPages, 5);
+      for (let page = 2; page <= pagesToFetch; page++) {
+        console.log(`Fetching page ${page} of ${pagesToFetch}`);
+        const pageResponse = await axios.get(`https://www.uci.org/api/riders/MTB/2025?page=${page}`);
+        
+        if (pageResponse.data.data && Array.isArray(pageResponse.data.data)) {
+          const dhRidersPage = pageResponse.data.data.filter((rider: any) => 
+            rider.format === 'DH'
+          );
+          allDHRiders = [...allDHRiders, ...dhRidersPage];
+        }
+      }
+      
+      console.log(`Found ${allDHRiders.length} downhill riders`);
+      return allDHRiders;
     } catch (error) {
       console.error('Error fetching UCI MTB riders:', error);
       throw new Error('Failed to fetch UCI MTB riders');
@@ -92,19 +117,33 @@ export class UCIApiService {
   /**
    * Get rider profile image
    */
-  async getRiderProfileImage(riderId: string): Promise<string> {
+  async getRiderProfileImage(riderUrl: string): Promise<string> {
     try {
-      // Try to get the rider's profile image from UCI
-      const response = await axios.get(`${this.baseUrl}/riders/${riderId}`);
+      if (!riderUrl) {
+        return 'https://www.uci.org/docs/default-source/imported-images/discipline/discipline-mountain-bike.jpg';
+      }
       
-      if (response.data && response.data.image) {
-        return response.data.image;
+      // The URL pattern is like "/rider-details/673156"
+      // Extract the rider ID
+      const riderId = riderUrl.split('/').pop();
+      
+      // Try to get the rider detail page
+      const response = await axios.get(`https://www.uci.org${riderUrl}`);
+      
+      // Extract the image URL from the HTML response (simplified approach)
+      // In a real implementation, you might want to use a DOM parser
+      if (response.data) {
+        const htmlData = response.data.toString();
+        const imageUrlMatches = htmlData.match(/<meta property="og:image" content="([^"]+)"/);
+        if (imageUrlMatches && imageUrlMatches[1]) {
+          return imageUrlMatches[1];
+        }
       }
       
       // If no image found, return a default image
       return `https://www.uci.org/docs/default-source/imported-images/discipline/discipline-mountain-bike.jpg`;
     } catch (error) {
-      console.error(`Error fetching rider profile image for rider ${riderId}:`, error);
+      console.error(`Error fetching rider profile image for ${riderUrl}:`, error);
       // Return a default image on error
       return `https://www.uci.org/docs/default-source/imported-images/discipline/discipline-mountain-bike.jpg`;
     }
@@ -143,57 +182,97 @@ export class UCIApiService {
   }
 
   /**
-   * Map UCI rider data to our rider schema
+   * Map UCI rider data to our schema
    */
   async mapRiderData(uciRiders: any[]): Promise<InsertRider[]> {
-    // Sort riders by ranking (if available) to determine cost
+    // Sort riders alphabetically since we don't have ranking in this API
     const sortedRiders = [...uciRiders].sort((a, b) => {
-      const aRanking = a.ranking?.position || 999;
-      const bRanking = b.ranking?.position || 999;
-      return aRanking - bRanking;
+      return (a.familyName || '').localeCompare(b.familyName || '');
     });
+    
+    // Cost tiers based on estimated rider quality (we'll use a simple distribution)
+    const totalRiders = sortedRiders.length;
+    const topTierCount = Math.floor(totalRiders * 0.2); // Top 20% get highest cost
+    const midTierCount = Math.floor(totalRiders * 0.3); // Next 30% get medium cost
     
     const mappedRiders = await Promise.all(
       sortedRiders.map(async (rider: any, index: number) => {
-        // Calculate cost based on ranking (higher ranked riders cost more)
-        // Elite/top riders cost more
-        const isElite = rider.category?.name?.toLowerCase().includes('elite');
-        const baseMaxCost = isElite ? 400000 : 300000;
-        const cost = Math.max(150000, baseMaxCost - (index * 10000));
+        // Calculate cost based on simple tier system
+        let cost = 200000; // Default mid-range cost
         
-        // Determine gender
-        let gender = 'male';
-        if (rider.gender === 'F' || 
-            rider.gender?.toLowerCase() === 'female' || 
-            rider.category?.name?.toLowerCase().includes('women')) {
+        if (index < topTierCount) {
+          // Top tier riders (more expensive)
+          cost = 350000 - (index * 5000);
+        } else if (index < topTierCount + midTierCount) {
+          // Mid tier riders
+          cost = 270000 - ((index - topTierCount) * 3000);
+        } else {
+          // Lower tier riders
+          cost = 200000 - ((index - topTierCount - midTierCount) * 1000);
+        }
+        
+        // Ensure minimum cost
+        cost = Math.max(150000, cost);
+        
+        // Determine gender based on category name if available
+        let gender = 'male'; // Default to male
+        // If we can detect women from category or other data, change to female
+        if (rider.category?.toLowerCase()?.includes('women')) {
           gender = 'female';
         }
         
         // Get rider's team
-        const team = rider.team?.name || 'Independent';
+        const team = rider.teamName || 'Independent';
         
-        // Get nationality
-        const country = rider.nationality?.name || rider.country?.name || 'Unknown';
+        // Get nationality from country code
+        const countryCode = rider.countryCode || 'Unknown';
+        let country = countryCode;
         
-        // Get points from ranking if available
-        const points = rider.ranking?.points || 0;
+        // Map some common country codes to full names
+        const countryMap: {[key: string]: string} = {
+          'FRA': 'France',
+          'USA': 'United States',
+          'GBR': 'Great Britain',
+          'AUS': 'Australia',
+          'CAN': 'Canada',
+          'GER': 'Germany',
+          'ITA': 'Italy',
+          'ESP': 'Spain',
+          'SUI': 'Switzerland',
+          'AUT': 'Austria',
+          'BEL': 'Belgium',
+          'NED': 'Netherlands',
+          'NZL': 'New Zealand',
+          'SLO': 'Slovenia',
+          'CZE': 'Czech Republic',
+          'POL': 'Poland',
+          'RSA': 'South Africa',
+          'BRA': 'Brazil',
+          'JPN': 'Japan'
+        };
         
-        // Get ranking position
-        const lastYearStanding = rider.ranking?.position || (index + 1);
+        if (countryMap[countryCode]) {
+          country = countryMap[countryCode];
+        }
+        
+        // Default points
+        const points = 0;
+        
+        // Default ranking
+        const lastYearStanding = index + 1;
         
         // Try to get rider's profile image
         let imageUrl;
         try {
-          if (rider.id) {
-            imageUrl = await this.getRiderProfileImage(rider.id);
+          if (rider.url) {
+            imageUrl = await this.getRiderProfileImage(rider.url);
           }
         } catch (error) {
-          console.error(`Error getting profile image for rider ${rider.id}:`, error);
+          console.error(`Error getting profile image for rider ${rider.url}:`, error);
         }
         
         // If no image was found, use a country flag as fallback
         if (!imageUrl) {
-          const countryCode = rider.nationality?.code || rider.country?.code;
           if (countryCode) {
             imageUrl = `https://flagcdn.com/w320/${countryCode.toLowerCase()}.png`;
           } else {
@@ -202,8 +281,11 @@ export class UCIApiService {
           }
         }
         
-        // Combine first and last name
-        const name = `${rider.firstName || ''} ${rider.lastName || ''}`.trim();
+        // Combine given name and family name
+        // First trim any whitespace
+        const givenName = (rider.givenName || '').trim();
+        const familyName = (rider.familyName || '').trim();
+        const name = `${givenName} ${familyName}`.trim();
         
         return {
           name,
