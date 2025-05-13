@@ -44,6 +44,8 @@ import { Loader2 } from 'lucide-react';
 export default function Admin() {
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
+  
+  // Race form state
   const [raceName, setRaceName] = useState('');
   const [location, setLocation] = useState('');
   const [country, setCountry] = useState('');
@@ -51,6 +53,17 @@ export default function Admin() {
   const [endDate, setEndDate] = useState('');
   const [status, setStatus] = useState('upcoming');
   const [imageUrl, setImageUrl] = useState('');
+  
+  // Rider form state
+  const [isEditingRider, setIsEditingRider] = useState(false);
+  const [editRiderId, setEditRiderId] = useState<number | null>(null);
+  const [riderName, setRiderName] = useState('');
+  const [riderGender, setRiderGender] = useState('');
+  const [riderTeam, setRiderTeam] = useState('');
+  const [riderCountry, setRiderCountry] = useState('');
+  const [riderImage, setRiderImage] = useState('');
+  const [riderCost, setRiderCost] = useState('');
+  const [riderPoints, setRiderPoints] = useState('');
   
   // Fetch races
   const {
@@ -153,6 +166,44 @@ export default function Admin() {
       });
     },
   });
+  
+  // Update a rider
+  const updateRiderMutation = useMutation({
+    mutationFn: async (riderData: any) => {
+      const response = await apiRequest(`/api/riders/${riderData.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(riderData),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/riders'] });
+      toast({
+        title: 'Success',
+        description: 'Rider updated successfully',
+      });
+      // Reset form
+      setIsEditingRider(false);
+      setEditRiderId(null);
+      setRiderName('');
+      setRiderGender('');
+      setRiderTeam('');
+      setRiderCountry('');
+      setRiderImage('');
+      setRiderCost('');
+      setRiderPoints('');
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: `Failed to update rider: ${error}`,
+        variant: 'destructive',
+      });
+    },
+  });
 
   // Delete a race
   const deleteRaceMutation = useMutation({
@@ -202,6 +253,59 @@ export default function Admin() {
     };
     
     addRaceMutation.mutate(raceData);
+  };
+  
+  // Handle edit rider button click
+  const handleEditRider = (rider: Rider) => {
+    setIsEditingRider(true);
+    setEditRiderId(rider.id);
+    setRiderName(rider.name);
+    setRiderGender(rider.gender);
+    setRiderTeam(rider.team || '');
+    setRiderCountry(rider.country || '');
+    setRiderImage(rider.image || '');
+    setRiderCost(rider.cost.toString());
+    setRiderPoints((rider.points || 0).toString());
+  };
+  
+  // Handle update rider form submission
+  const handleUpdateRider = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!riderName || !riderGender || !riderCountry || !riderCost) {
+      toast({
+        title: 'Error',
+        description: 'Please fill in all required fields',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    const riderData = {
+      id: editRiderId,
+      name: riderName,
+      gender: riderGender,
+      team: riderTeam,
+      country: riderCountry,
+      image: riderImage,
+      cost: parseInt(riderCost),
+      points: parseInt(riderPoints) || 0,
+    };
+    
+    updateRiderMutation.mutate(riderData);
+  };
+  
+  // Cancel rider edit
+  const cancelRiderEdit = () => {
+    setIsEditingRider(false);
+    setEditRiderId(null);
+    setRiderName('');
+    setRiderGender('');
+    setRiderTeam('');
+    setRiderCountry('');
+    setRiderImage('');
+    setRiderCost('');
+    setRiderPoints('');
   };
 
   // If not authenticated, show login prompt
@@ -572,13 +676,7 @@ export default function Admin() {
                                 variant="outline"
                                 size="sm"
                                 className="mr-2"
-                                onClick={() => {
-                                  // Navigate to edit rider page (to be implemented)
-                                  toast({
-                                    title: 'Info',
-                                    description: 'Edit functionality will be implemented soon',
-                                  });
-                                }}
+                                onClick={() => handleEditRider(rider)}
                               >
                                 Edit
                               </Button>
@@ -589,6 +687,106 @@ export default function Admin() {
                     </Table>
                   </div>
                 </div>
+              )}
+
+              {/* Edit Rider Form */}
+              {isEditingRider && (
+                <Card className="mt-6">
+                  <CardHeader>
+                    <CardTitle>Edit Rider</CardTitle>
+                    <CardDescription>Update rider information</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={handleUpdateRider} className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="riderName">Name*</Label>
+                          <Input 
+                            id="riderName" 
+                            value={riderName}
+                            onChange={(e) => setRiderName(e.target.value)}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="riderGender">Gender*</Label>
+                          <Select value={riderGender} onValueChange={setRiderGender}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select gender" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="male">Male</SelectItem>
+                              <SelectItem value="female">Female</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="riderTeam">Team</Label>
+                          <Input 
+                            id="riderTeam" 
+                            value={riderTeam}
+                            onChange={(e) => setRiderTeam(e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="riderCountry">Country*</Label>
+                          <Input 
+                            id="riderCountry" 
+                            value={riderCountry}
+                            onChange={(e) => setRiderCountry(e.target.value)}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="riderCost">Cost* (in $)</Label>
+                          <Input 
+                            id="riderCost" 
+                            type="number"
+                            value={riderCost}
+                            onChange={(e) => setRiderCost(e.target.value)}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="riderPoints">Points</Label>
+                          <Input 
+                            id="riderPoints" 
+                            type="number"
+                            value={riderPoints}
+                            onChange={(e) => setRiderPoints(e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2 col-span-2">
+                          <Label htmlFor="riderImage">Image URL</Label>
+                          <Input 
+                            id="riderImage" 
+                            value={riderImage}
+                            onChange={(e) => setRiderImage(e.target.value)}
+                            placeholder="https://example.com/image.jpg"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex justify-end space-x-2">
+                        <Button variant="outline" type="button" onClick={cancelRiderEdit}>
+                          Cancel
+                        </Button>
+                        <Button 
+                          type="submit"
+                          disabled={updateRiderMutation.isPending}
+                        >
+                          {updateRiderMutation.isPending ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Updating...
+                            </>
+                          ) : (
+                            'Update Rider'
+                          )}
+                        </Button>
+                      </div>
+                    </form>
+                  </CardContent>
+                </Card>
               )}
             </CardContent>
           </Card>
