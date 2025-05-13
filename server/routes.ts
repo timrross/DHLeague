@@ -129,14 +129,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch riders" });
     }
   });
-
+  
   app.get('/api/riders/:id', async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
-      const rider = await storage.getRider(id);
+      const riderId = Number(req.params.id);
+      if (isNaN(riderId)) {
+        return res.status(400).json({ message: 'Invalid rider ID' });
+      }
       
+      const rider = await storage.getRider(riderId);
       if (!rider) {
-        return res.status(404).json({ message: "Rider not found" });
+        return res.status(404).json({ message: 'Rider not found' });
       }
       
       res.json(rider);
@@ -145,6 +148,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch rider" });
     }
   });
+  
+  app.post('/api/riders', isAuthenticated, async (req: any, res) => {
+    try {
+      // Check if user is an admin
+      const userId = req.user.claims.sub;
+      if (userId !== "42624609") {
+        return res.status(403).json({ message: "Unauthorized. Admin access required." });
+      }
+      
+      const riderData = req.body;
+      const newRider = await storage.createRider(riderData);
+      res.status(201).json(newRider);
+    } catch (error) {
+      console.error("Error creating rider:", error);
+      res.status(500).json({ 
+        message: "Failed to create rider", 
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
+  app.put('/api/riders/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      // Check if user is an admin
+      const userId = req.user.claims.sub;
+      if (userId !== "42624609") {
+        return res.status(403).json({ message: "Unauthorized. Admin access required." });
+      }
+      
+      const riderId = Number(req.params.id);
+      if (isNaN(riderId)) {
+        return res.status(400).json({ message: 'Invalid rider ID' });
+      }
+      
+      const riderData = req.body;
+      const updatedRider = await storage.updateRider(riderId, riderData);
+      
+      if (!updatedRider) {
+        return res.status(404).json({ message: 'Rider not found' });
+      }
+      
+      res.json(updatedRider);
+    } catch (error) {
+      console.error("Error updating rider:", error);
+      res.status(500).json({ 
+        message: "Failed to update rider", 
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
+  app.delete('/api/riders/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      // Check if user is an admin
+      const userId = req.user.claims.sub;
+      if (userId !== "42624609") {
+        return res.status(403).json({ message: "Unauthorized. Admin access required." });
+      }
+      
+      const riderId = Number(req.params.id);
+      if (isNaN(riderId)) {
+        return res.status(400).json({ message: 'Invalid rider ID' });
+      }
+      
+      // Add a deleteRider method to the storage interface and implementation
+      // For now, we'll return 501 Not Implemented
+      res.status(501).json({ message: "Delete rider functionality not implemented yet" });
+    } catch (error) {
+      console.error("Error deleting rider:", error);
+      res.status(500).json({ 
+        message: "Failed to delete rider", 
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+
 
   app.get('/api/riders/gender/:gender', async (req, res) => {
     try {
@@ -301,14 +381,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch races" });
     }
   });
-
+  
   app.get('/api/races/:id', async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
-      const race = await storage.getRace(id);
+      const raceId = Number(req.params.id);
+      if (isNaN(raceId)) {
+        return res.status(400).json({ message: 'Invalid race ID' });
+      }
       
+      const race = await storage.getRace(raceId);
       if (!race) {
-        return res.status(404).json({ message: "Race not found" });
+        return res.status(404).json({ message: 'Race not found' });
       }
       
       res.json(race);
@@ -317,14 +400,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch race" });
     }
   });
-
+  
   app.get('/api/races/:id/results', async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
-      const raceWithResults = await storage.getRaceWithResults(id);
+      const raceId = Number(req.params.id);
+      if (isNaN(raceId)) {
+        return res.status(400).json({ message: 'Invalid race ID' });
+      }
       
+      const raceWithResults = await storage.getRaceWithResults(raceId);
       if (!raceWithResults) {
-        return res.status(404).json({ message: "Race not found" });
+        return res.status(404).json({ message: 'Race not found' });
       }
       
       res.json(raceWithResults);
@@ -333,6 +419,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch race results" });
     }
   });
+  
+  app.post('/api/races', isAuthenticated, async (req: any, res) => {
+    try {
+      // Check if user is an admin
+      const userId = req.user.claims.sub;
+      if (userId !== "42624609") {
+        return res.status(403).json({ message: "Unauthorized. Admin access required." });
+      }
+      
+      const raceData = req.body;
+      const newRace = await storage.createRace(raceData);
+      res.status(201).json(newRace);
+    } catch (error) {
+      console.error("Error creating race:", error);
+      res.status(500).json({ 
+        message: "Failed to create race", 
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
+  app.put('/api/races/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      // Check if user is an admin
+      const userId = req.user.claims.sub;
+      if (userId !== "42624609") {
+        return res.status(403).json({ message: "Unauthorized. Admin access required." });
+      }
+      
+      const raceId = Number(req.params.id);
+      if (isNaN(raceId)) {
+        return res.status(400).json({ message: 'Invalid race ID' });
+      }
+      
+      const raceData = req.body;
+      const updatedRace = await storage.updateRace(raceId, raceData);
+      
+      if (!updatedRace) {
+        return res.status(404).json({ message: 'Race not found' });
+      }
+      
+      res.json(updatedRace);
+    } catch (error) {
+      console.error("Error updating race:", error);
+      res.status(500).json({ 
+        message: "Failed to update race", 
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
+  app.post('/api/races/:id/results', isAuthenticated, async (req: any, res) => {
+    try {
+      // Check if user is an admin
+      const userId = req.user.claims.sub;
+      if (userId !== "42624609") {
+        return res.status(403).json({ message: "Unauthorized. Admin access required." });
+      }
+      
+      const raceId = Number(req.params.id);
+      if (isNaN(raceId)) {
+        return res.status(400).json({ message: 'Invalid race ID' });
+      }
+      
+      const resultData = req.body;
+      resultData.raceId = raceId;
+      
+      const newResult = await storage.addResult(resultData);
+      
+      // Update team points after adding a result
+      await storage.updateTeamPoints();
+      
+      res.status(201).json(newResult);
+    } catch (error) {
+      console.error("Error adding race result:", error);
+      res.status(500).json({ 
+        message: "Failed to add race result", 
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+
+
+
 
   // Leaderboard routes
   app.get('/api/leaderboard', async (req, res) => {
