@@ -76,15 +76,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Unauthorized. Admin access required." });
       }
       
-      // For now, return a placeholder response as the API endpoint may not be available
-      // In a production app, we would:
-      // 1. Fetch riders from UCI API
-      // 2. Map to our format
-      // 3. Add/update in database
+      // Fetch riders from UCI API
+      const uciRiders = await uciApiService.getMTBDownhillRiders();
+      console.log(`Found ${uciRiders.length} UCI downhill riders`);
+      
+      // Map to our format
+      const mappedRiders = await uciApiService.mapRiderData(uciRiders);
+      
+      // Add/update riders in database
+      const results = [];
+      for (const rider of mappedRiders) {
+        // Skip riders with empty names (shouldn't happen, but just in case)
+        if (!rider.name || rider.name.trim() === '') {
+          continue;
+        }
+        
+        // Check if rider already exists by name
+        const existingRiders = await storage.getRiders();
+        const existingRider = existingRiders.find(r => r.name === rider.name);
+        
+        if (existingRider) {
+          // Update existing rider
+          const updated = await storage.updateRider(existingRider.id, rider);
+          results.push({ action: 'updated', rider: updated });
+        } else {
+          // Create new rider
+          const created = await storage.createRider(rider);
+          results.push({ action: 'created', rider: created });
+        }
+      }
       
       res.json({ 
-        message: "Rider import simulation successful",
-        note: "This is a placeholder. In production, real UCI API data would be fetched."
+        message: `Successfully processed ${results.length} riders`,
+        details: results
       });
     } catch (error) {
       console.error("Error importing riders from UCI API:", error);

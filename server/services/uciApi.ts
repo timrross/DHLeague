@@ -66,16 +66,47 @@ export class UCIApiService {
   }
 
   /**
-   * Fetch MTB downhill riders rankings
+   * Fetch MTB downhill riders from UCI API
    */
-  async getMTBDownhillRiders(): Promise<UCIRider[]> {
+  async getMTBDownhillRiders(): Promise<any[]> {
     try {
-      // This endpoint might need to be adjusted based on the actual UCI API structure
-      const response = await axios.get(`${this.baseUrl}/rankings?discipline=MTB&category=DHI`);
-      return response.data;
+      // Get riders from the UCI API
+      const response = await axios.get('https://www.uci.org/api/riders/MTB/2025?page=1');
+      
+      // Filter for downhill riders (DHI)
+      const dhiRiders = response.data.filter((rider: any) => {
+        const disciplines = rider.disciplines || [];
+        return disciplines.some((discipline: any) => 
+          discipline?.abbreviation?.toLowerCase() === 'dhi' || 
+          (discipline?.name && discipline.name.toLowerCase().includes('downhill'))
+        );
+      });
+      
+      return dhiRiders;
     } catch (error) {
       console.error('Error fetching UCI MTB riders:', error);
       throw new Error('Failed to fetch UCI MTB riders');
+    }
+  }
+  
+  /**
+   * Get rider profile image
+   */
+  async getRiderProfileImage(riderId: string): Promise<string> {
+    try {
+      // Try to get the rider's profile image from UCI
+      const response = await axios.get(`${this.baseUrl}/riders/${riderId}`);
+      
+      if (response.data && response.data.image) {
+        return response.data.image;
+      }
+      
+      // If no image found, return a default image
+      return `https://www.uci.org/docs/default-source/imported-images/discipline/discipline-mountain-bike.jpg`;
+    } catch (error) {
+      console.error(`Error fetching rider profile image for rider ${riderId}:`, error);
+      // Return a default image on error
+      return `https://www.uci.org/docs/default-source/imported-images/discipline/discipline-mountain-bike.jpg`;
     }
   }
 
@@ -114,23 +145,81 @@ export class UCIApiService {
   /**
    * Map UCI rider data to our rider schema
    */
-  mapRiderData(uciRiders: UCIRider[]): InsertRider[] {
-    return uciRiders.map((rider: UCIRider, index: number) => {
-      // Calculate cost based on ranking (higher ranked riders cost more)
-      const cost = Math.max(150000, 400000 - (index * 10000));
-      
-      return {
-        name: `${rider.firstName} ${rider.lastName}`,
-        gender: rider.gender.toLowerCase(),
-        team: rider.teamName,
-        country: rider.nationality.name,
-        cost,
-        lastYearStanding: index + 1,
-        points: rider.points || 0,
-        image: `https://flagcdn.com/w320/${rider.nationality.code.toLowerCase()}.png`, // Use flag as fallback image
-        form: JSON.stringify([0, 0, 0, 0, 0]) // Default form data
-      };
+  async mapRiderData(uciRiders: any[]): Promise<InsertRider[]> {
+    // Sort riders by ranking (if available) to determine cost
+    const sortedRiders = [...uciRiders].sort((a, b) => {
+      const aRanking = a.ranking?.position || 999;
+      const bRanking = b.ranking?.position || 999;
+      return aRanking - bRanking;
     });
+    
+    const mappedRiders = await Promise.all(
+      sortedRiders.map(async (rider: any, index: number) => {
+        // Calculate cost based on ranking (higher ranked riders cost more)
+        // Elite/top riders cost more
+        const isElite = rider.category?.name?.toLowerCase().includes('elite');
+        const baseMaxCost = isElite ? 400000 : 300000;
+        const cost = Math.max(150000, baseMaxCost - (index * 10000));
+        
+        // Determine gender
+        let gender = 'male';
+        if (rider.gender === 'F' || 
+            rider.gender?.toLowerCase() === 'female' || 
+            rider.category?.name?.toLowerCase().includes('women')) {
+          gender = 'female';
+        }
+        
+        // Get rider's team
+        const team = rider.team?.name || 'Independent';
+        
+        // Get nationality
+        const country = rider.nationality?.name || rider.country?.name || 'Unknown';
+        
+        // Get points from ranking if available
+        const points = rider.ranking?.points || 0;
+        
+        // Get ranking position
+        const lastYearStanding = rider.ranking?.position || (index + 1);
+        
+        // Try to get rider's profile image
+        let imageUrl;
+        try {
+          if (rider.id) {
+            imageUrl = await this.getRiderProfileImage(rider.id);
+          }
+        } catch (error) {
+          console.error(`Error getting profile image for rider ${rider.id}:`, error);
+        }
+        
+        // If no image was found, use a country flag as fallback
+        if (!imageUrl) {
+          const countryCode = rider.nationality?.code || rider.country?.code;
+          if (countryCode) {
+            imageUrl = `https://flagcdn.com/w320/${countryCode.toLowerCase()}.png`;
+          } else {
+            // Default image if no country code
+            imageUrl = 'https://www.uci.org/docs/default-source/imported-images/discipline/discipline-mountain-bike.jpg';
+          }
+        }
+        
+        // Combine first and last name
+        const name = `${rider.firstName || ''} ${rider.lastName || ''}`.trim();
+        
+        return {
+          name,
+          gender,
+          team,
+          country,
+          cost,
+          lastYearStanding,
+          points,
+          image: imageUrl,
+          form: JSON.stringify([0, 0, 0, 0, 0]) // Default form data
+        };
+      })
+    );
+    
+    return mappedRiders;
   }
 }
 
