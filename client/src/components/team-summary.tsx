@@ -79,7 +79,7 @@ export default function TeamSummary({ selectedRiders, toggleRiderSelection }: Te
           <div key={rider.id} className="bg-white rounded-md p-3 shadow-sm flex justify-between items-center">
             <div className="flex items-center">
               <Avatar className={`w-8 h-8 border-2 mr-2 ${rider.gender === 'male' ? 'border-blue-300' : 'border-pink-300'}`}>
-                <AvatarImage src={rider.image || undefined} alt={rider.name} className="object-cover" />
+                <AvatarImage src={safeImageUrl(rider.image)} alt={rider.name} className="object-cover" />
                 <AvatarFallback className={`${rider.gender === 'male' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'}`}>
                   {getInitials(rider.name)}
                 </AvatarFallback>
