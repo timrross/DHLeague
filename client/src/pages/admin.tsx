@@ -58,9 +58,10 @@ export default function Admin() {
   
   // Rider form state
   const [isEditingRider, setIsEditingRider] = useState(false);
+  const [showAddRiderForm, setShowAddRiderForm] = useState(false);
   const [editRiderId, setEditRiderId] = useState<number | null>(null);
   const [riderName, setRiderName] = useState('');
-  const [riderGender, setRiderGender] = useState('');
+  const [riderGender, setRiderGender] = useState('male');
   const [riderTeam, setRiderTeam] = useState('');
   const [riderCountry, setRiderCountry] = useState('');
   const [riderImage, setRiderImage] = useState('');
@@ -164,6 +165,42 @@ export default function Admin() {
       toast({
         title: 'Error',
         description: `Failed to add race: ${error}`,
+        variant: 'destructive',
+      });
+    },
+  });
+  
+  // Add a new rider
+  const addRiderMutation = useMutation({
+    mutationFn: async (riderData: any) => {
+      const response = await apiRequest('/api/riders', {
+        method: 'POST',
+        body: JSON.stringify(riderData),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/riders'] });
+      toast({
+        title: 'Success',
+        description: 'Rider added successfully',
+      });
+      // Reset form
+      setRiderName('');
+      setRiderGender('male');
+      setRiderTeam('');
+      setRiderCountry('');
+      setRiderImage('');
+      setRiderCost('');
+      setRiderPoints('');
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: `Failed to add rider: ${error}`,
         variant: 'destructive',
       });
     },
@@ -333,6 +370,32 @@ export default function Admin() {
     };
     
     updateRiderMutation.mutate(riderData);
+  };
+  
+  // Handle add rider form submission
+  const handleAddRider = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!riderName || !riderGender || !riderCountry || !riderCost) {
+      toast({
+        title: 'Error',
+        description: 'Please fill in all required fields',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    const riderData = {
+      name: riderName,
+      gender: riderGender,
+      team: riderTeam,
+      country: riderCountry,
+      image: riderImage,
+      cost: parseInt(riderCost),
+      points: parseInt(riderPoints) || 0,
+    };
+    
+    addRiderMutation.mutate(riderData);
   };
   
   // Cancel rider edit
@@ -519,100 +582,200 @@ export default function Admin() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleAddRace} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Race Name*</Label>
-                      <Input 
-                        id="name" 
-                        value={raceName}
-                        onChange={(e) => setRaceName(e.target.value)}
-                        placeholder="Fort William World Cup"
-                        required
-                      />
+                {isEditingRace ? (
+                  // Edit Race Form
+                  <form onSubmit={handleUpdateRace} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="name">Race Name*</Label>
+                        <Input 
+                          id="name" 
+                          value={raceName}
+                          onChange={(e) => setRaceName(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="location">Location*</Label>
+                        <Input 
+                          id="location" 
+                          value={location}
+                          onChange={(e) => setLocation(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="country">Country*</Label>
+                        <Input 
+                          id="country" 
+                          value={country}
+                          onChange={(e) => setCountry(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="status">Status*</Label>
+                        <Select value={status} onValueChange={setStatus}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="upcoming">Upcoming</SelectItem>
+                            <SelectItem value="next">Next</SelectItem>
+                            <SelectItem value="ongoing">Ongoing</SelectItem>
+                            <SelectItem value="completed">Completed</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="startDate">Start Date*</Label>
+                        <Input 
+                          id="startDate" 
+                          type="date"
+                          value={startDate}
+                          onChange={(e) => setStartDate(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="endDate">End Date*</Label>
+                        <Input 
+                          id="endDate" 
+                          type="date"
+                          value={endDate}
+                          onChange={(e) => setEndDate(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2 col-span-2">
+                        <Label htmlFor="imageUrl">Image URL</Label>
+                        <Input 
+                          id="imageUrl" 
+                          value={imageUrl}
+                          onChange={(e) => setImageUrl(e.target.value)}
+                          placeholder="https://example.com/image.jpg"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Leave blank to use a random image based on location
+                        </p>
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="location">Location*</Label>
-                      <Input 
-                        id="location" 
-                        value={location}
-                        onChange={(e) => setLocation(e.target.value)}
-                        placeholder="Fort William"
-                        required
-                      />
+                    <div className="flex justify-end space-x-2">
+                      <Button variant="outline" type="button" onClick={cancelRaceEdit}>
+                        Cancel
+                      </Button>
+                      <Button 
+                        type="submit"
+                        disabled={updateRaceMutation.isPending}
+                      >
+                        {updateRaceMutation.isPending ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Updating...
+                          </>
+                        ) : (
+                          'Update Race'
+                        )}
+                      </Button>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="country">Country*</Label>
-                      <Input 
-                        id="country" 
-                        value={country}
-                        onChange={(e) => setCountry(e.target.value)}
-                        placeholder="Scotland"
-                        required
-                      />
+                  </form>
+                ) : (
+                  // Add Race Form
+                  <form onSubmit={handleAddRace} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="name">Race Name*</Label>
+                        <Input 
+                          id="name" 
+                          value={raceName}
+                          onChange={(e) => setRaceName(e.target.value)}
+                          placeholder="Fort William World Cup"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="location">Location*</Label>
+                        <Input 
+                          id="location" 
+                          value={location}
+                          onChange={(e) => setLocation(e.target.value)}
+                          placeholder="Fort William"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="country">Country*</Label>
+                        <Input 
+                          id="country" 
+                          value={country}
+                          onChange={(e) => setCountry(e.target.value)}
+                          placeholder="Scotland"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="status">Status*</Label>
+                        <Select value={status} onValueChange={setStatus}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="upcoming">Upcoming</SelectItem>
+                            <SelectItem value="next">Next</SelectItem>
+                            <SelectItem value="ongoing">Ongoing</SelectItem>
+                            <SelectItem value="completed">Completed</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="startDate">Start Date*</Label>
+                        <Input 
+                          id="startDate" 
+                          type="date"
+                          value={startDate}
+                          onChange={(e) => setStartDate(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="endDate">End Date*</Label>
+                        <Input 
+                          id="endDate" 
+                          type="date"
+                          value={endDate}
+                          onChange={(e) => setEndDate(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2 col-span-2">
+                        <Label htmlFor="imageUrl">Image URL</Label>
+                        <Input 
+                          id="imageUrl" 
+                          value={imageUrl}
+                          onChange={(e) => setImageUrl(e.target.value)}
+                          placeholder="https://example.com/image.jpg"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Leave blank to use a random image based on location
+                        </p>
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="status">Status*</Label>
-                      <Select value={status} onValueChange={setStatus}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="upcoming">Upcoming</SelectItem>
-                          <SelectItem value="next">Next</SelectItem>
-                          <SelectItem value="ongoing">Ongoing</SelectItem>
-                          <SelectItem value="completed">Completed</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="startDate">Start Date*</Label>
-                      <Input 
-                        id="startDate" 
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="endDate">End Date*</Label>
-                      <Input 
-                        id="endDate" 
-                        type="date"
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2 col-span-2">
-                      <Label htmlFor="imageUrl">Image URL</Label>
-                      <Input 
-                        id="imageUrl" 
-                        value={imageUrl}
-                        onChange={(e) => setImageUrl(e.target.value)}
-                        placeholder="https://example.com/image.jpg"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Leave blank to use a random image based on location
-                      </p>
-                    </div>
-                  </div>
-                  <Button 
-                    type="submit"
-                    disabled={addRaceMutation.isPending}
-                    className="w-full"
-                  >
-                    {addRaceMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Adding Race...
-                      </>
-                    ) : (
-                      'Add Race'
-                    )}
-                  </Button>
-                </form>
+                    <Button 
+                      type="submit"
+                      disabled={addRaceMutation.isPending}
+                      className="w-full"
+                    >
+                      {addRaceMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Adding Race...
+                        </>
+                      ) : (
+                        'Add Race'
+                      )}
+                    </Button>
+                  </form>
+                )}
               </CardContent>
             </Card>
             
@@ -674,14 +837,7 @@ export default function Admin() {
                               variant="outline"
                               size="sm"
                               className="mr-2"
-                              onClick={() => {
-                                // Navigate to edit race page (to be implemented)
-                                // window.location.href = `/admin/races/edit/${race.id}`;
-                                toast({
-                                  title: 'Info',
-                                  description: 'Edit functionality will be implemented soon',
-                                });
-                              }}
+                              onClick={() => handleEditRace(race)}
                             >
                               Edit
                             </Button>
@@ -735,11 +891,18 @@ export default function Admin() {
                     <h3 className="text-lg font-medium">Total Riders: {riders.length}</h3>
                     <Button
                       onClick={() => {
-                        // Navigate to add rider page (to be implemented)
-                        toast({
-                          title: 'Info',
-                          description: 'Add rider functionality will be implemented soon',
-                        });
+                        setIsEditingRider(false);
+                        setEditRiderId(null);
+                        setRiderName('');
+                        setRiderGender('male');
+                        setRiderTeam('');
+                        setRiderCountry('');
+                        setRiderImage('');
+                        setRiderCost('');
+                        setRiderPoints('');
+                        
+                        // Toggle to Add Rider form
+                        setShowAddRiderForm(prevState => !prevState);
                       }}
                     >
                       Add Rider
@@ -787,15 +950,15 @@ export default function Admin() {
                 </div>
               )}
 
-              {/* Edit Rider Form */}
-              {isEditingRider && (
+              {/* Add/Edit Rider Form */}
+              {(isEditingRider || showAddRiderForm) && (
                 <Card className="mt-6">
                   <CardHeader>
-                    <CardTitle>Edit Rider</CardTitle>
-                    <CardDescription>Update rider information</CardDescription>
+                    <CardTitle>{isEditingRider ? 'Edit Rider' : 'Add Rider'}</CardTitle>
+                    <CardDescription>{isEditingRider ? 'Update rider information' : 'Add a new rider to the database'}</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <form onSubmit={handleUpdateRider} className="space-y-4">
+                    <form onSubmit={isEditingRider ? handleUpdateRider : handleAddRider} className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label htmlFor="riderName">Name*</Label>
@@ -865,20 +1028,48 @@ export default function Admin() {
                         </div>
                       </div>
                       <div className="flex justify-end space-x-2">
-                        <Button variant="outline" type="button" onClick={cancelRiderEdit}>
+                        <Button 
+                          variant="outline" 
+                          type="button" 
+                          onClick={() => {
+                            if (isEditingRider) {
+                              cancelRiderEdit();
+                            } else {
+                              setShowAddRiderForm(false);
+                              setRiderName('');
+                              setRiderGender('male');
+                              setRiderTeam('');
+                              setRiderCountry('');
+                              setRiderImage('');
+                              setRiderCost('');
+                              setRiderPoints('');
+                            }
+                          }}
+                        >
                           Cancel
                         </Button>
                         <Button 
                           type="submit"
-                          disabled={updateRiderMutation.isPending}
+                          disabled={isEditingRider ? updateRiderMutation.isPending : addRiderMutation.isPending}
                         >
-                          {updateRiderMutation.isPending ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Updating...
-                            </>
+                          {isEditingRider ? (
+                            updateRiderMutation.isPending ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Updating...
+                              </>
+                            ) : (
+                              'Update Rider'
+                            )
                           ) : (
-                            'Update Rider'
+                            addRiderMutation.isPending ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Adding...
+                              </>
+                            ) : (
+                              'Add Rider'
+                            )
                           )}
                         </Button>
                       </div>
