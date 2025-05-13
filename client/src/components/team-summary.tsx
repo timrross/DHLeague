@@ -1,6 +1,7 @@
 import { Rider } from "@shared/schema";
 import { X } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface TeamSummaryProps {
   selectedRiders: Rider[];
