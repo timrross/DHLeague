@@ -92,17 +92,24 @@ export class UCIApiService {
         allDHRiders = [...dhRidersPage1];
       }
       
-      // Fetch additional pages if needed (limit to 5 pages max to avoid excessive requests)
-      const pagesToFetch = Math.min(totalPages, 5);
-      for (let page = 2; page <= pagesToFetch; page++) {
-        console.log(`Fetching page ${page} of ${pagesToFetch}`);
-        const pageResponse = await axios.get(`https://www.uci.org/api/riders/MTB/2025?page=${page}`);
-        
-        if (pageResponse.data.data && Array.isArray(pageResponse.data.data)) {
-          const dhRidersPage = pageResponse.data.data.filter((rider: any) => 
-            rider.format === 'DH'
-          );
-          allDHRiders = [...allDHRiders, ...dhRidersPage];
+      // Fetch all additional pages (no limit)
+      for (let page = 2; page <= totalPages; page++) {
+        console.log(`Fetching page ${page} of ${totalPages}`);
+        try {
+          const pageResponse = await axios.get(`https://www.uci.org/api/riders/MTB/2025?page=${page}`);
+          
+          if (pageResponse.data.data && Array.isArray(pageResponse.data.data)) {
+            const dhRidersPage = pageResponse.data.data.filter((rider: any) => 
+              rider.format === 'DH'
+            );
+            allDHRiders = [...allDHRiders, ...dhRidersPage];
+          }
+          
+          // Add a small delay to avoid overwhelming the API
+          await new Promise(resolve => setTimeout(resolve, 100));
+        } catch (pageError) {
+          console.error(`Error fetching page ${page}:`, pageError);
+          // Continue to next page even if one page fails
         }
       }
       
