@@ -1,7 +1,7 @@
 import { Rider } from "@shared/schema";
 import { Check, Plus } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { safeImageUrl } from "@/lib/utils";
+import { safeImageUrl, getInitials, getColorFromName } from "@/lib/utils";
 
 interface RiderCardProps {
   rider: Rider;
@@ -10,15 +10,15 @@ interface RiderCardProps {
 }
 
 export default function RiderCard({ rider, isSelected, onClick }: RiderCardProps) {
-  // Get rider initials for avatar
-  const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('');
-  };
-
   // Format cost as currency
   const formatCost = (cost: number) => {
     return `$${cost.toLocaleString()}`;
   };
+
+  // Get the color for the avatar background
+  const avatarBgColor = isSelected 
+    ? 'bg-primary' 
+    : getColorFromName(rider.name);
 
   return (
     <div 
@@ -28,7 +28,7 @@ export default function RiderCard({ rider, isSelected, onClick }: RiderCardProps
       <div className="flex items-center">
         <Avatar className={`w-10 h-10 border-2 mr-3 ${isSelected ? 'border-primary' : 'border-transparent'}`}>
           <AvatarImage src={safeImageUrl(rider.image)} alt={rider.name} className="object-cover" />
-          <AvatarFallback className={`${isSelected ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700'}`}>
+          <AvatarFallback className={`${avatarBgColor} text-white`}>
             {getInitials(rider.name)}
           </AvatarFallback>
         </Avatar>
@@ -46,7 +46,10 @@ export default function RiderCard({ rider, isSelected, onClick }: RiderCardProps
         <span className="font-accent font-bold text-primary text-lg mr-3">{formatCost(rider.cost)}</span>
         <button 
           className={`${isSelected ? 'bg-green-500' : 'bg-primary'} text-white w-8 h-8 rounded-full flex items-center justify-center hover:${isSelected ? 'bg-green-600' : 'bg-red-700'} transition duration-200`}
-          onClick={onClick}
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent event bubbling
+            onClick();
+          }}
         >
           {isSelected ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
         </button>

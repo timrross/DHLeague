@@ -2,7 +2,7 @@ import { Rider } from "@shared/schema";
 import { X } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { safeImageUrl } from "@/lib/utils";
+import { safeImageUrl, getInitials, getColorFromName } from "@/lib/utils";
 
 interface TeamSummaryProps {
   selectedRiders: Rider[];
@@ -18,11 +18,6 @@ export default function TeamSummary({ selectedRiders, toggleRiderSelection }: Te
   const isCompositionValid = selectedRiders.length <= 6 && 
                             maleRidersCount <= 4 && 
                             (selectedRiders.length === 6 ? femaleRidersCount >= 2 : true);
-
-  // Get rider initials for avatar
-  const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('');
-  };
 
   return (
     <div>
@@ -80,7 +75,7 @@ export default function TeamSummary({ selectedRiders, toggleRiderSelection }: Te
             <div className="flex items-center">
               <Avatar className={`w-8 h-8 border-2 mr-2 ${rider.gender === 'male' ? 'border-blue-300' : 'border-pink-300'}`}>
                 <AvatarImage src={safeImageUrl(rider.image)} alt={rider.name} className="object-cover" />
-                <AvatarFallback className={`${rider.gender === 'male' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'}`}>
+                <AvatarFallback className={getColorFromName(rider.name)}>
                   {getInitials(rider.name)}
                 </AvatarFallback>
               </Avatar>
