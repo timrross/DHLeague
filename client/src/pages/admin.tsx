@@ -865,30 +865,144 @@ export default function Admin() {
         
         {/* Manage Riders Tab */}
         <TabsContent value="riders">
-          <Card>
-            <CardHeader>
-              <CardTitle>Rider List</CardTitle>
-              <CardDescription>
-                View and manage riders.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoadingRiders ? (
-                <div className="flex justify-center items-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-              ) : ridersError ? (
-                <div className="text-center py-8 text-red-500">
-                  Error loading riders
-                </div>
-              ) : !riders || riders.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  No riders found. Import from UCI API.
-                </div>
-              ) : (
-                <div>
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-medium">Total Riders: {riders.length}</h3>
+          <div className="grid gap-6">
+            {/* Add/Edit Rider Form */}
+            {(isEditingRider || showAddRiderForm) ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>{isEditingRider ? 'Edit Rider' : 'Add Rider'}</CardTitle>
+                  <CardDescription>{isEditingRider ? 'Update rider information' : 'Add a new rider to the database'}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={isEditingRider ? handleUpdateRider : handleAddRider} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="riderName">Name*</Label>
+                        <Input 
+                          id="riderName" 
+                          value={riderName}
+                          onChange={(e) => setRiderName(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="riderGender">Gender*</Label>
+                        <Select value={riderGender} onValueChange={setRiderGender}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select gender" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="male">Male</SelectItem>
+                            <SelectItem value="female">Female</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="riderTeam">Team</Label>
+                        <Input 
+                          id="riderTeam" 
+                          value={riderTeam}
+                          onChange={(e) => setRiderTeam(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="riderCountry">Country*</Label>
+                        <Input 
+                          id="riderCountry" 
+                          value={riderCountry}
+                          onChange={(e) => setRiderCountry(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="riderCost">Cost* (in $)</Label>
+                        <Input 
+                          id="riderCost" 
+                          type="number"
+                          value={riderCost}
+                          onChange={(e) => setRiderCost(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="riderPoints">Points</Label>
+                        <Input 
+                          id="riderPoints" 
+                          type="number"
+                          value={riderPoints}
+                          onChange={(e) => setRiderPoints(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2 col-span-2">
+                        <Label htmlFor="riderImage">Image URL</Label>
+                        <Input 
+                          id="riderImage" 
+                          value={riderImage}
+                          onChange={(e) => setRiderImage(e.target.value)}
+                          placeholder="https://example.com/image.jpg"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end space-x-2">
+                      <Button 
+                        variant="outline" 
+                        type="button" 
+                        onClick={() => {
+                          if (isEditingRider) {
+                            cancelRiderEdit();
+                          } else {
+                            setShowAddRiderForm(false);
+                            setRiderName('');
+                            setRiderGender('male');
+                            setRiderTeam('');
+                            setRiderCountry('');
+                            setRiderImage('');
+                            setRiderCost('');
+                            setRiderPoints('');
+                          }
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button 
+                        type="submit"
+                        disabled={isEditingRider ? updateRiderMutation.isPending : addRiderMutation.isPending}
+                      >
+                        {isEditingRider ? (
+                          updateRiderMutation.isPending ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Updating...
+                            </>
+                          ) : (
+                            'Update Rider'
+                          )
+                        ) : (
+                          addRiderMutation.isPending ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Adding...
+                            </>
+                          ) : (
+                            'Add Rider'
+                          )
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+            ) : null}
+            
+            {/* Rider List */}
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Rider List</CardTitle>
+                    <CardDescription>View and manage riders</CardDescription>
+                  </div>
+                  {!showAddRiderForm && !isEditingRider && (
                     <Button
                       onClick={() => {
                         setIsEditingRider(false);
@@ -901,184 +1015,77 @@ export default function Admin() {
                         setRiderCost('');
                         setRiderPoints('');
                         
-                        // Toggle to Add Rider form
-                        setShowAddRiderForm(prevState => !prevState);
+                        // Open Add Rider form
+                        setShowAddRiderForm(true);
                       }}
                     >
                       Add Rider
                     </Button>
-                  </div>
-                  
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableCaption>List of all riders</TableCaption>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Gender</TableHead>
-                          <TableHead>Team</TableHead>
-                          <TableHead>Country</TableHead>
-                          <TableHead>Cost</TableHead>
-                          <TableHead>Points</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {riders.map((rider: any) => (
-                          <TableRow key={rider.id}>
-                            <TableCell className="font-medium">{rider.name}</TableCell>
-                            <TableCell>{rider.gender}</TableCell>
-                            <TableCell>{rider.team}</TableCell>
-                            <TableCell>{rider.country}</TableCell>
-                            <TableCell>${(rider.cost / 1000).toFixed(0)}k</TableCell>
-                            <TableCell>{rider.points}</TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="mr-2"
-                                onClick={() => handleEditRider(rider)}
-                              >
-                                Edit
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+                  )}
                 </div>
-              )}
-
-              {/* Add/Edit Rider Form */}
-              {(isEditingRider || showAddRiderForm) && (
-                <Card className="mt-6">
-                  <CardHeader>
-                    <CardTitle>{isEditingRider ? 'Edit Rider' : 'Add Rider'}</CardTitle>
-                    <CardDescription>{isEditingRider ? 'Update rider information' : 'Add a new rider to the database'}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <form onSubmit={isEditingRider ? handleUpdateRider : handleAddRider} className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="riderName">Name*</Label>
-                          <Input 
-                            id="riderName" 
-                            value={riderName}
-                            onChange={(e) => setRiderName(e.target.value)}
-                            required
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="riderGender">Gender*</Label>
-                          <Select value={riderGender} onValueChange={setRiderGender}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select gender" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="male">Male</SelectItem>
-                              <SelectItem value="female">Female</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="riderTeam">Team</Label>
-                          <Input 
-                            id="riderTeam" 
-                            value={riderTeam}
-                            onChange={(e) => setRiderTeam(e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="riderCountry">Country*</Label>
-                          <Input 
-                            id="riderCountry" 
-                            value={riderCountry}
-                            onChange={(e) => setRiderCountry(e.target.value)}
-                            required
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="riderCost">Cost* (in $)</Label>
-                          <Input 
-                            id="riderCost" 
-                            type="number"
-                            value={riderCost}
-                            onChange={(e) => setRiderCost(e.target.value)}
-                            required
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="riderPoints">Points</Label>
-                          <Input 
-                            id="riderPoints" 
-                            type="number"
-                            value={riderPoints}
-                            onChange={(e) => setRiderPoints(e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-2 col-span-2">
-                          <Label htmlFor="riderImage">Image URL</Label>
-                          <Input 
-                            id="riderImage" 
-                            value={riderImage}
-                            onChange={(e) => setRiderImage(e.target.value)}
-                            placeholder="https://example.com/image.jpg"
-                          />
-                        </div>
-                      </div>
-                      <div className="flex justify-end space-x-2">
-                        <Button 
-                          variant="outline" 
-                          type="button" 
-                          onClick={() => {
-                            if (isEditingRider) {
-                              cancelRiderEdit();
-                            } else {
-                              setShowAddRiderForm(false);
-                              setRiderName('');
-                              setRiderGender('male');
-                              setRiderTeam('');
-                              setRiderCountry('');
-                              setRiderImage('');
-                              setRiderCost('');
-                              setRiderPoints('');
-                            }
-                          }}
-                        >
-                          Cancel
-                        </Button>
-                        <Button 
-                          type="submit"
-                          disabled={isEditingRider ? updateRiderMutation.isPending : addRiderMutation.isPending}
-                        >
-                          {isEditingRider ? (
-                            updateRiderMutation.isPending ? (
-                              <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Updating...
-                              </>
-                            ) : (
-                              'Update Rider'
-                            )
-                          ) : (
-                            addRiderMutation.isPending ? (
-                              <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Adding...
-                              </>
-                            ) : (
-                              'Add Rider'
-                            )
-                          )}
-                        </Button>
-                      </div>
-                    </form>
-                  </CardContent>
-                </Card>
-              )}
-            </CardContent>
-          </Card>
+              </CardHeader>
+              <CardContent>
+                {isLoadingRiders ? (
+                  <div className="flex justify-center items-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : ridersError ? (
+                  <div className="text-center py-8 text-red-500">
+                    Error loading riders
+                  </div>
+                ) : !riders || riders.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    No riders found. Import from UCI API.
+                  </div>
+                ) : (
+                  <div>
+                    <div className="mb-4">
+                      <h3 className="text-sm font-medium text-gray-500">Total Riders: {riders.length}</h3>
+                    </div>
+                    
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableCaption>List of all riders</TableCaption>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Gender</TableHead>
+                            <TableHead>Team</TableHead>
+                            <TableHead>Country</TableHead>
+                            <TableHead>Cost</TableHead>
+                            <TableHead>Points</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {riders.map((rider: any) => (
+                            <TableRow key={rider.id}>
+                              <TableCell className="font-medium">{rider.name}</TableCell>
+                              <TableCell>{rider.gender}</TableCell>
+                              <TableCell>{rider.team}</TableCell>
+                              <TableCell>{rider.country}</TableCell>
+                              <TableCell>${(rider.cost / 1000).toFixed(0)}k</TableCell>
+                              <TableCell>{rider.points}</TableCell>
+                              <TableCell className="text-right">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="mr-2"
+                                  onClick={() => handleEditRider(rider)}
+                                >
+                                  Edit
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
         
         {/* Manage Results Tab */}
