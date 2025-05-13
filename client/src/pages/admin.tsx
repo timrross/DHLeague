@@ -219,7 +219,7 @@ export default function Admin() {
   
   // If not admin, show unauthorized message
   // In a real application, check for admin role
-  // This is just a placeholder assuming user with ID 1 is admin
+  // This is just a placeholder assuming user with specified ID is admin
   if (user && user.id !== "42624609") {
     return (
       <div className="container mx-auto py-10 text-center">

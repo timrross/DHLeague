@@ -5,13 +5,11 @@ import { Button } from "@/components/ui/button";
 import { 
   Sheet, 
   SheetContent, 
-  SheetDescription, 
   SheetHeader, 
   SheetTitle, 
-  SheetTrigger,
-  SheetClose
+  SheetTrigger
 } from "@/components/ui/sheet";
-import { Menu, X, Mountain, User } from "lucide-react";
+import { Menu, Mountain, Shield } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const navigation = [
@@ -65,6 +63,14 @@ export default function Header() {
                   {getInitials(user?.firstName || "User")}
                 </AvatarFallback>
               </Avatar>
+              {user?.id === "42624609" && (
+                <Link href="/admin">
+                  <a className="flex items-center text-white hover:text-primary font-body font-semibold transition duration-200">
+                    <Shield className="h-4 w-4 mr-1" />
+                    Admin
+                  </a>
+                </Link>
+              )}
               <a href="/api/logout" className="text-white hover:text-primary font-body font-semibold transition duration-200">
                 Logout
               </a>

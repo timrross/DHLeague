@@ -21,6 +21,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch user" });
     }
   });
+  
+  // Admin routes
+  app.post('/api/admin/import-races', isAuthenticated, async (req: any, res) => {
+    try {
+      // Check if user is an admin (in this simple example, we're using a fixed ID)
+      const userId = req.user.claims.sub;
+      if (userId !== "42624609") {
+        return res.status(403).json({ message: "Unauthorized. Admin access required." });
+      }
+      
+      // Fetch races from UCI API
+      const uciRaces = await uciApiService.getUpcomingMTBEvents();
+      
+      // Map to our race format
+      const mappedRaces = uciApiService.mapRaceData(uciRaces);
+      
+      // Add/update races in database
+      const results = [];
+      for (const race of mappedRaces) {
+        // Check if race already exists by name
+        const existingRaces = await storage.getRaces();
+        const existingRace = existingRaces.find(r => r.name === race.name);
+        
+        if (existingRace) {
+          // Update existing race
+          const updated = await storage.updateRace(existingRace.id, race);
+          results.push({ action: 'updated', race: updated });
+        } else {
+          // Create new race
+          const created = await storage.createRace(race);
+          results.push({ action: 'created', race: created });
+        }
+      }
+      
+      res.json({ 
+        message: `Successfully processed ${results.length} races`,
+        details: results 
+      });
+    } catch (error) {
+      console.error("Error importing races from UCI API:", error);
+      res.status(500).json({ 
+        message: "Failed to import races", 
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
+  app.post('/api/admin/import-riders', isAuthenticated, async (req: any, res) => {
+    try {
+      // Check if user is an admin
+      const userId = req.user.claims.sub;
+      if (userId !== "42624609") {
+        return res.status(403).json({ message: "Unauthorized. Admin access required." });
+      }
+      
+      // For now, return a placeholder response as the API endpoint may not be available
+      // In a production app, we would:
+      // 1. Fetch riders from UCI API
+      // 2. Map to our format
+      // 3. Add/update in database
+      
+      res.json({ 
+        message: "Rider import simulation successful",
+        note: "This is a placeholder. In production, real UCI API data would be fetched."
+      });
+    } catch (error) {
+      console.error("Error importing riders from UCI API:", error);
+      res.status(500).json({ 
+        message: "Failed to import riders", 
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
 
   // Rider routes
   app.get('/api/riders', async (req, res) => {

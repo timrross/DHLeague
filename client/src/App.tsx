@@ -7,6 +7,7 @@ import TeamBuilder from "@/pages/team-builder";
 import Races from "@/pages/races";
 import Leaderboard from "@/pages/leaderboard";
 import Rules from "@/pages/rules";
+import Admin from "@/pages/admin";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 
@@ -22,6 +23,7 @@ function App() {
             <Route path="/races" component={Races} />
             <Route path="/leaderboard" component={Leaderboard} />
             <Route path="/rules" component={Rules} />
+            <Route path="/admin" component={Admin} />
             <Route component={NotFound} />
           </Switch>
         </main>
