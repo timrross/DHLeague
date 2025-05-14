@@ -21,9 +21,17 @@ export function RiderImageUpdater({ rider, onSuccess }: RiderImageUpdaterProps) 
   // Update rider image mutation
   const updateImageMutation = useMutation({
     mutationFn: async () => {
-      // Create an object with only id and image to update
+      // Create an object with all existing rider properties plus the updated image
+      // This ensures we have valid fields even if the server has strict validation
       const updateData = {
         id: rider.id,
+        name: rider.name,
+        team: rider.team,
+        country: rider.country,
+        gender: rider.gender,
+        cost: rider.cost,
+        lastYearStanding: rider.lastYearStanding,
+        points: rider.points,
         image: imageUrl
       };
       
