@@ -39,7 +39,6 @@ export default function TeamBuilder() {
   
   // Calculate lock date (1 day before race start)
   const lockDate = nextRace ? new Date(new Date(nextRace.startDate).getTime() - 24 * 60 * 60 * 1000) : new Date();
-  const isTeamLocked = nextRace && new Date() >= lockDate;
   
   // Fetch riders
   const { data: riders, isLoading: ridersLoading } = useQuery<Rider[]>({
@@ -135,8 +134,69 @@ export default function TeamBuilder() {
   const femaleRidersCount = selectedRiders.filter(r => r.gender === "female").length;
   
   // Team lock status and swap tracking
+  const isTeamLocked = userTeam?.isLocked || false;
   const swapsUsed = userTeam?.swapsUsed || 0;
   const swapsRemaining = 2 - swapsUsed;
+  
+  // Functions to handle rider swaps
+  const initiateSwap = (rider: Rider) => {
+    if (swapsRemaining <= 0) {
+      toast({
+        title: "No swaps remaining",
+        description: "You've used all your swaps for this race.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setSwapRider(rider);
+    setSwapMode(true);
+    setSelectedTab("all"); // Reset tab to show all riders
+    setSearchTerm(""); // Clear search
+    
+    toast({
+      title: "Swap Mode Activated",
+      description: `Select a new rider to replace ${rider.name}. (${swapsRemaining} swap${swapsRemaining !== 1 ? 's' : ''} remaining)`,
+      variant: "default",
+    });
+  };
+  
+  // Cancel swap mode
+  const cancelSwap = () => {
+    setSwapMode(false);
+    setSwapRider(null);
+  };
+  
+  // Swap rider mutation
+  const swapRiderMutation = useMutation({
+    mutationFn: async (data: { removedRiderId: number, addedRiderId: number }) => {
+      if (!userTeam?.id) {
+        throw new Error("Team not found");
+      }
+      return apiRequest(`/api/teams/${userTeam.id}/swap`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' }
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Rider swapped successfully!",
+        description: `You have ${swapsRemaining - 1} swap${swapsRemaining - 1 !== 1 ? 's' : ''} remaining for this race.`,
+        variant: "default",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/teams/user'] });
+      setSwapMode(false);
+      setSwapRider(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to swap rider",
+        description: error.message || "Please try again later.",
+        variant: "destructive",
+      });
+    }
+  });
   const isTeamValid = selectedRiders.length === 6 && 
                      maleRidersCount <= 4 && 
                      femaleRidersCount >= 2 && 
@@ -144,13 +204,100 @@ export default function TeamBuilder() {
 
   // Handle rider selection/deselection
   const toggleRiderSelection = (rider: Rider) => {
+    // If in swap mode, handle the swap
+    if (swapMode && swapRider) {
+      // Can't swap with a rider already on the team
+      if (selectedRiders.some(r => r.id === rider.id)) {
+        toast({
+          title: "Rider already on team",
+          description: "You can't swap with a rider already on your team.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Validate gender ratio
+      const removingMale = swapRider.gender === "male";
+      const addingMale = rider.gender === "male";
+      const currentMaleCount = selectedRiders.filter(r => r.gender === "male").length;
+      const currentFemaleCount = selectedRiders.filter(r => r.gender === "female").length;
+      
+      if (!removingMale && addingMale && currentMaleCount >= 4) {
+        toast({
+          title: "Maximum male riders reached",
+          description: "You can have a maximum of 4 male riders in your team.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (removingMale && !addingMale && currentFemaleCount >= 4) {
+        toast({
+          title: "Maximum female riders reached",
+          description: "You can have a maximum of 4 female riders in your team.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Check budget
+      const newBudget = usedBudget - swapRider.cost + rider.cost;
+      if (newBudget > totalBudget) {
+        toast({
+          title: "Budget exceeded",
+          description: `This swap would exceed your budget of $${totalBudget.toLocaleString()}.`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // If all checks pass, perform the swap
+      swapRiderMutation.mutate({
+        removedRiderId: swapRider.id,
+        addedRiderId: rider.id
+      });
+      
+      return;
+    }
+    
+    // If team is locked and not in swap mode, prevent direct changes
+    if (isTeamLocked) {
+      toast({
+        title: "Team is locked",
+        description: "Your team is locked for the next race. Use the 'Swap Rider' feature instead.",
+        variant: "default",
+      });
+      return;
+    }
+    
+    // Regular team building mode
     const isSelected = selectedRiders.some(r => r.id === rider.id);
     
     if (isSelected) {
       // Remove rider
       setSelectedRiders(selectedRiders.filter(r => r.id !== rider.id));
     } else {
-      // Add rider if team isn't full or if we're replacing
+      // Check gender balance
+      if (rider.gender === "male" && maleRidersCount >= 4) {
+        toast({
+          title: "Maximum male riders reached",
+          description: "You can have a maximum of 4 male riders in your team.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Check budget
+      if (usedBudget + rider.cost > totalBudget) {
+        toast({
+          title: "Budget exceeded",
+          description: `This rider would exceed your budget of $${totalBudget.toLocaleString()}.`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Add rider if team isn't full
       if (selectedRiders.length < 6) {
         setSelectedRiders([...selectedRiders, rider]);
       } else {
@@ -358,7 +505,13 @@ export default function TeamBuilder() {
                 {/* Team composition */}
                 <TeamSummary 
                   selectedRiders={selectedRiders} 
-                  toggleRiderSelection={toggleRiderSelection} 
+                  toggleRiderSelection={toggleRiderSelection}
+                  isTeamLocked={isTeamLocked}
+                  swapsRemaining={swapsRemaining}
+                  swapMode={swapMode}
+                  initiateSwap={initiateSwap}
+                  cancelSwap={cancelSwap}
+                  swapRider={swapRider}
                 />
                 
                 {/* Action buttons */}

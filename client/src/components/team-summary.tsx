@@ -1,15 +1,31 @@
 import { Rider } from "@shared/schema";
-import { X } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
+import { X, RefreshCw } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { safeImageUrl, getInitials, getColorFromName } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface TeamSummaryProps {
   selectedRiders: Rider[];
   toggleRiderSelection: (rider: Rider) => void;
+  isTeamLocked?: boolean;
+  swapsRemaining?: number;
+  swapMode?: boolean;
+  initiateSwap?: (rider: Rider) => void;
+  cancelSwap?: () => void;
+  swapRider?: Rider | null;
 }
 
-export default function TeamSummary({ selectedRiders, toggleRiderSelection }: TeamSummaryProps) {
+export default function TeamSummary({ 
+  selectedRiders, 
+  toggleRiderSelection,
+  isTeamLocked = false,
+  swapsRemaining = 0,
+  swapMode = false,
+  initiateSwap,
+  cancelSwap,
+  swapRider = null
+}: TeamSummaryProps) {
   // Count male and female riders
   const maleRidersCount = selectedRiders.filter(r => r.gender === "male").length;
   const femaleRidersCount = selectedRiders.filter(r => r.gender === "female").length;
@@ -62,7 +78,34 @@ export default function TeamSummary({ selectedRiders, toggleRiderSelection }: Te
       
       {/* Selected riders */}
       <div className="space-y-3 mb-5">
-        <h4 className="font-heading font-semibold text-gray-700 text-sm">SELECTED RIDERS</h4>
+        <div className="flex justify-between items-center">
+          <h4 className="font-heading font-semibold text-gray-700 text-sm">SELECTED RIDERS</h4>
+          
+          {isTeamLocked && (
+            <Badge variant={swapMode ? "destructive" : "default"}>
+              {swapMode ? "Selecting Swap" : `${swapsRemaining} Swap${swapsRemaining !== 1 ? 's' : ''} Left`}
+            </Badge>
+          )}
+        </div>
+        
+        {swapMode && swapRider && (
+          <div className="bg-amber-50 border border-amber-200 rounded-md p-3 text-sm">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center space-x-2">
+                <RefreshCw className="h-4 w-4 text-amber-600" />
+                <span>Select a rider to replace <strong>{swapRider.name}</strong></span>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => cancelSwap && cancelSwap()}
+                className="h-7 text-xs"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
         
         {selectedRiders.length === 0 && (
           <div className="bg-gray-100 rounded-md p-4 text-center text-gray-500 text-sm">
@@ -71,7 +114,12 @@ export default function TeamSummary({ selectedRiders, toggleRiderSelection }: Te
         )}
         
         {selectedRiders.map((rider) => (
-          <div key={rider.id} className="bg-white rounded-md p-3 shadow-sm flex justify-between items-center">
+          <div 
+            key={rider.id} 
+            className={`bg-white rounded-md p-3 shadow-sm flex justify-between items-center ${
+              swapRider?.id === rider.id ? 'ring-2 ring-amber-400' : ''
+            }`}
+          >
             <div className="flex items-center">
               <Avatar className={`w-8 h-8 border-2 mr-2 ${rider.gender === 'male' ? 'border-blue-300' : 'border-pink-300'}`}>
                 <AvatarImage src={safeImageUrl(rider.image)} alt={rider.name} className="object-cover" />
@@ -88,12 +136,23 @@ export default function TeamSummary({ selectedRiders, toggleRiderSelection }: Te
             </div>
             <div className="flex items-center">
               <span className="font-accent font-semibold text-primary text-sm mr-2">${rider.cost.toLocaleString()}</span>
-              <button 
-                className="text-gray-400 hover:text-red-500 w-6 h-6 flex items-center justify-center transition duration-200"
-                onClick={() => toggleRiderSelection(rider)}
-              >
-                <X className="h-4 w-4" />
-              </button>
+              
+              {isTeamLocked ? (
+                <button 
+                  className="text-gray-400 hover:text-blue-500 w-6 h-6 flex items-center justify-center transition duration-200"
+                  onClick={() => initiateSwap && initiateSwap(rider)}
+                  disabled={swapMode}
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </button>
+              ) : (
+                <button 
+                  className="text-gray-400 hover:text-red-500 w-6 h-6 flex items-center justify-center transition duration-200"
+                  onClick={() => toggleRiderSelection(rider)}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
             </div>
           </div>
         ))}
