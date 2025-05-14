@@ -3,7 +3,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { Race, Rider } from '@shared/schema';
+import { Race, Rider, User } from '@shared/schema';
 
 import {
   Tabs,
@@ -39,8 +39,30 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { Loader2 } from 'lucide-react';
+import { Loader2, UserCog, Edit, Trash, Check, X, Pencil, RefreshCw } from 'lucide-react';
 import { ImageUpload } from '@/components/ui/image-upload';
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 
 export default function Admin() {
   const { user, isAuthenticated } = useAuth();
@@ -484,9 +506,7 @@ export default function Admin() {
   }
   
   // If not admin, show unauthorized message
-  // In a real application, check for admin role
-  // This is just a placeholder assuming user with specified ID is admin
-  if (user && user.id !== "42624609") {
+  if (user && !user.isAdmin) {
     return (
       <div className="container mx-auto py-10 text-center">
         <h1 className="text-3xl font-bold mb-4">Unauthorized</h1>
@@ -499,8 +519,9 @@ export default function Admin() {
     <div className="container mx-auto py-10">
       <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
       
-      <Tabs defaultValue="import" className="w-full">
+      <Tabs defaultValue="users" className="w-full">
         <TabsList className="mb-6">
+          <TabsTrigger value="users">Manage Users</TabsTrigger>
           <TabsTrigger value="import">Import Data</TabsTrigger>
           <TabsTrigger value="races">Manage Races</TabsTrigger>
           <TabsTrigger value="riders">Manage Riders</TabsTrigger>
