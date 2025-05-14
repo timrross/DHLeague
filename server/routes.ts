@@ -148,13 +148,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      const updatedUser = await storage.updateUser(userId, updateData);
-      
-      if (!updatedUser) {
-        return res.status(404).json({ message: "User not found" });
+      // Check if there's at least one valid property to update
+      if (Object.keys(updateData).length === 0) {
+        return res.status(400).json({ 
+          message: 'No valid fields provided for update',
+          error: 'At least one valid field must be provided'
+        });
       }
       
-      res.json(updatedUser);
+      try {
+        const updatedUser = await storage.updateUser(userId, updateData);
+        
+        if (!updatedUser) {
+          return res.status(404).json({ message: "User not found" });
+        }
+        
+        res.json(updatedUser);
+      } catch (error: any) {
+        if (error.message && error.message.includes("No values to set")) {
+          return res.status(400).json({ 
+            message: 'No valid fields provided for update',
+            error: error.message
+          });
+        }
+        throw error;  // Let the outer catch handle other errors
+      }
     } catch (error) {
       console.error("Error updating user:", error);
       res.status(500).json({ message: "Failed to update user" });
@@ -376,15 +394,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (riderData.lastYearStanding) riderData.lastYearStanding = Number(riderData.lastYearStanding);
       
       // Debug the data being sent
-      console.log("Updating rider with data:", JSON.stringify(riderData));
+      console.log("Updating rider with data:", riderData);
       
-      const updatedRider = await storage.updateRider(riderId, riderData);
+      // Check if there's at least one valid property to update
+      const hasValidFields = Object.values(riderData).some(val => val !== undefined && val !== null && val !== "");
       
-      if (!updatedRider) {
-        return res.status(404).json({ message: 'Rider not found' });
+      if (!hasValidFields) {
+        return res.status(400).json({ 
+          message: 'No valid fields provided for update',
+          error: 'At least one field must have a value'
+        });
       }
       
-      res.json(updatedRider);
+      try {
+        const updatedRider = await storage.updateRider(riderId, riderData);
+        
+        if (!updatedRider) {
+          return res.status(404).json({ message: 'Rider not found' });
+        }
+        
+        res.json(updatedRider);
+      } catch (error: any) {
+        if (error.message && error.message.includes("No values to set")) {
+          return res.status(400).json({ 
+            message: 'No valid fields provided for update',
+            error: error.message
+          });
+        }
+        throw error;  // Let the outer catch handle other errors
+      }
     } catch (error) {
       console.error("Error updating rider:", error);
       res.status(500).json({ 
