@@ -8,8 +8,8 @@ export default function FeaturedSections() {
       <Card className="bg-white rounded-lg shadow-md overflow-hidden">
         <div className="h-48 bg-secondary overflow-hidden">
           <img 
-            src="https://pixabay.com/get/g82d416b5bbc7820f8ea5af0c90bdf0829e8ad8f769a046921399f801203c7f8279dd2ab9c12a25bf7b72534d11000953079db6657a267d77c0d503cc805b703e_1280.jpg" 
-            alt="Rider preparing for race" 
+            src="https://mbaction.com/wp-content/uploads/2020/02/Finals-VDS-2019-1555.jpg" 
+            alt="Downhill mountain bike rider in action" 
             className="w-full h-full object-cover transition duration-300 hover:scale-105"
           />
         </div>
