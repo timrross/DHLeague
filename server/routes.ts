@@ -25,14 +25,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Admin routes
-  app.post('/api/admin/import-races', isAuthenticated, async (req: any, res) => {
+  // Admin middleware to check if user is an admin
+  const isAdmin = async (req: any, res: Response, next: Function) => {
     try {
-      // Check if user is an admin (in this simple example, we're using a fixed ID)
       const userId = req.user.claims.sub;
-      if (userId !== "42624609") {
+      const user = await storage.getUser(userId);
+      
+      if (!user || !user.isAdmin) {
         return res.status(403).json({ message: "Unauthorized. Admin access required." });
       }
+      
+      next();
+    } catch (error) {
+      console.error("Error checking admin status:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  };
+  
+  // Admin routes
+  
+  // User management
+  app.get('/api/admin/users', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const usersWithTeams = await storage.getUsersWithTeams();
+      res.json(usersWithTeams);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+  
+  app.get('/api/admin/users/:id', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const userId = req.params.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const team = await storage.getUserTeam(userId);
+      
+      res.json({
+        ...user,
+        team
+      });
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+  
+  app.patch('/api/admin/users/:id', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const userId = req.params.id;
+      const userData = req.body;
+      
+      // Validate we're only updating allowed fields
+      const allowedFields = ['isAdmin', 'isActive', 'firstName', 'lastName', 'email'];
+      const updateData: Record<string, any> = {};
+      
+      for (const field of allowedFields) {
+        if (field in userData) {
+          updateData[field] = userData[field];
+        }
+      }
+      
+      const updatedUser = await storage.updateUser(userId, updateData);
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+  
+  app.delete('/api/admin/users/:id', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const userId = req.params.id;
+      
+      // Check if we're trying to delete the current user
+      if (userId === req.user?.claims?.sub) {
+        return res.status(400).json({ message: "Cannot delete your own account" });
+      }
+      
+      const success = await storage.deleteUser(userId);
+      
+      if (!success) {
+        return res.status(500).json({ message: "Failed to delete user" });
+      }
+      
+      res.json({ message: "User deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
+  
+  // Import data 
+  app.post('/api/admin/import-races', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
       
       // Fetch races from UCI API
       const uciRaces = await uciApiService.getUpcomingMTBEvents();
@@ -71,13 +167,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post('/api/admin/import-riders', isAuthenticated, async (req: any, res) => {
+  app.post('/api/admin/import-riders', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
-      // Check if user is an admin
-      const userId = req.user.claims.sub;
-      if (userId !== "42624609") {
-        return res.status(403).json({ message: "Unauthorized. Admin access required." });
-      }
       
       // Fetch riders from UCI API
       const uciRiders = await uciApiService.getMTBDownhillRiders();
@@ -163,13 +254,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Image upload endpoint (handles both file uploads and URL downloads)
-  app.post('/api/upload-image', isAuthenticated, upload.single('file'), processImage, downloadImage, async (req: any, res) => {
+  app.post('/api/upload-image', isAuthenticated, isAdmin, upload.single('file'), processImage, downloadImage, async (req: any, res) => {
     try {
-      // Check if user is an admin
-      const userId = req.user.claims.sub;
-      if (userId !== "42624609") {
-        return res.status(403).json({ message: "Unauthorized. Admin access required." });
-      }
       
       // Return the processed image path
       if (req.body.image) {
@@ -186,13 +272,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post('/api/riders', isAuthenticated, async (req: any, res) => {
+  app.post('/api/riders', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
-      // Check if user is an admin
-      const userId = req.user.claims.sub;
-      if (userId !== "42624609") {
-        return res.status(403).json({ message: "Unauthorized. Admin access required." });
-      }
       
       const riderData = req.body;
       const newRider = await storage.createRider(riderData);
@@ -206,13 +287,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.put('/api/riders/:id', isAuthenticated, async (req: any, res) => {
+  app.put('/api/riders/:id', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
-      // Check if user is an admin
-      const userId = req.user.claims.sub;
-      if (userId !== "42624609") {
-        return res.status(403).json({ message: "Unauthorized. Admin access required." });
-      }
       
       const riderId = Number(req.params.id);
       if (isNaN(riderId)) {
@@ -236,13 +312,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.delete('/api/riders/:id', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/riders/:id', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
-      // Check if user is an admin
-      const userId = req.user.claims.sub;
-      if (userId !== "42624609") {
-        return res.status(403).json({ message: "Unauthorized. Admin access required." });
-      }
       
       const riderId = Number(req.params.id);
       if (isNaN(riderId)) {
