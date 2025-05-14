@@ -5,6 +5,8 @@ import { setupAuth, isAuthenticated } from "./replitAuth";
 import { uciApiService } from "./services/uciApi";
 import { insertTeamSchema, insertTeamRiderSchema } from "@shared/schema";
 import { z } from "zod";
+import { upload, processImage, downloadImage } from "./imageUpload";
+import path from "path";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -146,6 +148,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching rider:", error);
       res.status(500).json({ message: "Failed to fetch rider" });
+    }
+  });
+  
+  // Static file serving
+  app.use('/uploads', (req, res, next) => {
+    const filePath = path.join(__dirname, '../public/uploads', path.basename(req.url));
+    res.sendFile(filePath, (err) => {
+      if (err) {
+        next();
+      }
+    });
+  });
+
+  // Image upload endpoint (handles both file uploads and URL downloads)
+  app.post('/api/upload-image', isAuthenticated, upload.single('file'), processImage, downloadImage, async (req: any, res) => {
+    try {
+      // Check if user is an admin
+      const userId = req.user.claims.sub;
+      if (userId !== "42624609") {
+        return res.status(403).json({ message: "Unauthorized. Admin access required." });
+      }
+      
+      // Return the processed image path
+      if (req.body.image) {
+        res.json({ imageUrl: req.body.image });
+      } else {
+        res.status(400).json({ message: "No image was uploaded or provided via URL" });
+      }
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      res.status(500).json({ 
+        message: "Failed to upload image", 
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   });
   
