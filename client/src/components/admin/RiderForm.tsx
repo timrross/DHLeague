@@ -35,23 +35,23 @@ export default function RiderForm({
   // Initialize state with initial data or defaults
   const [riderName, setRiderName] = useState(initialData.name || '');
   const [team, setTeam] = useState(initialData.team || '');
-  const [nationality, setNationality] = useState(initialData.nationality || '');
+  const [country, setCountry] = useState(initialData.country || '');
   const [gender, setGender] = useState(initialData.gender || 'male');
   const [cost, setCost] = useState<number>(initialData.cost || 0);
-  const [ranking, setRanking] = useState<number>(initialData.ranking || 0);
+  const [lastYearStanding, setLastYearStanding] = useState<number>(initialData.lastYearStanding || 0);
   const [points, setPoints] = useState<number>(initialData.points || 0);
-  const [profileImageUrl, setProfileImageUrl] = useState(initialData.profileImageUrl || '');
+  const [image, setImage] = useState(initialData.image || '');
 
   // Update form if initialData changes (like when editing a different rider)
   useEffect(() => {
     setRiderName(initialData.name || '');
     setTeam(initialData.team || '');
-    setNationality(initialData.nationality || '');
+    setCountry(initialData.country || '');
     setGender(initialData.gender || 'male');
     setCost(initialData.cost || 0);
-    setRanking(initialData.ranking || 0);
+    setLastYearStanding(initialData.lastYearStanding || 0);
     setPoints(initialData.points || 0);
-    setProfileImageUrl(initialData.profileImageUrl || '');
+    setImage(initialData.image || '');
   }, [initialData]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -61,12 +61,12 @@ export default function RiderForm({
       ...(initialData.id ? { id: initialData.id } : {}),
       name: riderName,
       team,
-      nationality,
+      country,
       gender,
       cost: Number(cost),
-      ranking: Number(ranking),
+      lastYearStanding: Number(lastYearStanding),
       points: Number(points),
-      profileImageUrl
+      image
     };
     
     onSubmit(riderData);
@@ -102,14 +102,14 @@ export default function RiderForm({
           />
         </div>
         
-        {/* Nationality */}
+        {/* Country */}
         <div className={`space-y-2 ${compact ? "col-span-4" : ""}`}>
-          <Label htmlFor="nationality">Nationality*</Label>
+          <Label htmlFor="country">Country*</Label>
           <Input 
-            id="nationality" 
+            id="country" 
             placeholder="USA"
-            value={nationality}
-            onChange={(e) => setNationality(e.target.value)}
+            value={country}
+            onChange={(e) => setCountry(e.target.value)}
             required
           />
         </div>
@@ -143,14 +143,14 @@ export default function RiderForm({
           />
         </div>
         
-        {/* Ranking */}
+        {/* Last Year Standing */}
         <div className={`space-y-2 ${compact ? "col-span-3" : ""}`}>
-          <Label htmlFor="ranking">Ranking</Label>
+          <Label htmlFor="lastYearStanding">Last Year Standing</Label>
           <Input 
-            id="ranking" 
+            id="lastYearStanding" 
             type="number"
-            value={ranking}
-            onChange={(e) => setRanking(Number(e.target.value))}
+            value={lastYearStanding}
+            onChange={(e) => setLastYearStanding(Number(e.target.value))}
           />
         </div>
         
@@ -167,10 +167,10 @@ export default function RiderForm({
         
         {/* Profile Image */}
         <div className={`space-y-2 ${compact ? "col-span-12" : ""}`}>
-          <Label htmlFor="profileImageUrl">Profile Image</Label>
+          <Label htmlFor="image">Profile Image</Label>
           <EnhancedImageUpload 
-            currentImage={profileImageUrl}
-            onImageChange={setProfileImageUrl}
+            currentImage={image}
+            onImageChange={setImage}
             name="riderImage"
           />
         </div>
