@@ -21,7 +21,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-neutral">
       {/* Hero Section */}
-      <section className="relative bg-secondary" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1564585222527-c2777a5bc6cb?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1920&h=800')", backgroundSize: "cover", backgroundPosition: "center" }}>
+      <section className="relative bg-secondary" style={{ backgroundImage: "url('https://images.ctfassets.net/761l7gh5x5an/6imXFOweEx2vvfLsWdjaAC/df5f9d1fcade37a98121bc89d846c369/UCI_WCh-DHI_65.JPG?fit=thumb&fl=progressive&w=2400&h=')", backgroundSize: "cover", backgroundPosition: "center" }}>
         <div className="absolute inset-0 bg-black bg-opacity-50"></div>
         <div className="container mx-auto px-4 py-16 md:py-24 relative z-10">
           <div className="max-w-3xl">
@@ -76,7 +76,7 @@ export default function Home() {
         
         {/* Advertisement */}
         <div className="my-8">
-          <LeaderboardAd client="ca-pub-1234567890" />
+          <LeaderboardAd client="ca-pub-0373252830777091" />
         </div>
 
         {/* Top Performers */}
