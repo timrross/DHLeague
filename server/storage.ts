@@ -190,6 +190,17 @@ export class DatabaseStorage implements IStorage {
   async getRidersByGender(gender: string): Promise<Rider[]> {
     return await db.select().from(riders).where(eq(riders.gender, gender));
   }
+  
+  async deleteAllRiders(): Promise<void> {
+    // First, delete related results
+    await db.delete(results);
+    
+    // Then delete team-rider associations
+    await db.delete(teamRiders);
+    
+    // Finally delete all riders
+    await db.delete(riders);
+  }
 
   // Team operations
   async getTeam(id: number): Promise<Team | undefined> {
