@@ -58,12 +58,6 @@ export interface IStorage {
   
   // Leaderboard operations
   getLeaderboard(): Promise<LeaderboardEntry[]>;
-  
-  // Admin operations
-  getAllUsers(): Promise<User[]>;
-  updateUser(id: string, userData: Partial<User>): Promise<User | undefined>;
-  deleteUser(id: string): Promise<boolean>;
-  getUsersWithTeams(): Promise<(User & { team?: TeamWithRiders })[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -95,71 +89,6 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return result[0];
-  }
-
-  // Admin operations
-  async getAllUsers(): Promise<User[]> {
-    return await db.select().from(users);
-  }
-
-  async updateUser(id: string, userData: Partial<User>): Promise<User | undefined> {
-    const result = await db
-      .update(users)
-      .set({
-        ...userData,
-        updatedAt: new Date()
-      })
-      .where(eq(users.id, id))
-      .returning();
-    
-    return result[0];
-  }
-
-  async deleteUser(id: string): Promise<boolean> {
-    try {
-      await db.transaction(async (tx) => {
-        // Get user's team(s)
-        const userTeams = await tx
-          .select()
-          .from(teams)
-          .where(eq(teams.userId, id));
-        
-        // Delete team-rider associations and teams
-        for (const team of userTeams) {
-          await tx
-            .delete(teamRiders)
-            .where(eq(teamRiders.teamId, team.id));
-          
-          await tx
-            .delete(teams)
-            .where(eq(teams.id, team.id));
-        }
-        
-        // Delete user
-        await tx
-          .delete(users)
-          .where(eq(users.id, id));
-      });
-      
-      return true;
-    } catch (error) {
-      console.error("Error deleting user:", error);
-      return false;
-    }
-  }
-
-  async getUsersWithTeams(): Promise<(User & { team?: TeamWithRiders })[]> {
-    const allUsers = await this.getAllUsers();
-    
-    return await Promise.all(
-      allUsers.map(async (user) => {
-        const team = await this.getUserTeam(user.id);
-        return {
-          ...user,
-          team
-        };
-      })
-    );
   }
 
   // Rider operations
@@ -534,76 +463,39 @@ export class DatabaseStorage implements IStorage {
         { name: "Dakotah Norton", gender: "male", team: "INTENSE Factory", cost: 200000, lastYearStanding: 7, image: "https://pixabay.com/get/g3a1af921072d00ed8251d3fe0d9eaeedfb61d355148715a2330a66168baf531a8f01cfc7aac1a2cab21a2271872ba386711d8b1dadd91c9a9928b09f0d99b440_1280.jpg", country: "USA", points: 155, form: JSON.stringify([4, 8, 7, 5, 6]) },
         { name: "Bernard Kerr", gender: "male", team: "Pivot Factory", cost: 170000, lastYearStanding: 8, image: "https://pixabay.com/get/g751aa0d1ab1f9ca6d5508fdb09df26de0a85b3824bb4f9e9b77ad79275d045f226d7a01b000170bd1c6f1878663a0ef61fd89985a5c26c8412bc44582129ddb3_1280.jpg", country: "UK", points: 150, form: JSON.stringify([9, 6, 5, 7, 5]) },
         { name: "Luca Shaw", gender: "male", team: "Santa Cruz Syndicate", cost: 180000, lastYearStanding: 9, image: "https://pixabay.com/get/g82d416b5bbc7820f8ea5af0c90bdf0829e8ad8f769a046921399f801203c7f8279dd2ab9c12a25bf7b72534d11000953079db6657a267d77c0d503cc805b703e_1280.jpg", country: "USA", points: 145, form: JSON.stringify([10, 7, 6, 8, 7]) },
-        { name: "Loris Vergier", gender: "male", team: "Trek Factory", cost: 280000, lastYearStanding: 10, image: "https://pixabay.com/get/g3a1af921072d00ed8251d3fe0d9eaeedfb61d355148715a2330a66168baf531a8f01cfc7aac1a2cab21a2271872ba386711d8b1dadd91c9a9928b09f0d99b440_1280.jpg", country: "France", points: 138, form: JSON.stringify([1, 9, 8, 12, 3]) },
-        { name: "Greg Minnaar", gender: "male", team: "Santa Cruz Syndicate", cost: 260000, lastYearStanding: 11, image: "https://pixabay.com/get/g751aa0d1ab1f9ca6d5508fdb09df26de0a85b3824bb4f9e9b77ad79275d045f226d7a01b000170bd1c6f1878663a0ef61fd89985a5c26c8412bc44582129ddb3_1280.jpg", country: "South Africa", points: 130, form: JSON.stringify([12, 8, 10, 4, 15]) },
-        { name: "Aaron Gwin", gender: "male", team: "Intense Factory", cost: 240000, lastYearStanding: 12, image: "https://pixabay.com/get/g82d416b5bbc7820f8ea5af0c90bdf0829e8ad8f769a046921399f801203c7f8279dd2ab9c12a25bf7b72534d11000953079db6657a267d77c0d503cc805b703e_1280.jpg", country: "USA", points: 125, form: JSON.stringify([15, 10, 9, 6, 5]) },
-        
-        // Female riders
-        { name: "Vali Höll", gender: "female", team: "RockShox Trek", cost: 320000, lastYearStanding: 1, image: "https://pixabay.com/get/gdc9b1ef2b2aedf4e681de3e4b1dd19b13a845b393cefcdccd6744c7ab1ecb270558a49665ba44bb2200498d0c349df1303f138e60ab0d8883be61aea348bd266_1280.jpg", country: "Austria", points: 210, form: JSON.stringify([1, 1, 2, 3, 1]) },
-        { name: "Camille Balanche", gender: "female", team: "Dorval AM", cost: 290000, lastYearStanding: 2, image: "https://pixabay.com/get/g3a1af921072d00ed8251d3fe0d9eaeedfb61d355148715a2330a66168baf531a8f01cfc7aac1a2cab21a2271872ba386711d8b1dadd91c9a9928b09f0d99b440_1280.jpg", country: "Switzerland", points: 195, form: JSON.stringify([2, 3, 1, 2, 4]) },
-        { name: "Myriam Nicole", gender: "female", team: "Commencal/Muc-Off", cost: 270000, lastYearStanding: 3, image: "https://pixabay.com/get/g751aa0d1ab1f9ca6d5508fdb09df26de0a85b3824bb4f9e9b77ad79275d045f226d7a01b000170bd1c6f1878663a0ef61fd89985a5c26c8412bc44582129ddb3_1280.jpg", country: "France", points: 180, form: JSON.stringify([3, 2, 4, 1, 2]) },
-        { name: "Marine Cabirou", gender: "female", team: "Scott Downhill", cost: 250000, lastYearStanding: 4, image: "https://pixabay.com/get/g82d416b5bbc7820f8ea5af0c90bdf0829e8ad8f769a046921399f801203c7f8279dd2ab9c12a25bf7b72534d11000953079db6657a267d77c0d503cc805b703e_1280.jpg", country: "France", points: 165, form: JSON.stringify([6, 4, 3, 5, 3]) },
-        { name: "Tahnée Seagrave", gender: "female", team: "Canyon Collective", cost: 230000, lastYearStanding: 5, image: "https://pixabay.com/get/gdc9b1ef2b2aedf4e681de3e4b1dd19b13a845b393cefcdccd6744c7ab1ecb270558a49665ba44bb2200498d0c349df1303f138e60ab0d8883be61aea348bd266_1280.jpg", country: "UK", points: 150, form: JSON.stringify([5, 6, 5, 4, 5]) },
-        { name: "Nina Hoffmann", gender: "female", team: "Santa Cruz Syndicate", cost: 200000, lastYearStanding: 6, image: "https://pixabay.com/get/g3a1af921072d00ed8251d3fe0d9eaeedfb61d355148715a2330a66168baf531a8f01cfc7aac1a2cab21a2271872ba386711d8b1dadd91c9a9928b09f0d99b440_1280.jpg", country: "Germany", points: 140, form: JSON.stringify([4, 5, 7, 6, 6]) },
-        { name: "Eleonora Farina", gender: "female", team: "MS Mondraker", cost: 180000, lastYearStanding: 7, image: "https://pixabay.com/get/g751aa0d1ab1f9ca6d5508fdb09df26de0a85b3824bb4f9e9b77ad79275d045f226d7a01b000170bd1c6f1878663a0ef61fd89985a5c26c8412bc44582129ddb3_1280.jpg", country: "Italy", points: 130, form: JSON.stringify([7, 7, 6, 7, 8]) },
-        { name: "Anna Newkirk", gender: "female", team: "Canyon Collective", cost: 160000, lastYearStanding: 8, image: "https://pixabay.com/get/g82d416b5bbc7820f8ea5af0c90bdf0829e8ad8f769a046921399f801203c7f8279dd2ab9c12a25bf7b72534d11000953079db6657a267d77c0d503cc805b703e_1280.jpg", country: "USA", points: 120, form: JSON.stringify([8, 8, 9, 8, 7]) },
+        { name: "Loris Vergier", gender: "male", team: "Trek Factory Racing", cost: 250000, lastYearStanding: 10, image: "https://pixabay.com/get/gdc9b1ef2b2aedf4e681de3e4b1dd19b13a845b393cefcdccd6744c7ab1ecb270558a49665ba44bb2200498d0c349df1303f138e60ab0d8883be61aea348bd266_1280.jpg", country: "France", points: 140, form: JSON.stringify([3, 9, 8, 4, 8]) },
+        { name: "Valentina Höll", gender: "female", team: "YT Mob", cost: 300000, lastYearStanding: 1, image: "https://pixabay.com/get/g986685f1116e75f74cbedbbf8de0b03d61a41f6565be835ec307d48f2733a3152fa85983a71108a14eeeb501211fd8b116ef777a47469ba90d68ae4c8123b4c4_1280.jpg", country: "Austria", points: 230, form: JSON.stringify([1, 1, 2, 5, 1]) },
+        { name: "Myriam Nicole", gender: "female", team: "Commencal/Muc-Off", cost: 290000, lastYearStanding: 2, image: "https://pixabay.com/get/g986685f1116e75f74cbedbbf8de0b03d61a41f6565be835ec307d48f2733a3152fa85983a71108a14eeeb501211fd8b116ef777a47469ba90d68ae4c8123b4c4_1280.jpg", country: "France", points: 220, form: JSON.stringify([2, 2, 1, 3, 2]) },
+        { name: "Tahnee Seagrave", gender: "female", team: "Canyon Collective", cost: 275000, lastYearStanding: 3, image: "https://pixabay.com/get/g986685f1116e75f74cbedbbf8de0b03d61a41f6565be835ec307d48f2733a3152fa85983a71108a14eeeb501211fd8b116ef777a47469ba90d68ae4c8123b4c4_1280.jpg", country: "UK", points: 210, form: JSON.stringify([3, 3, 3, 2, 3]) },
+        { name: "Nina Hoffmann", gender: "female", team: "Syndicate", cost: 265000, lastYearStanding: 4, image: "https://pixabay.com/get/g986685f1116e75f74cbedbbf8de0b03d61a41f6565be835ec307d48f2733a3152fa85983a71108a14eeeb501211fd8b116ef777a47469ba90d68ae4c8123b4c4_1280.jpg", country: "Germany", points: 200, form: JSON.stringify([4, 4, 4, 1, 4]) },
+        { name: "Marine Cabirou", gender: "female", team: "Scott Downhill Factory", cost: 255000, lastYearStanding: 5, image: "https://pixabay.com/get/g986685f1116e75f74cbedbbf8de0b03d61a41f6565be835ec307d48f2733a3152fa85983a71108a14eeeb501211fd8b116ef777a47469ba90d68ae4c8123b4c4_1280.jpg", country: "France", points: 190, form: JSON.stringify([5, 5, 5, 4, 5]) },
+        { name: "Camille Balanche", gender: "female", team: "Dorval AM", cost: 240000, lastYearStanding: 6, image: "https://pixabay.com/get/g986685f1116e75f74cbedbbf8de0b03d61a41f6565be835ec307d48f2733a3152fa85983a71108a14eeeb501211fd8b116ef777a47469ba90d68ae4c8123b4c4_1280.jpg", country: "Switzerland", points: 180, form: JSON.stringify([6, 6, 6, 7, 6]) },
+        { name: "Eleonora Farina", gender: "female", team: "MS Mondraker", cost: 230000, lastYearStanding: 7, image: "https://pixabay.com/get/g986685f1116e75f74cbedbbf8de0b03d61a41f6565be835ec307d48f2733a3152fa85983a71108a14eeeb501211fd8b116ef777a47469ba90d68ae4c8123b4c4_1280.jpg", country: "Italy", points: 170, form: JSON.stringify([7, 7, 7, 6, 7]) },
+        { name: "Monika Hrastnik", gender: "female", team: "Dorval AM", cost: 220000, lastYearStanding: 8, image: "https://pixabay.com/get/g986685f1116e75f74cbedbbf8de0b03d61a41f6565be835ec307d48f2733a3152fa85983a71108a14eeeb501211fd8b116ef777a47469ba90d68ae4c8123b4c4_1280.jpg", country: "Slovenia", points: 160, form: JSON.stringify([8, 8, 8, 8, 8]) },
+        { name: "Vali Höll", gender: "female", team: "YT Mob", cost: 210000, lastYearStanding: 9, image: "https://pixabay.com/get/g986685f1116e75f74cbedbbf8de0b03d61a41f6565be835ec307d48f2733a3152fa85983a71108a14eeeb501211fd8b116ef777a47469ba90d68ae4c8123b4c4_1280.jpg", country: "Austria", points: 150, form: JSON.stringify([9, 9, 9, 9, 9]) },
+        { name: "Anna Newkirk", gender: "female", team: "Beyond Racing", cost: 200000, lastYearStanding: 10, image: "https://pixabay.com/get/g986685f1116e75f74cbedbbf8de0b03d61a41f6565be835ec307d48f2733a3152fa85983a71108a14eeeb501211fd8b116ef777a47469ba90d68ae4c8123b4c4_1280.jpg", country: "USA", points: 140, form: JSON.stringify([10, 10, 10, 10, 10]) }
       ];
-      
-      // Insert sample riders
+
+      // Create riders
       for (const rider of sampleRiders) {
         await this.createRider(rider);
       }
-      
+
       // Sample races data
       const sampleRaces: InsertRace[] = [
-        {
-          name: "Fort William",
-          location: "Fort William",
-          country: "United Kingdom",
-          startDate: new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000), // 1 week from now
-          endDate: new Date(new Date().getTime() + 9 * 24 * 60 * 60 * 1000),
-          status: 'next'
-        },
-        {
-          name: "Leogang",
-          location: "Leogang",
-          country: "Austria",
-          startDate: new Date(new Date().getTime() + 21 * 24 * 60 * 60 * 1000), // 3 weeks from now
-          endDate: new Date(new Date().getTime() + 23 * 24 * 60 * 60 * 1000),
-          status: 'upcoming'
-        },
-        {
-          name: "Val di Sole",
-          location: "Val di Sole",
-          country: "Italy", 
-          startDate: new Date(new Date().getTime() + 35 * 24 * 60 * 60 * 1000), // 5 weeks from now
-          endDate: new Date(new Date().getTime() + 37 * 24 * 60 * 60 * 1000),
-          status: 'upcoming'
-        },
-        {
-          name: "Lenzerheide",
-          location: "Lenzerheide",
-          country: "Switzerland",
-          startDate: new Date(new Date().getTime() + 49 * 24 * 60 * 60 * 1000), // 7 weeks from now
-          endDate: new Date(new Date().getTime() + 51 * 24 * 60 * 60 * 1000),
-          status: 'upcoming'
-        },
-        {
-          name: "Mont-Sainte-Anne",
-          location: "Mont-Sainte-Anne",
-          country: "Canada",
-          startDate: new Date(new Date().getTime() + 63 * 24 * 60 * 60 * 1000), // 9 weeks from now
-          endDate: new Date(new Date().getTime() + 65 * 24 * 60 * 60 * 1000),
-          status: 'upcoming'
-        }
+        { name: "Fort William", location: "Fort William", country: "Scotland", startDate: new Date("2023-06-03"), endDate: new Date("2023-06-04"), status: "next", imageUrl: "https://pixabay.com/get/g751aa0d1ab1f9ca6d5508fdb09df26de0a85b3824bb4f9e9b77ad79275d045f226d7a01b000170bd1c6f1878663a0ef61fd89985a5c26c8412bc44582129ddb3_1280.jpg" },
+        { name: "Lenzerheide", location: "Lenzerheide", country: "Switzerland", startDate: new Date("2023-06-10"), endDate: new Date("2023-06-11"), status: "upcoming", imageUrl: "https://pixabay.com/get/g3a1af921072d00ed8251d3fe0d9eaeedfb61d355148715a2330a66168baf531a8f01cfc7aac1a2cab21a2271872ba386711d8b1dadd91c9a9928b09f0d99b440_1280.jpg" },
+        { name: "Leogang", location: "Leogang", country: "Austria", startDate: new Date("2023-06-17"), endDate: new Date("2023-06-18"), status: "upcoming", imageUrl: "https://pixabay.com/get/gdc9b1ef2b2aedf4e681de3e4b1dd19b13a845b393cefcdccd6744c7ab1ecb270558a49665ba44bb2200498d0c349df1303f138e60ab0d8883be61aea348bd266_1280.jpg" },
+        { name: "Val di Sole", location: "Val di Sole", country: "Italy", startDate: new Date("2023-07-15"), endDate: new Date("2023-07-16"), status: "upcoming", imageUrl: "https://pixabay.com/get/g82d416b5bbc7820f8ea5af0c90bdf0829e8ad8f769a046921399f801203c7f8279dd2ab9c12a25bf7b72534d11000953079db6657a267d77c0d503cc805b703e_1280.jpg" },
+        { name: "Vallnord", location: "Vallnord", country: "Andorra", startDate: new Date("2023-09-02"), endDate: new Date("2023-09-03"), status: "upcoming", imageUrl: "https://pixabay.com/get/g751aa0d1ab1f9ca6d5508fdb09df26de0a85b3824bb4f9e9b77ad79275d045f226d7a01b000170bd1c6f1878663a0ef61fd89985a5c26c8412bc44582129ddb3_1280.jpg" }
       ];
-      
-      // Insert sample races
+
+      // Create races
       for (const race of sampleRaces) {
         await this.createRace(race);
       }
-      
-      console.log("Sample data initialization completed.");
+
+      console.log("Sample data initialization complete.");
     } catch (error) {
       console.error("Error initializing sample data:", error);
     }
