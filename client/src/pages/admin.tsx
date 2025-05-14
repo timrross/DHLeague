@@ -39,7 +39,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { Loader2, UserCog, Edit, Trash, Check, X, Pencil, RefreshCw, Upload } from 'lucide-react';
+import { Loader2, UserCog, Edit, Trash, Check, X, Pencil, RefreshCw, Upload, Trash2 } from 'lucide-react';
 import { ImageUpload } from '@/components/ui/image-upload';
 import { 
   Dialog,
@@ -293,6 +293,30 @@ export default function Admin() {
       toast({
         title: 'Error',
         description: `Failed to import riders: ${error}`,
+        variant: 'destructive',
+      });
+    },
+  });
+  
+  // Delete all riders
+  const deleteAllRidersMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('/api/admin/riders', {
+        method: 'DELETE',
+      });
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/riders'] });
+      toast({
+        title: 'Success',
+        description: 'All riders deleted successfully',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: `Failed to delete all riders: ${error}`,
         variant: 'destructive',
       });
     },
@@ -1474,24 +1498,60 @@ export default function Admin() {
                     <CardDescription>View and manage riders</CardDescription>
                   </div>
                   {!showAddRiderForm && !isEditingRider && (
-                    <Button
-                      onClick={() => {
-                        setIsEditingRider(false);
-                        setEditRiderId(null);
-                        setRiderName('');
-                        setRiderGender('male');
-                        setRiderTeam('');
-                        setRiderCountry('');
-                        setRiderImage('');
-                        setRiderCost('');
-                        setRiderPoints('');
-                        
-                        // Open Add Rider form
-                        setShowAddRiderForm(true);
-                      }}
-                    >
-                      Add Rider
-                    </Button>
+                    <div className="flex gap-2">
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="destructive">
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete All Riders
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete all riders?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will permanently delete all riders from the database
+                              and remove all rider assignments from user teams.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deleteAllRidersMutation.mutate()}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              {deleteAllRidersMutation.isPending ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Deleting...
+                                </>
+                              ) : (
+                                "Delete All"
+                              )}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                      
+                      <Button
+                        onClick={() => {
+                          setIsEditingRider(false);
+                          setEditRiderId(null);
+                          setRiderName('');
+                          setRiderGender('male');
+                          setRiderTeam('');
+                          setRiderCountry('');
+                          setRiderImage('');
+                          setRiderCost('');
+                          setRiderPoints('');
+                          
+                          // Open Add Rider form
+                          setShowAddRiderForm(true);
+                        }}
+                      >
+                        Add Rider
+                      </Button>
+                    </div>
                   )}
                 </div>
               </CardHeader>
