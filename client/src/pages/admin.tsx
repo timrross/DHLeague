@@ -935,12 +935,11 @@ export default function Admin() {
                         />
                       </div>
                       <div className="space-y-2 col-span-2">
-                        <Label htmlFor="riderImage">Image URL</Label>
-                        <Input 
-                          id="riderImage" 
-                          value={riderImage}
-                          onChange={(e) => setRiderImage(e.target.value)}
-                          placeholder="https://example.com/image.jpg"
+                        <Label htmlFor="riderImage">Rider Image</Label>
+                        <ImageUpload
+                          currentImage={riderImage}
+                          onImageChange={(url) => setRiderImage(url)}
+                          name={riderName}
                         />
                       </div>
                     </div>
