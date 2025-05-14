@@ -1,0 +1,243 @@
+import { useState, useRef, ChangeEvent } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2, Upload, Link, X } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { safeImageUrl, getInitials, getColorFromName } from "@/lib/utils";
+import { apiRequest } from "@/lib/queryClient";
+
+// Define the expected response type from the image upload API
+interface ImageUploadResponse {
+  imageUrl: string;
+}
+
+interface ImageUploadProps {
+  currentImage?: string | null;
+  onImageChange: (url: string) => void;
+  name?: string; // Optional name to use for avatar fallback
+}
+
+export function ImageUpload({ currentImage, onImageChange, name = "" }: ImageUploadProps) {
+  const [activeTab, setActiveTab] = useState<string>("upload");
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [imageUrl, setImageUrl] = useState<string>("");
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(currentImage || null);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Handle file selection
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploadError(null);
+    setIsUploading(true);
+    setUploadProgress(10);
+
+    try {
+      const file = files[0];
+      
+      // Create a form data object
+      const formData = new FormData();
+      formData.append("file", file);
+
+      // Upload the file
+      setUploadProgress(30);
+      const response = await apiRequest<ImageUploadResponse>("/api/upload-image", {
+        method: "POST",
+        body: formData,
+        headers: {
+          // Don't set Content-Type header with FormData
+          // Browser will set it automatically with boundary
+        },
+      });
+
+      setUploadProgress(100);
+      
+      // Update the image URL
+      if (response && response.imageUrl) {
+        setPreviewImage(response.imageUrl);
+        onImageChange(response.imageUrl);
+      } else {
+        throw new Error("Invalid response from server");
+      }
+    } catch (error) {
+      console.error("Upload failed:", error);
+      setUploadError("Upload failed. Please try again.");
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  // Handle URL submission
+  const handleUrlSubmit = async () => {
+    if (!imageUrl.trim()) return;
+
+    setUploadError(null);
+    setIsUploading(true);
+    setUploadProgress(10);
+
+    try {
+      // Check URL format
+      if (!imageUrl.match(/^https?:\/\/.+\/.+$/i)) {
+        throw new Error("Invalid URL format");
+      }
+
+      // Create a form data object
+      const formData = new FormData();
+      formData.append("imageUrl", imageUrl);
+
+      // Send the URL to the server
+      setUploadProgress(30);
+      const response = await apiRequest<ImageUploadResponse>("/api/upload-image", {
+        method: "POST",
+        body: formData,
+      });
+
+      setUploadProgress(100);
+      
+      // Update the image URL
+      if (response && typeof response === 'object' && 'imageUrl' in response) {
+        setPreviewImage(response.imageUrl);
+        onImageChange(response.imageUrl);
+        setImageUrl("");
+      } else {
+        throw new Error("Invalid response from server");
+      }
+    } catch (error) {
+      console.error("URL import failed:", error);
+      setUploadError("Failed to import image from URL. Please try again.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // Clear the image
+  const handleClearImage = () => {
+    setPreviewImage(null);
+    onImageChange("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Preview area */}
+      {previewImage ? (
+        <div className="flex items-center space-x-4">
+          <Avatar className="w-24 h-24 rounded-md border">
+            <AvatarImage 
+              src={safeImageUrl(previewImage)} 
+              alt="Profile" 
+              className="object-cover w-full h-full"
+            />
+            <AvatarFallback 
+              className={`${getColorFromName(name)} text-white text-xl w-full h-full rounded-md flex items-center justify-center`}
+            >
+              {getInitials(name)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="space-y-2">
+            <p className="text-sm text-gray-600">Current image</p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="text-red-500 hover:text-red-700"
+              onClick={handleClearImage}
+            >
+              <X className="h-4 w-4 mr-1" /> Remove
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-center space-x-4">
+          <Avatar className="w-24 h-24 rounded-md border bg-gray-100">
+            <AvatarFallback 
+              className={`${getColorFromName(name)} text-white text-xl w-full h-full rounded-md flex items-center justify-center`}
+            >
+              {getInitials(name)}
+            </AvatarFallback>
+          </Avatar>
+          <div>
+            <p className="text-sm text-gray-600">No image selected</p>
+            <p className="text-xs text-gray-500">The rider's initials will be shown instead</p>
+          </div>
+        </div>
+      )}
+
+      {/* Tabs for upload options */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="upload">
+            <Upload className="h-4 w-4 mr-2" /> Upload File
+          </TabsTrigger>
+          <TabsTrigger value="url">
+            <Link className="h-4 w-4 mr-2" /> Image URL
+          </TabsTrigger>
+        </TabsList>
+        
+        {/* File Upload Content */}
+        <TabsContent value="upload" className="space-y-4">
+          <div className="grid w-full max-w-sm items-center gap-1.5">
+            <Label htmlFor="picture">Profile Picture</Label>
+            <Input
+              id="picture"
+              type="file"
+              disabled={isUploading}
+              accept="image/*"
+              onChange={handleFileChange}
+              ref={fileInputRef}
+            />
+            <p className="text-xs text-gray-500">
+              Accepted formats: JPG, PNG, GIF, WebP (max 5MB)
+            </p>
+          </div>
+        </TabsContent>
+        
+        {/* URL Content */}
+        <TabsContent value="url" className="space-y-4">
+          <div className="grid w-full items-center gap-1.5">
+            <Label htmlFor="imageUrl">Image URL</Label>
+            <div className="flex space-x-2">
+              <Input
+                id="imageUrl"
+                type="url"
+                placeholder="https://example.com/image.jpg"
+                disabled={isUploading}
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+              />
+              <Button 
+                onClick={handleUrlSubmit} 
+                disabled={isUploading || !imageUrl.trim()}
+              >
+                {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Import"}
+              </Button>
+            </div>
+            <p className="text-xs text-gray-500">
+              Enter the URL of an existing image to import it
+            </p>
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      {/* Upload Progress and Error Message */}
+      {isUploading && (
+        <div className="w-full bg-gray-200 rounded-full h-1.5 mb-4">
+          <div
+            className="bg-primary h-1.5 rounded-full transition-all duration-300"
+            style={{ width: `${uploadProgress}%` }}
+          ></div>
+        </div>
+      )}
+      
+      {uploadError && (
+        <p className="text-red-500 text-sm mt-2">{uploadError}</p>
+      )}
+    </div>
+  );
+}

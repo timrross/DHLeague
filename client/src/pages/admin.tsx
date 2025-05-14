@@ -40,6 +40,7 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Loader2 } from 'lucide-react';
+import { ImageUpload } from '@/components/ui/image-upload';
 
 export default function Admin() {
   const { user, isAuthenticated } = useAuth();
