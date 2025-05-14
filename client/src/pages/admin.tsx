@@ -229,9 +229,6 @@ export default function Admin() {
     points: '',
   });
   
-  // Image upload for inline editing
-  const [inlineImageFile, setInlineImageFile] = useState<File | null>(null);
-  
   // Fetch races
   const {
     data: races = [] as Race[],
@@ -553,47 +550,20 @@ export default function Admin() {
   };
   
   // Handle inline edit save
-  const handleInlineEditSave = async (riderId: number) => {
-    let imageUrl = inlineEditData.image;
-    
-    // Handle file upload if a file was selected
-    if (inlineImageFile) {
-      const formData = new FormData();
-      formData.append('image', inlineImageFile);
-      
-      try {
-        const uploadResponse = await apiRequest('/api/upload/rider-image', {
-          method: 'POST',
-          body: formData,
-        });
-        
-        if (uploadResponse && uploadResponse.imageUrl) {
-          imageUrl = uploadResponse.imageUrl;
-        }
-      } catch (error) {
-        console.error('Error uploading image:', error);
-        toast({
-          title: 'Image Upload Failed',
-          description: 'There was an error uploading the rider image',
-          variant: 'destructive'
-        });
-      }
-    }
-    
+  const handleInlineEditSave = (riderId: number) => {
     const riderData = {
       id: riderId,
       name: inlineEditData.name,
       gender: inlineEditData.gender,
       team: inlineEditData.team,
       country: inlineEditData.country,
-      image: imageUrl,
+      image: inlineEditData.image,
       cost: parseInt(inlineEditData.cost),
       points: parseInt(inlineEditData.points) || 0,
     };
     
     updateRiderMutation.mutate(riderData);
     setInlineEditRiderId(null);
-    setInlineImageFile(null);
   };
   
   // Handle update rider form submission
@@ -1642,26 +1612,24 @@ export default function Admin() {
                                 <TableRow className="bg-accent/10">
                                   <TableCell colSpan={7} className="p-0">
                                     <div className="p-4">
-                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="space-y-4">
+                                      <form className="space-y-4">
+                                        <div className="grid grid-cols-2 gap-4">
                                           <div className="space-y-2">
                                             <Label htmlFor={`rider-${rider.id}-name`}>Name*</Label>
-                                            <Input
+                                            <Input 
                                               id={`rider-${rider.id}-name`}
                                               value={inlineEditData.name}
                                               onChange={(e) => setInlineEditData({...inlineEditData, name: e.target.value})}
-                                              className="w-full"
                                               required
                                             />
                                           </div>
-                                          
                                           <div className="space-y-2">
                                             <Label htmlFor={`rider-${rider.id}-gender`}>Gender*</Label>
                                             <Select 
                                               value={inlineEditData.gender} 
                                               onValueChange={(value) => setInlineEditData({...inlineEditData, gender: value})}
                                             >
-                                              <SelectTrigger id={`rider-${rider.id}-gender`}>
+                                              <SelectTrigger>
                                                 <SelectValue placeholder="Select gender" />
                                               </SelectTrigger>
                                               <SelectContent>
@@ -1670,137 +1638,76 @@ export default function Admin() {
                                               </SelectContent>
                                             </Select>
                                           </div>
-                                          
                                           <div className="space-y-2">
                                             <Label htmlFor={`rider-${rider.id}-team`}>Team</Label>
-                                            <Input
+                                            <Input 
                                               id={`rider-${rider.id}-team`}
                                               value={inlineEditData.team}
                                               onChange={(e) => setInlineEditData({...inlineEditData, team: e.target.value})}
-                                              className="w-full"
                                             />
                                           </div>
-                                          
                                           <div className="space-y-2">
-                                            <Label htmlFor={`rider-${rider.id}-country`}>Country</Label>
-                                            <Input
+                                            <Label htmlFor={`rider-${rider.id}-country`}>Country*</Label>
+                                            <Input 
                                               id={`rider-${rider.id}-country`}
                                               value={inlineEditData.country}
                                               onChange={(e) => setInlineEditData({...inlineEditData, country: e.target.value})}
-                                              className="w-full"
+                                              required
+                                            />
+                                          </div>
+                                          <div className="space-y-2">
+                                            <Label htmlFor={`rider-${rider.id}-cost`}>Cost* (in $)</Label>
+                                            <Input 
+                                              id={`rider-${rider.id}-cost`}
+                                              type="number"
+                                              value={inlineEditData.cost}
+                                              onChange={(e) => setInlineEditData({...inlineEditData, cost: e.target.value})}
+                                              required
+                                            />
+                                          </div>
+                                          <div className="space-y-2">
+                                            <Label htmlFor={`rider-${rider.id}-points`}>Points</Label>
+                                            <Input 
+                                              id={`rider-${rider.id}-points`}
+                                              type="number"
+                                              value={inlineEditData.points}
+                                              onChange={(e) => setInlineEditData({...inlineEditData, points: e.target.value})}
+                                            />
+                                          </div>
+                                          <div className="space-y-2 col-span-2">
+                                            <Label htmlFor={`rider-${rider.id}-image`}>Rider Image</Label>
+                                            <ImageUpload
+                                              currentImage={inlineEditData.image}
+                                              onImageChange={(url) => setInlineEditData({...inlineEditData, image: url})}
+                                              name={inlineEditData.name}
                                             />
                                           </div>
                                         </div>
                                         
-                                        <div className="space-y-4">
-                                          <div className="space-y-2">
-                                            <Label>Profile Image</Label>
-                                            <div className="flex items-center justify-center mb-4">
-                                              {(inlineImageFile || rider.image || inlineEditData.image) ? (
-                                                <div className="relative h-40 w-40 rounded-md overflow-hidden border">
-                                                  <img 
-                                                    src={inlineImageFile ? URL.createObjectURL(inlineImageFile) : (inlineEditData.image || rider.image)} 
-                                                    alt={inlineEditData.name || rider.name}
-                                                    className="h-full w-full object-cover"
-                                                    onError={(e) => {
-                                                      const target = e.target as HTMLImageElement;
-                                                      target.onerror = null;
-                                                      target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(inlineEditData.name || rider.name)}&background=random&size=160`;
-                                                    }}
-                                                  />
-                                                  <Button 
-                                                    variant="destructive" 
-                                                    size="icon" 
-                                                    className="absolute top-2 right-2 h-6 w-6 rounded-full"
-                                                    onClick={() => {
-                                                      setInlineImageFile(null);
-                                                      setInlineEditData({...inlineEditData, image: ''});
-                                                    }}
-                                                  >
-                                                    <X className="h-3 w-3" />
-                                                  </Button>
-                                                </div>
-                                              ) : (
-                                                <div className="h-40 w-40 rounded-md bg-secondary flex flex-col items-center justify-center gap-2 border border-dashed border-muted-foreground/50">
-                                                  <Upload className="h-8 w-8 text-muted-foreground" />
-                                                  <span className="text-sm text-muted-foreground">No image</span>
-                                                </div>
-                                              )}
-                                            </div>
-                                            
-                                            <div className="grid grid-cols-1 gap-4">
-                                              <div className="space-y-2">
-                                                <Label htmlFor={`rider-${rider.id}-image-url`}>Image URL</Label>
-                                                <Input
-                                                  id={`rider-${rider.id}-image-url`}
-                                                  value={inlineEditData.image}
-                                                  onChange={(e) => setInlineEditData({...inlineEditData, image: e.target.value})}
-                                                  placeholder="https://example.com/image.jpg"
-                                                  disabled={!!inlineImageFile}
-                                                />
-                                              </div>
-                                              
-                                              <div className="space-y-2">
-                                                <Label htmlFor={`rider-${rider.id}-image-upload`}>Upload Image</Label>
-                                                <Input
-                                                  id={`rider-${rider.id}-image-upload`}
-                                                  type="file"
-                                                  accept="image/*"
-                                                  onChange={(e) => {
-                                                    if (e.target.files && e.target.files[0]) {
-                                                      setInlineImageFile(e.target.files[0]);
-                                                      setInlineEditData({...inlineEditData, image: ''});
-                                                    }
-                                                  }}
-                                                />
-                                              </div>
-                                            </div>
-                                          </div>
-                                          
-                                          <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                              <Label htmlFor={`rider-${rider.id}-cost`}>Cost* (in $k)</Label>
-                                              <Input
-                                                id={`rider-${rider.id}-cost`}
-                                                value={inlineEditData.cost}
-                                                onChange={(e) => setInlineEditData({...inlineEditData, cost: e.target.value})}
-                                                type="number"
-                                                required
-                                              />
-                                            </div>
-                                            
-                                            <div className="space-y-2">
-                                              <Label htmlFor={`rider-${rider.id}-points`}>Points</Label>
-                                              <Input
-                                                id={`rider-${rider.id}-points`}
-                                                value={inlineEditData.points}
-                                                onChange={(e) => setInlineEditData({...inlineEditData, points: e.target.value})}
-                                                type="number"
-                                              />
-                                            </div>
-                                          </div>
+                                        <div className="flex justify-end mt-6 gap-2">
+                                          <Button 
+                                            type="button"
+                                            variant="outline" 
+                                            onClick={handleInlineEditCancel}
+                                          >
+                                            Cancel
+                                          </Button>
+                                          <Button
+                                            type="button"
+                                            onClick={() => handleInlineEditSave(rider.id)}
+                                            disabled={updateRiderMutation.isPending}
+                                          >
+                                            {updateRiderMutation.isPending ? (
+                                              <>
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                Saving...
+                                              </>
+                                            ) : (
+                                              "Save Changes"
+                                            )}
+                                          </Button>
                                         </div>
-                                      </div>
-                                      
-                                      <div className="flex justify-end mt-6 gap-2">
-                                        <Button variant="outline" onClick={handleInlineEditCancel}>
-                                          Cancel
-                                        </Button>
-                                        <Button 
-                                          variant="default"
-                                          onClick={() => handleInlineEditSave(rider.id)}
-                                          disabled={updateRiderMutation.isPending}
-                                        >
-                                          {updateRiderMutation.isPending ? (
-                                            <>
-                                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                              Saving...
-                                            </>
-                                          ) : (
-                                            "Save Changes"
-                                          )}
-                                        </Button>
-                                      </div>
+                                      </form>
                                     </div>
                                   </TableCell>
                                 </TableRow>
