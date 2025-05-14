@@ -196,10 +196,10 @@ export default function RiderManagement() {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Team</TableHead>
-                  <TableHead>Nationality</TableHead>
+                  <TableHead>Country</TableHead>
                   <TableHead>Gender</TableHead>
                   <TableHead>Cost</TableHead>
-                  <TableHead>Ranking</TableHead>
+                  <TableHead>Last Year Standing</TableHead>
                   <TableHead>Points</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -236,9 +236,9 @@ export default function RiderManagement() {
                         <TableCell className="font-medium">
                           <div className="flex items-center space-x-2">
                             <div className="w-8 h-8 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center">
-                              {rider.profileImageUrl ? (
+                              {rider.image ? (
                                 <img 
-                                  src={rider.profileImageUrl} 
+                                  src={rider.image} 
                                   alt={rider.name}
                                   className="w-full h-full object-cover" 
                                 />
@@ -252,10 +252,10 @@ export default function RiderManagement() {
                           </div>
                         </TableCell>
                         <TableCell>{rider.team}</TableCell>
-                        <TableCell>{rider.nationality}</TableCell>
+                        <TableCell>{rider.country}</TableCell>
                         <TableCell className="capitalize">{rider.gender}</TableCell>
                         <TableCell>${rider.cost.toLocaleString()}</TableCell>
-                        <TableCell>{rider.ranking}</TableCell>
+                        <TableCell>{rider.lastYearStanding}</TableCell>
                         <TableCell>{rider.points}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end space-x-2">
