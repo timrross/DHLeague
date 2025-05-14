@@ -182,21 +182,28 @@ export class DatabaseStorage implements IStorage {
     // Filter out undefined values that would cause "No values to set" error
     const cleanData: Record<string, any> = {};
     
-    // Only keep fields with defined values
+    // Only keep fields with defined, non-null, non-empty values
     Object.keys(riderData).forEach(key => {
-      if (riderData[key as keyof Rider] !== undefined) {
-        cleanData[key] = riderData[key as keyof Rider];
+      const value = riderData[key as keyof Rider];
+      if (value !== undefined && value !== null && value !== "") {
+        cleanData[key] = value;
       }
     });
     
     // Log what we're updating with
     console.log(`Cleaned updateRider data for ID ${id}:`, cleanData);
     
-    // Ensure we have at least one field to update
+    // If no fields to update, just return the existing rider
     if (Object.keys(cleanData).length === 0) {
-      throw new Error("No values to set - all fields were undefined");
+      console.log(`No fields to update for rider ID ${id}, returning current rider`);
+      const [existingRider] = await db
+        .select()
+        .from(riders)
+        .where(eq(riders.id, id));
+      return existingRider;
     }
     
+    // Proceed with update since we have fields
     const result = await db
       .update(riders)
       .set(cleanData)
