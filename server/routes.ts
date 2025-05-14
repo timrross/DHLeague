@@ -167,6 +167,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Delete all riders endpoint for admin
+  app.delete('/api/admin/riders', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      await storage.deleteAllRiders();
+      res.json({ message: "All riders deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting all riders:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
   app.post('/api/admin/import-riders', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       

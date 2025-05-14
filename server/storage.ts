@@ -35,6 +35,7 @@ export interface IStorage {
   createRider(rider: InsertRider): Promise<Rider>;
   updateRider(id: number, rider: Partial<Rider>): Promise<Rider | undefined>;
   getRidersByGender(gender: string): Promise<Rider[]>;
+  deleteAllRiders(): Promise<void>;
   
   // Team operations
   getTeam(id: number): Promise<Team | undefined>;
