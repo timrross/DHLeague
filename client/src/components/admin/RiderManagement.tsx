@@ -42,13 +42,16 @@ export default function RiderManagement() {
   const [imageEditRiderId, setImageEditRiderId] = useState<number | null>(
     null,
   );
+  
+  // Type assertion for riders array to avoid TypeScript errors
+  const ridersList: Rider[] = [];
 
   // Fetch riders
   const {
     data: riders = [],
     isLoading: isLoadingRiders,
     error: ridersError,
-  } = useQuery({
+  } = useQuery<Rider[]>({
     queryKey: ["/api/riders"],
   });
 
@@ -217,7 +220,7 @@ export default function RiderManagement() {
             <div className="text-center py-8 text-red-500">
               Error loading riders
             </div>
-          ) : !riders || riders.length === 0 ? (
+          ) : !riders || (riders as any[]).length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               No riders found. Add a rider or import from UCI API.
             </div>
@@ -237,7 +240,7 @@ export default function RiderManagement() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {riders.map((rider: any) => (
+                {(riders as any[]).map((rider: Rider) => (
                   <React.Fragment key={rider.id}>
                     {inlineEditRiderId === rider.id ? (
                       <TableRow>
@@ -317,8 +320,30 @@ export default function RiderManagement() {
                               variant="ghost"
                               size="icon"
                               onClick={() => handleInlineEditRider(rider)}
+                              title="Edit Rider"
                             >
                               <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleImageEditRider(rider)}
+                              title="Update Image"
+                            >
+                              <svg 
+                                xmlns="http://www.w3.org/2000/svg" 
+                                width="16" 
+                                height="16" 
+                                viewBox="0 0 24 24" 
+                                fill="none" 
+                                stroke="currentColor" 
+                                strokeWidth="2" 
+                                strokeLinecap="round" 
+                                strokeLinejoin="round"
+                                className="h-4 w-4"
+                              >
+                                <path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
                             </Button>
                             <Button
                               variant="ghost"
@@ -332,6 +357,7 @@ export default function RiderManagement() {
                                   deleteRiderMutation.mutate(rider.id);
                                 }
                               }}
+                              title="Delete Rider"
                             >
                               <Trash2 className="h-4 w-4 text-red-500" />
                             </Button>
