@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Loader2, Pencil, Trash, Check, X, Trash2 } from 'lucide-react';
-import { ImageUpload } from '@/components/ui/image-upload';
+import { EnhancedImageUpload } from '@/components/ui/enhanced-image-upload';
 
 export default function RiderManagement() {
   const { toast } = useToast();
