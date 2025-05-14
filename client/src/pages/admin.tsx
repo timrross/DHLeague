@@ -201,6 +201,8 @@ export default function Admin() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   // Status is now calculated automatically based on dates
+  // We keep this for now to avoid breaking the UI, but it's not used on the server
+  const [status, setStatus] = useState('upcoming');
   const [imageUrl, setImageUrl] = useState('');
   const [isEditingRace, setIsEditingRace] = useState(false);
   const [editRaceId, setEditRaceId] = useState<number | null>(null);
@@ -671,8 +673,8 @@ export default function Admin() {
     setInlineRaceEditData({
       name: race.name,
       location: race.location,
-      country: race.country,
-      // Status is removed as it's calculated automatically
+      country: race.country, 
+      // Status is no longer needed as it's calculated automatically
       imageUrl: race.imageUrl || '',
       startDate: startDateObj.toISOString().split('T')[0],
       endDate: endDateObj.toISOString().split('T')[0]
