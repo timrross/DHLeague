@@ -68,6 +68,124 @@ export default function Admin() {
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
   
+  // User management state
+  const [selectedUser, setSelectedUser] = useState<UserWithTeam | null>(null);
+  const [isEditingUser, setIsEditingUser] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [editUserData, setEditUserData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    isAdmin: false,
+    isActive: true
+  });
+
+  // Define extended user interface that includes team info
+  interface UserWithTeam extends User {
+    team?: {
+      id: number;
+      name: string;
+      totalPoints: number;
+      userId: string;
+      riders: any[];
+    };
+  }
+  
+  // Fetch users
+  const {
+    data: users = [] as UserWithTeam[],
+    isLoading: isLoadingUsers,
+    error: usersError
+  } = useQuery<UserWithTeam[]>({
+    queryKey: ['/api/admin/users'],
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 1000 * 60 * 10, // 10 minutes
+  });
+
+  // Update user
+  const updateUserMutation = useMutation({
+    mutationFn: async (userData: any) => {
+      const response = await apiRequest(`/api/admin/users/${userData.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(userData),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      toast({
+        title: 'Success',
+        description: 'User updated successfully',
+      });
+      setIsEditingUser(false);
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: `Failed to update user: ${error}`,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Delete user
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const response = await apiRequest(`/api/admin/users/${userId}`, {
+        method: 'DELETE',
+      });
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      toast({
+        title: 'Success',
+        description: 'User deleted successfully',
+      });
+      setIsDeleteDialogOpen(false);
+      setSelectedUser(null);
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: `Failed to delete user: ${error}`,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Edit user handler
+  const handleEditUser = (userData: UserWithTeam) => {
+    setSelectedUser(userData);
+    setEditUserData({
+      firstName: userData.firstName || '',
+      lastName: userData.lastName || '',
+      email: userData.email || '',
+      isAdmin: userData.isAdmin || false,
+      isActive: userData.isActive !== false // Default to true if not explicitly false
+    });
+    setIsEditingUser(true);
+  };
+
+  // Update user handler
+  const handleUpdateUser = () => {
+    if (!selectedUser) return;
+    
+    updateUserMutation.mutate({
+      id: selectedUser.id,
+      ...editUserData
+    });
+  };
+
+  // Delete user handler
+  const handleDeleteUser = () => {
+    if (!selectedUser) return;
+    deleteUserMutation.mutate(selectedUser.id);
+  };
+  
   // Race form state
   const [raceName, setRaceName] = useState('');
   const [location, setLocation] = useState('');
@@ -527,6 +645,246 @@ export default function Admin() {
           <TabsTrigger value="riders">Manage Riders</TabsTrigger>
           <TabsTrigger value="results">Manage Results</TabsTrigger>
         </TabsList>
+        
+        {/* User Management Tab */}
+        <TabsContent value="users">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <UserCog className="h-5 w-5" />
+                  <span>User Management</span>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] })}
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh
+                </Button>
+              </CardTitle>
+              <CardDescription>
+                Manage all users, control access permissions, and moderate fantasy teams.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoadingUsers ? (
+                <div className="flex justify-center items-center py-10">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : usersError ? (
+                <div className="text-center py-10 text-destructive">
+                  <p>Error loading users. Please try again.</p>
+                </div>
+              ) : (
+                <div className="space-y-8">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>ID</TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead>Team</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {users.map((userData: any) => (
+                        <TableRow key={userData.id}>
+                          <TableCell className="font-mono text-xs">{userData.id}</TableCell>
+                          <TableCell>
+                            {userData.firstName || userData.lastName ? (
+                              `${userData.firstName || ''} ${userData.lastName || ''}`.trim()
+                            ) : (
+                              <span className="text-muted-foreground italic">Not set</span>
+                            )}
+                          </TableCell>
+                          <TableCell>{userData.email || <span className="text-muted-foreground italic">No email</span>}</TableCell>
+                          <TableCell>
+                            {userData.isActive !== false ? (
+                              <Badge variant="outline" className="bg-green-100 text-green-800">Active</Badge>
+                            ) : (
+                              <Badge variant="destructive" className="bg-red-100 text-red-800">Inactive</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {userData.isAdmin ? (
+                              <Badge className="bg-purple-100 text-purple-800">Admin</Badge>
+                            ) : (
+                              <Badge variant="outline">User</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {userData.team ? (
+                              <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                                {userData.team.name}
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground italic">No team</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEditUser(userData)}
+                                title="Edit User"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <AlertDialog open={isDeleteDialogOpen && selectedUser?.id === userData.id} onOpenChange={setIsDeleteDialogOpen}>
+                                <AlertDialogTrigger asChild>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    onClick={() => setSelectedUser(userData)}
+                                    title="Delete User"
+                                    disabled={userData.id === user?.id}
+                                  >
+                                    <Trash className="h-4 w-4 text-destructive" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This will permanently delete the user account for{' '}
+                                      <span className="font-bold">
+                                        {selectedUser?.firstName || selectedUser?.email || selectedUser?.id}
+                                      </span>
+                                      {selectedUser?.team ? (
+                                        <> and their team <span className="font-bold">{selectedUser.team.name}</span></>
+                                      ) : null}
+                                      . This action cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction 
+                                      onClick={handleDeleteUser}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      {deleteUserMutation.isPending ? (
+                                        <>
+                                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                          Deleting...
+                                        </>
+                                      ) : (
+                                        "Delete User"
+                                      )}
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  
+                  {/* Edit User Dialog */}
+                  <Dialog open={isEditingUser} onOpenChange={setIsEditingUser}>
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Edit User</DialogTitle>
+                        <DialogDescription>
+                          Make changes to user profile and permissions
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="firstName" className="text-right">
+                            First Name
+                          </Label>
+                          <Input
+                            id="firstName"
+                            value={editUserData.firstName}
+                            onChange={(e) => setEditUserData({...editUserData, firstName: e.target.value})}
+                            className="col-span-3"
+                          />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="lastName" className="text-right">
+                            Last Name
+                          </Label>
+                          <Input
+                            id="lastName"
+                            value={editUserData.lastName}
+                            onChange={(e) => setEditUserData({...editUserData, lastName: e.target.value})}
+                            className="col-span-3"
+                          />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="email" className="text-right">
+                            Email
+                          </Label>
+                          <Input
+                            id="email"
+                            type="email"
+                            value={editUserData.email}
+                            onChange={(e) => setEditUserData({...editUserData, email: e.target.value})}
+                            className="col-span-3"
+                          />
+                        </div>
+                        <Separator />
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="isActive" className="text-right">
+                            Status
+                          </Label>
+                          <div className="flex items-center gap-2 col-span-3">
+                            <Switch
+                              id="isActive"
+                              checked={editUserData.isActive}
+                              onCheckedChange={(checked) => setEditUserData({...editUserData, isActive: checked})}
+                            />
+                            <Label htmlFor="isActive" className="cursor-pointer">
+                              {editUserData.isActive ? 'Active' : 'Inactive'}
+                            </Label>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="isAdmin" className="text-right">
+                            Admin Role
+                          </Label>
+                          <div className="flex items-center gap-2 col-span-3">
+                            <Switch
+                              id="isAdmin"
+                              checked={editUserData.isAdmin}
+                              onCheckedChange={(checked) => setEditUserData({...editUserData, isAdmin: checked})}
+                            />
+                            <Label htmlFor="isAdmin" className="cursor-pointer">
+                              {editUserData.isAdmin ? 'Admin' : 'Standard User'}
+                            </Label>
+                          </div>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsEditingUser(false)}>
+                          Cancel
+                        </Button>
+                        <Button onClick={handleUpdateUser} disabled={updateUserMutation.isPending}>
+                          {updateUserMutation.isPending ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Saving...
+                            </>
+                          ) : (
+                            "Save Changes"
+                          )}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
         
         {/* Import Data Tab */}
         <TabsContent value="import">
