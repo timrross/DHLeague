@@ -39,7 +39,7 @@ export default function RiderManagement() {
 
   // Fetch riders
   const {
-    data: riders = [],
+    data: riders = [] as Rider[],
     isLoading: isLoadingRiders,
     error: ridersError,
   } = useQuery({
