@@ -7,7 +7,7 @@ import TeamBuilder from "@/pages/team-builder";
 import Races from "@/pages/races";
 import Leaderboard from "@/pages/leaderboard";
 import Rules from "@/pages/rules";
-import Admin from "@/pages/admin-new";
+import Admin from "@/pages/admin";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import AdProvider from "@/components/layout/ad-provider";
