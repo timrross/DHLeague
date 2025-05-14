@@ -213,7 +213,6 @@ export default function Admin() {
     country: '',
     startDate: '',
     endDate: '',
-    status: 'upcoming',
     imageUrl: '',
   });
   
@@ -673,7 +672,7 @@ export default function Admin() {
       name: race.name,
       location: race.location,
       country: race.country,
-      status: race.status,
+      // Status is removed as it's calculated automatically
       imageUrl: race.imageUrl || '',
       startDate: startDateObj.toISOString().split('T')[0],
       endDate: endDateObj.toISOString().split('T')[0]
@@ -696,7 +695,7 @@ export default function Admin() {
       country: inlineRaceEditData.country,
       startDate: inlineRaceEditData.startDate, // Just use the string
       endDate: inlineRaceEditData.endDate, // Just use the string
-      status: inlineRaceEditData.status,
+      // Status is automatically calculated on the server based on dates
       imageUrl: inlineRaceEditData.imageUrl || `https://source.unsplash.com/random/1200x800/?mountain,bike,${inlineRaceEditData.location}`,
     };
     
