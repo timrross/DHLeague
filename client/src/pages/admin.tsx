@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { apiRequest, queryClient } from '@/lib/queryClient';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Race, Rider, User } from '@shared/schema';
@@ -67,6 +67,7 @@ import { Switch } from '@/components/ui/switch';
 export default function Admin() {
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   // User management state
   const [selectedUser, setSelectedUser] = useState<UserWithTeam | null>(null);
@@ -95,11 +96,13 @@ export default function Admin() {
   const {
     data: users = [] as UserWithTeam[],
     isLoading: isLoadingUsers,
-    error: usersError
+    error: usersError,
+    refetch: refetchUsers
   } = useQuery<UserWithTeam[]>({
     queryKey: ['/api/admin/users'],
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    gcTime: 1000 * 60 * 10, // 10 minutes
+    staleTime: 1000 * 60, // 1 minute
+    gcTime: 1000 * 60 * 5, // 5 minutes
+    refetchOnWindowFocus: true,
   });
 
   // Update user
@@ -115,7 +118,10 @@ export default function Admin() {
       return response;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      // Refresh data
+      refetchUsers();
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+      
       toast({
         title: 'Success',
         description: 'User updated successfully',
@@ -140,7 +146,9 @@ export default function Admin() {
       return response;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      // Force refetch users list
+      refetchUsers();
+      
       toast({
         title: 'Success',
         description: 'User deleted successfully',
@@ -658,7 +666,13 @@ export default function Admin() {
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] })}
+                  onClick={() => {
+                    refetchUsers();
+                    toast({
+                      title: "Refreshing",
+                      description: "User list refreshed"
+                    });
+                  }}
                 >
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Refresh
