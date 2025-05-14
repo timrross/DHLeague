@@ -63,6 +63,15 @@ export function SimpleRiderForm({
       image
     };
     
+    console.log("Form submitted with data:", riderData);
+    console.log("Current image value:", image);
+    
+    // Only submit if we have some data
+    if (!image && Object.values(riderData).every(val => val === undefined || val === null || val === "" || val === 0)) {
+      console.error("No data to submit - all fields empty");
+      return;
+    }
+    
     onSubmit(riderData);
   };
 
@@ -162,7 +171,10 @@ export function SimpleRiderForm({
           <Label htmlFor="image" className="text-xs">Profile Image</Label>
           <EnhancedImageUpload 
             currentImage={image}
-            onImageChange={setImage}
+            onImageChange={(url) => {
+              console.log("Image URL changed:", url);
+              setImage(url);
+            }}
             name="riderImage"
             size="sm"
             compact={true}
