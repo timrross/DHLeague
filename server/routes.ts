@@ -850,19 +850,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const raceData = { ...req.body };
       delete raceData.status;
       
-      const updatedRace = await storage.updateRace(raceId, raceData);
+      // Check if there's at least one valid property to update
+      const hasValidFields = Object.values(raceData).some(val => 
+        val !== undefined && val !== null && val !== ""
+      );
       
-      if (!updatedRace) {
-        return res.status(404).json({ message: 'Race not found' });
+      if (!hasValidFields) {
+        return res.status(400).json({ 
+          message: 'No valid fields provided for update',
+          error: 'At least one field must have a value'
+        });
       }
       
-      // Update race statuses after updating the race
-      await updateRaceStatuses();
-      
-      // Get the race again with its calculated status
-      const raceWithStatus = await storage.getRace(raceId);
-      
-      res.json(raceWithStatus || updatedRace);
+      try {
+        const updatedRace = await storage.updateRace(raceId, raceData);
+        
+        if (!updatedRace) {
+          return res.status(404).json({ message: 'Race not found' });
+        }
+        
+        // Update race statuses after updating the race
+        await updateRaceStatuses();
+        
+        // Get the race again with its calculated status
+        const raceWithStatus = await storage.getRace(raceId);
+        
+        res.json(raceWithStatus);
+      } catch (error: any) {
+        if (error.message && error.message.includes("No values to set")) {
+          return res.status(400).json({ 
+            message: 'No valid fields provided for update',
+            error: error.message
+          });
+        }
+        throw error;  // Let the outer catch handle other errors
+      }
     } catch (error) {
       console.error("Error updating race:", error);
       res.status(500).json({ 
