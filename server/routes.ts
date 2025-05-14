@@ -364,6 +364,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const riderData = req.body;
+      
+      // Map any mismatched field names
+      if (riderData.profileImageUrl !== undefined && riderData.image === undefined) {
+        riderData.image = riderData.profileImageUrl;
+      }
+      
+      // Map any numeric fields that might come as strings
+      if (riderData.cost) riderData.cost = Number(riderData.cost);
+      if (riderData.points) riderData.points = Number(riderData.points);
+      if (riderData.lastYearStanding) riderData.lastYearStanding = Number(riderData.lastYearStanding);
+      
+      // Debug the data being sent
+      console.log("Updating rider with data:", JSON.stringify(riderData));
+      
       const updatedRider = await storage.updateRider(riderId, riderData);
       
       if (!updatedRider) {

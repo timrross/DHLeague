@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
-import { useToast } from '@/hooks/use-toast';
-import { Rider } from '@shared/schema';
-import RiderForm from './RiderForm';
+import React, { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { Rider } from "@shared/schema";
+import RiderForm from "./RiderForm";
 
 import {
   Card,
@@ -11,8 +11,8 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -21,8 +21,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Loader2, Pencil, Trash2, Plus } from 'lucide-react';
+} from "@/components/ui/table";
+import { Loader2, Pencil, Trash2, Plus } from "lucide-react";
 
 export default function RiderManagement() {
   const { toast } = useToast();
@@ -30,9 +30,11 @@ export default function RiderManagement() {
 
   // Form state
   const [showAddRiderForm, setShowAddRiderForm] = useState(false);
-  
+
   // Inline edit state
-  const [inlineEditRiderId, setInlineEditRiderId] = useState<number | null>(null);
+  const [inlineEditRiderId, setInlineEditRiderId] = useState<number | null>(
+    null,
+  );
 
   // Fetch riders
   const {
@@ -40,83 +42,83 @@ export default function RiderManagement() {
     isLoading: isLoadingRiders,
     error: ridersError,
   } = useQuery({
-    queryKey: ['/api/riders'],
+    queryKey: ["/api/riders"],
   });
 
   // Add rider mutation
   const addRiderMutation = useMutation({
     mutationFn: async (riderData: any) => {
-      return apiRequest('/api/riders', {
-        method: 'POST',
-        body: JSON.stringify(riderData)
+      return apiRequest("/api/riders", {
+        method: "POST",
+        body: JSON.stringify(riderData),
       });
     },
     onSuccess: () => {
       setShowAddRiderForm(false);
-      
+
       // Refetch riders
-      queryClient.invalidateQueries({ queryKey: ['/api/riders'] });
-      
+      queryClient.invalidateQueries({ queryKey: ["/api/riders"] });
+
       toast({
-        title: 'Success',
-        description: 'Rider added successfully',
+        title: "Success",
+        description: "Rider added successfully",
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: `Failed to add rider: ${error.message || 'Unknown error'}`,
-        variant: 'destructive',
+        title: "Error",
+        description: `Failed to add rider: ${error.message || "Unknown error"}`,
+        variant: "destructive",
       });
-    }
+    },
   });
 
   // Update rider mutation
   const updateRiderMutation = useMutation({
     mutationFn: async (riderData: any) => {
       return apiRequest(`/api/riders/${riderData.id}`, {
-        method: 'PUT',
-        body: JSON.stringify(riderData)
+        method: "PUT",
+        body: JSON.stringify(riderData),
       });
     },
     onSuccess: () => {
       setInlineEditRiderId(null); // Close the edit form
-      queryClient.invalidateQueries({ queryKey: ['/api/riders'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/riders"] });
       toast({
-        title: 'Success',
-        description: 'Rider updated successfully',
+        title: "Success",
+        description: "Rider updated successfully",
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: `Failed to update rider: ${error.message || 'Unknown error'}`,
-        variant: 'destructive',
+        title: "Error",
+        description: `Failed to update rider: ${error.message || "Unknown error"}`,
+        variant: "destructive",
       });
-    }
+    },
   });
 
   // Delete rider mutation
   const deleteRiderMutation = useMutation({
     mutationFn: async (riderId: number) => {
       return apiRequest(`/api/riders/${riderId}`, {
-        method: 'DELETE'
+        method: "DELETE",
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/riders'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/riders"] });
       toast({
-        title: 'Success',
-        description: 'Rider deleted successfully',
+        title: "Success",
+        description: "Rider deleted successfully",
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: `Failed to delete rider: ${error.message || 'Unknown error'}`,
-        variant: 'destructive',
+        title: "Error",
+        description: `Failed to delete rider: ${error.message || "Unknown error"}`,
+        variant: "destructive",
       });
-    }
+    },
   });
 
   // Handle add rider button click
@@ -133,12 +135,12 @@ export default function RiderManagement() {
   const handleInlineEditRider = (rider: any) => {
     setInlineEditRiderId(rider.id);
   };
-  
+
   // Handle inline edit cancel
   const handleInlineRiderEditCancel = () => {
     setInlineEditRiderId(null);
   };
-  
+
   // Handle inline edit save
   const handleInlineRiderEditSave = (riderData: any) => {
     updateRiderMutation.mutate(riderData);
@@ -160,6 +162,7 @@ export default function RiderManagement() {
               onCancel={() => setShowAddRiderForm(false)}
               isSubmitting={addRiderMutation.isPending}
               submitButtonText="Add Rider"
+              compact={true}
             />
           ) : (
             <Button onClick={handleAddRiderClick}>
@@ -172,9 +175,7 @@ export default function RiderManagement() {
       <Card>
         <CardHeader>
           <CardTitle>Rider Roster</CardTitle>
-          <CardDescription>
-            View and manage existing riders.
-          </CardDescription>
+          <CardDescription>View and manage existing riders.</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoadingRiders ? (
@@ -237,14 +238,17 @@ export default function RiderManagement() {
                           <div className="flex items-center space-x-2">
                             <div className="w-8 h-8 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center">
                               {rider.image ? (
-                                <img 
-                                  src={rider.image} 
+                                <img
+                                  src={rider.image}
                                   alt={rider.name}
-                                  className="w-full h-full object-cover" 
+                                  className="w-full h-full object-cover"
                                 />
                               ) : (
                                 <span className="text-xs font-bold">
-                                  {rider.name.split(' ').map((n: string) => n[0]).join('')}
+                                  {rider.name
+                                    .split(" ")
+                                    .map((n: string) => n[0])
+                                    .join("")}
                                 </span>
                               )}
                             </div>
@@ -253,7 +257,9 @@ export default function RiderManagement() {
                         </TableCell>
                         <TableCell>{rider.team}</TableCell>
                         <TableCell>{rider.country}</TableCell>
-                        <TableCell className="capitalize">{rider.gender}</TableCell>
+                        <TableCell className="capitalize">
+                          {rider.gender}
+                        </TableCell>
                         <TableCell>${rider.cost.toLocaleString()}</TableCell>
                         <TableCell>{rider.lastYearStanding}</TableCell>
                         <TableCell>{rider.points}</TableCell>
@@ -270,7 +276,11 @@ export default function RiderManagement() {
                               variant="ghost"
                               size="icon"
                               onClick={() => {
-                                if (window.confirm(`Are you sure you want to delete ${rider.name}?`)) {
+                                if (
+                                  window.confirm(
+                                    `Are you sure you want to delete ${rider.name}?`,
+                                  )
+                                ) {
                                   deleteRiderMutation.mutate(rider.id);
                                 }
                               }}

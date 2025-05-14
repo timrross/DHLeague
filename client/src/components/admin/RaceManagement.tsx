@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
-import { useToast } from '@/hooks/use-toast';
-import { Race } from '@shared/schema';
-import RaceForm from './RaceForm';
+import React, { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { Race } from "@shared/schema";
+import RaceForm from "./RaceForm";
 
 import {
   Card,
@@ -11,8 +11,8 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -21,8 +21,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Loader2, Pencil, Trash2, Plus } from 'lucide-react';
+} from "@/components/ui/table";
+import { Loader2, Pencil, Trash2, Plus } from "lucide-react";
 
 export default function RaceManagement() {
   const { toast } = useToast();
@@ -40,83 +40,83 @@ export default function RaceManagement() {
     isLoading: isLoadingRaces,
     error: racesError,
   } = useQuery({
-    queryKey: ['/api/races'],
+    queryKey: ["/api/races"],
   });
 
   // Add race mutation
   const addRaceMutation = useMutation({
     mutationFn: async (raceData: any) => {
-      return apiRequest('/api/races', {
-        method: 'POST',
-        body: JSON.stringify(raceData)
+      return apiRequest("/api/races", {
+        method: "POST",
+        body: JSON.stringify(raceData),
       });
     },
     onSuccess: () => {
       setShowAddRaceForm(false);
-      
+
       // Refetch races
-      queryClient.invalidateQueries({ queryKey: ['/api/races'] });
-      
+      queryClient.invalidateQueries({ queryKey: ["/api/races"] });
+
       toast({
-        title: 'Success',
-        description: 'Race added successfully',
+        title: "Success",
+        description: "Race added successfully",
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: `Failed to add race: ${error.message || 'Unknown error'}`,
-        variant: 'destructive',
+        title: "Error",
+        description: `Failed to add race: ${error.message || "Unknown error"}`,
+        variant: "destructive",
       });
-    }
+    },
   });
 
   // Update race mutation
   const updateRaceMutation = useMutation({
     mutationFn: async (raceData: any) => {
       return apiRequest(`/api/races/${raceData.id}`, {
-        method: 'PUT',
-        body: JSON.stringify(raceData)
+        method: "PUT",
+        body: JSON.stringify(raceData),
       });
     },
     onSuccess: () => {
       setInlineEditRaceId(null); // Close the edit form
-      queryClient.invalidateQueries({ queryKey: ['/api/races'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/races"] });
       toast({
-        title: 'Success',
-        description: 'Race updated successfully',
+        title: "Success",
+        description: "Race updated successfully",
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: `Failed to update race: ${error.message || 'Unknown error'}`,
-        variant: 'destructive',
+        title: "Error",
+        description: `Failed to update race: ${error.message || "Unknown error"}`,
+        variant: "destructive",
       });
-    }
+    },
   });
 
   // Delete race mutation
   const deleteRaceMutation = useMutation({
     mutationFn: async (raceId: number) => {
       return apiRequest(`/api/races/${raceId}`, {
-        method: 'DELETE'
+        method: "DELETE",
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/races'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/races"] });
       toast({
-        title: 'Success',
-        description: 'Race deleted successfully',
+        title: "Success",
+        description: "Race deleted successfully",
       });
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: `Failed to delete race: ${error.message || 'Unknown error'}`,
-        variant: 'destructive',
+        title: "Error",
+        description: `Failed to delete race: ${error.message || "Unknown error"}`,
+        variant: "destructive",
       });
-    }
+    },
   });
 
   // Handle add race button click
@@ -130,7 +130,7 @@ export default function RaceManagement() {
     if (!raceData.imageUrl) {
       raceData.imageUrl = `https://source.unsplash.com/random/1200x800/?mountain,bike,${raceData.location}`;
     }
-    
+
     addRaceMutation.mutate(raceData);
   };
 
@@ -138,12 +138,12 @@ export default function RaceManagement() {
   const handleInlineEditRace = (race: any) => {
     setInlineEditRaceId(race.id);
   };
-  
+
   // Handle inline edit cancel
   const handleInlineRaceEditCancel = () => {
     setInlineEditRaceId(null);
   };
-  
+
   // Handle inline edit save
   const handleInlineRaceEditSave = (raceData: any) => {
     updateRaceMutation.mutate(raceData);
@@ -171,6 +171,7 @@ export default function RaceManagement() {
               onCancel={() => setShowAddRaceForm(false)}
               isSubmitting={addRaceMutation.isPending}
               submitButtonText="Add Race"
+              compact={true}
             />
           ) : (
             <Button onClick={handleAddRaceClick}>
@@ -183,9 +184,7 @@ export default function RaceManagement() {
       <Card>
         <CardHeader>
           <CardTitle>Race Schedule</CardTitle>
-          <CardDescription>
-            View and manage existing races.
-          </CardDescription>
+          <CardDescription>View and manage existing races.</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoadingRaces ? (
@@ -239,18 +238,28 @@ export default function RaceManagement() {
                       </TableRow>
                     ) : (
                       <TableRow>
-                        <TableCell className="font-medium">{race.name}</TableCell>
-                        <TableCell>{race.location}, {race.country}</TableCell>
+                        <TableCell className="font-medium">
+                          {race.name}
+                        </TableCell>
                         <TableCell>
-                          {formatDate(race.startDate)} to {formatDate(race.endDate)}
+                          {race.location}, {race.country}
+                        </TableCell>
+                        <TableCell>
+                          {formatDate(race.startDate)} to{" "}
+                          {formatDate(race.endDate)}
                         </TableCell>
                         <TableCell>
                           <span
                             className={`px-2 py-1 rounded text-xs font-semibold capitalize
-                              ${race.status === 'upcoming' ? 'bg-blue-100 text-blue-800' : 
-                                race.status === 'next' ? 'bg-green-100 text-green-800' : 
-                                race.status === 'ongoing' ? 'bg-orange-100 text-orange-800' : 
-                                'bg-gray-100 text-gray-800'}`}
+                              ${
+                                race.status === "upcoming"
+                                  ? "bg-blue-100 text-blue-800"
+                                  : race.status === "next"
+                                    ? "bg-green-100 text-green-800"
+                                    : race.status === "ongoing"
+                                      ? "bg-orange-100 text-orange-800"
+                                      : "bg-gray-100 text-gray-800"
+                              }`}
                           >
                             {race.status}
                           </span>
@@ -268,7 +277,11 @@ export default function RaceManagement() {
                               variant="ghost"
                               size="icon"
                               onClick={() => {
-                                if (window.confirm(`Are you sure you want to delete ${race.name}?`)) {
+                                if (
+                                  window.confirm(
+                                    `Are you sure you want to delete ${race.name}?`,
+                                  )
+                                ) {
                                   deleteRaceMutation.mutate(race.id);
                                 }
                               }}
