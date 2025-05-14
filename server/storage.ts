@@ -438,9 +438,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateRace(id: number, raceData: Partial<Race>): Promise<Race | undefined> {
+    // Convert date strings to Date objects if they're strings
+    const processedData: Partial<Race> = { ...raceData };
+    
+    if (typeof processedData.startDate === 'string') {
+      processedData.startDate = new Date(processedData.startDate);
+    }
+    
+    if (typeof processedData.endDate === 'string') {
+      processedData.endDate = new Date(processedData.endDate);
+    }
+    
     const result = await db
       .update(races)
-      .set(raceData)
+      .set(processedData)
       .where(eq(races.id, id))
       .returning();
     return result[0];
