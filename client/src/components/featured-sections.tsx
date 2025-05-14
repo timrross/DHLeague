@@ -33,7 +33,7 @@ export default function FeaturedSections() {
       <Card className="bg-white rounded-lg shadow-md overflow-hidden">
         <div className="h-48 bg-secondary overflow-hidden">
           <img
-            src="https://pixabay.com/get/g751aa0d1ab1f9ca6d5508fdb09df26de0a85b3824bb4f9e9b77ad79275d045f226d7a01b000170bd1c6f1878663a0ef61fd89985a5c26c8412bc44582129ddb3_1280.jpg"
+            src="https://i.ytimg.com/vi/Co2qCO-cIPA/maxresdefault.jpg"
             alt="Downhill race course"
             className="w-full h-full object-cover transition duration-300 hover:scale-105"
           />
