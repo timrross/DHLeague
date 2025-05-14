@@ -3,16 +3,19 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { Link, useLocation } from "wouter";
-import { Rider, User, TeamWithRiders } from "@shared/schema";
+import { Rider, User, TeamWithRiders, Race } from "@shared/schema";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import RiderCard from "@/components/rider-card";
 import TeamSummary from "@/components/team-summary";
-import { Search } from "lucide-react";
+import CountdownTimer from "@/components/countdown-timer";
+import { Search, AlertTriangle, Info, RefreshCw } from "lucide-react";
 
 export default function TeamBuilder() {
   const [, setLocation] = useLocation();
@@ -24,7 +27,21 @@ export default function TeamBuilder() {
   const [selectedRiders, setSelectedRiders] = useState<Rider[]>([]);
   const [teamName, setTeamName] = useState("My DH Team");
   const [isCreatingTeam, setIsCreatingTeam] = useState(false);
+  const [swapMode, setSwapMode] = useState(false);
+  const [swapRider, setSwapRider] = useState<Rider | null>(null);
 
+  // Fetch all races
+  const { data: races, isLoading: racesLoading } = useQuery({
+    queryKey: ['/api/races'],
+  });
+
+  // Determine next race
+  const nextRace = races?.find((race: Race) => race.status === 'next');
+  
+  // Calculate lock date (1 day before race start)
+  const lockDate = nextRace ? new Date(new Date(nextRace.startDate).getTime() - 24 * 60 * 60 * 1000) : new Date();
+  const isTeamLocked = nextRace && new Date() >= lockDate;
+  
   // Fetch riders
   const { data: riders, isLoading: ridersLoading } = useQuery({
     queryKey: ['/api/riders'],
@@ -39,7 +56,11 @@ export default function TeamBuilder() {
   // Create team mutation
   const createTeam = useMutation({
     mutationFn: async (data: { name: string, riderIds: number[] }) => {
-      return apiRequest('POST', '/api/teams', data);
+      return apiRequest('/api/teams', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' }
+      });
     },
     onSuccess: () => {
       toast({
@@ -61,10 +82,11 @@ export default function TeamBuilder() {
 
   // Update team mutation
   const updateTeam = useMutation({
-    mutationFn: async (data: { id: number, name: string, riderIds: number[] }) => {
-      return apiRequest('PUT', `/api/teams/${data.id}`, {
-        name: data.name,
-        riderIds: data.riderIds
+    mutationFn: async (data: { name: string, riderIds: number[] }) => {
+      return apiRequest(`/api/teams/${userTeam?.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' }
       });
     },
     onSuccess: () => {
