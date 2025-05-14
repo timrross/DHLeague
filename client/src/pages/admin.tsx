@@ -200,7 +200,7 @@ export default function Admin() {
   const [country, setCountry] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [status, setStatus] = useState('upcoming');
+  // Status is now calculated automatically based on dates
   const [imageUrl, setImageUrl] = useState('');
   const [isEditingRace, setIsEditingRace] = useState(false);
   const [editRaceId, setEditRaceId] = useState<number | null>(null);
