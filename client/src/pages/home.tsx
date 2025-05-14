@@ -33,14 +33,14 @@ export default function Home() {
             </p>
             <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
               <Link href="/team-builder">
-                <a className="bg-primary hover:bg-red-700 text-white font-bold py-3 px-8 rounded-md text-center transition duration-200 text-lg font-heading">
+                <div className="bg-primary hover:bg-red-700 text-white font-bold py-3 px-8 rounded-md text-center transition duration-200 text-lg font-heading cursor-pointer">
                   CREATE YOUR TEAM
-                </a>
+                </div>
               </Link>
               <Link href="/rules">
-                <a className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white font-semibold py-3 px-8 rounded-md text-center backdrop-filter backdrop-blur-sm transition duration-200 text-lg font-body">
+                <div className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white font-semibold py-3 px-8 rounded-md text-center backdrop-filter backdrop-blur-sm transition duration-200 text-lg font-body cursor-pointer">
                   HOW IT WORKS
-                </a>
+                </div>
               </Link>
             </div>
           </div>
@@ -61,9 +61,9 @@ export default function Home() {
               </div>
               <CountdownTimer targetDate={new Date(nextRace.startDate)} />
               <Link href={`/races/${nextRace.id}`}>
-                <a className="mt-3 md:mt-0 text-white underline font-semibold hover:text-white/80 transition">
+                <div className="mt-3 md:mt-0 text-white underline font-semibold hover:text-white/80 transition cursor-pointer">
                   View Race Details
-                </a>
+                </div>
               </Link>
             </div>
           </div>

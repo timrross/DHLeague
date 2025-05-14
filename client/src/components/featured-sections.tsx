@@ -17,9 +17,9 @@ export default function FeaturedSections() {
           <h3 className="font-heading font-bold text-xl text-secondary mb-2">BUILD YOUR TEAM</h3>
           <p className="text-gray-600 mb-4">Select 6 riders (min. 2 women) within your $2M budget to score points throughout the season.</p>
           <Link href="/team-builder">
-            <a className="inline-block bg-primary hover:bg-red-700 text-white font-heading font-bold px-4 py-2 rounded-md transition duration-200">
+            <div className="inline-block bg-primary hover:bg-red-700 text-white font-heading font-bold px-4 py-2 rounded-md transition duration-200 cursor-pointer">
               CREATE TEAM
-            </a>
+            </div>
           </Link>
         </CardContent>
       </Card>
@@ -37,9 +37,9 @@ export default function FeaturedSections() {
           <h3 className="font-heading font-bold text-xl text-secondary mb-2">RACE SCHEDULE</h3>
           <p className="text-gray-600 mb-4">Stay updated with all the rounds of the 2023 UCI Downhill World Cup season.</p>
           <Link href="/races">
-            <a className="inline-block bg-primary hover:bg-red-700 text-white font-heading font-bold px-4 py-2 rounded-md transition duration-200">
+            <div className="inline-block bg-primary hover:bg-red-700 text-white font-heading font-bold px-4 py-2 rounded-md transition duration-200 cursor-pointer">
               VIEW SCHEDULE
-            </a>
+            </div>
           </Link>
         </CardContent>
       </Card>
@@ -57,9 +57,9 @@ export default function FeaturedSections() {
           <h3 className="font-heading font-bold text-xl text-secondary mb-2">LEADERBOARDS</h3>
           <p className="text-gray-600 mb-4">See how your fantasy team ranks against others in global and private leagues.</p>
           <Link href="/leaderboard">
-            <a className="inline-block bg-primary hover:bg-red-700 text-white font-heading font-bold px-4 py-2 rounded-md transition duration-200">
+            <div className="inline-block bg-primary hover:bg-red-700 text-white font-heading font-bold px-4 py-2 rounded-md transition duration-200 cursor-pointer">
               VIEW STANDINGS
-            </a>
+            </div>
           </Link>
         </CardContent>
       </Card>
