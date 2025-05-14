@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Rider } from '@shared/schema';
-import RiderForm from './RiderForm';
 
 import {
   Card,
@@ -13,6 +12,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Table,
   TableBody,
@@ -22,8 +23,15 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Loader2, Pencil, Trash2 } from 'lucide-react';
-import { safeImageUrl, getInitials, getColorFromName } from '@/lib/utils';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Loader2, Pencil, Trash, Check, X, Trash2 } from 'lucide-react';
+import { ImageUpload } from '@/components/ui/image-upload';
 
 export default function RiderManagement() {
   const { toast } = useToast();
@@ -296,32 +304,218 @@ export default function RiderManagement() {
         </CardHeader>
         <CardContent>
           {showAddRiderForm ? (
-            <RiderForm
-              onSubmit={handleAddRider}
-              onCancel={() => setShowAddRiderForm(false)}
-              isSubmitting={addRiderMutation.isPending}
-              submitButtonText="Add Rider"
-            />
+            <form onSubmit={handleAddRider}>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                {/* Rider Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="riderName">Rider Name*</Label>
+                  <Input 
+                    id="riderName" 
+                    placeholder="Amaury Pierron"
+                    value={riderName}
+                    onChange={(e) => setRiderName(e.target.value)}
+                    required
+                  />
+                </div>
+                {/* Gender */}
+                <div className="space-y-2">
+                  <Label htmlFor="riderGender">Gender*</Label>
+                  <Select value={riderGender} onValueChange={setRiderGender}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="m">Male</SelectItem>
+                      <SelectItem value="f">Female</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                {/* Team */}
+                <div className="space-y-2">
+                  <Label htmlFor="riderTeam">Team</Label>
+                  <Input 
+                    id="riderTeam" 
+                    placeholder="MS Mondraker Team"
+                    value={riderTeam}
+                    onChange={(e) => setRiderTeam(e.target.value)}
+                  />
+                </div>
+                {/* Country */}
+                <div className="space-y-2">
+                  <Label htmlFor="riderCountry">Country</Label>
+                  <Input 
+                    id="riderCountry" 
+                    placeholder="France"
+                    value={riderCountry}
+                    onChange={(e) => setRiderCountry(e.target.value)}
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                {/* Cost */}
+                <div className="space-y-2">
+                  <Label htmlFor="riderCost">Cost (Budget Points)*</Label>
+                  <Input 
+                    id="riderCost" 
+                    type="number"
+                    placeholder="500"
+                    value={riderCost}
+                    onChange={(e) => setRiderCost(e.target.value)}
+                    required
+                  />
+                </div>
+                {/* Points */}
+                <div className="space-y-2">
+                  <Label htmlFor="riderPoints">Current Points</Label>
+                  <Input 
+                    id="riderPoints" 
+                    type="number"
+                    placeholder="0"
+                    value={riderPoints}
+                    onChange={(e) => setRiderPoints(e.target.value)}
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2 mb-4">
+                <Label htmlFor="riderImage">Profile Image</Label>
+                <ImageUpload
+                  endpoint="riderImage"
+                  value={riderImage}
+                  onChange={setRiderImage}
+                />
+              </div>
+              <Button 
+                type="submit"
+                disabled={addRiderMutation.isPending}
+                className="w-full"
+              >
+                {addRiderMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Adding Rider...
+                  </>
+                ) : (
+                  'Add Rider'
+                )}
+              </Button>
+            </form>
           ) : isEditingRider ? (
-            <RiderForm
-              initialData={{
-                id: editRiderId,
-                name: riderName,
-                gender: riderGender,
-                team: riderTeam,
-                country: riderCountry,
-                image: riderImage,
-                cost: parseInt(riderCost || '0', 10),
-                points: parseInt(riderPoints || '0', 10)
-              }}
-              onSubmit={handleUpdateRider}
-              onCancel={() => {
-                setIsEditingRider(false);
-                setEditRiderId(null);
-              }}
-              isSubmitting={updateRiderMutation.isPending}
-              submitButtonText="Update Rider"
-            />
+            <form onSubmit={handleUpdateRider}>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                {/* Rider Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="riderName">Rider Name*</Label>
+                  <Input 
+                    id="riderName" 
+                    placeholder="Amaury Pierron"
+                    value={riderName}
+                    onChange={(e) => setRiderName(e.target.value)}
+                    required
+                  />
+                </div>
+                {/* Gender */}
+                <div className="space-y-2">
+                  <Label htmlFor="riderGender">Gender*</Label>
+                  <Select value={riderGender} onValueChange={setRiderGender}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="m">Male</SelectItem>
+                      <SelectItem value="f">Female</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                {/* Team */}
+                <div className="space-y-2">
+                  <Label htmlFor="riderTeam">Team</Label>
+                  <Input 
+                    id="riderTeam" 
+                    placeholder="MS Mondraker Team"
+                    value={riderTeam}
+                    onChange={(e) => setRiderTeam(e.target.value)}
+                  />
+                </div>
+                {/* Country */}
+                <div className="space-y-2">
+                  <Label htmlFor="riderCountry">Country</Label>
+                  <Input 
+                    id="riderCountry" 
+                    placeholder="France"
+                    value={riderCountry}
+                    onChange={(e) => setRiderCountry(e.target.value)}
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                {/* Cost */}
+                <div className="space-y-2">
+                  <Label htmlFor="riderCost">Cost (Budget Points)*</Label>
+                  <Input 
+                    id="riderCost" 
+                    type="number"
+                    placeholder="500"
+                    value={riderCost}
+                    onChange={(e) => setRiderCost(e.target.value)}
+                    required
+                  />
+                </div>
+                {/* Points */}
+                <div className="space-y-2">
+                  <Label htmlFor="riderPoints">Current Points</Label>
+                  <Input 
+                    id="riderPoints" 
+                    type="number"
+                    placeholder="0"
+                    value={riderPoints}
+                    onChange={(e) => setRiderPoints(e.target.value)}
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2 mb-4">
+                <Label htmlFor="riderImage">Profile Image</Label>
+                <ImageUpload
+                  endpoint="riderImage"
+                  value={riderImage}
+                  onChange={setRiderImage}
+                />
+              </div>
+              <div className="flex justify-between">
+                <Button 
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsEditingRider(false);
+                    setEditRiderId(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit"
+                  disabled={updateRiderMutation.isPending}
+                >
+                  {updateRiderMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Updating...
+                    </>
+                  ) : (
+                    'Update Rider'
+                  )}
+                </Button>
+              </div>
+            </form>
           ) : (
             <div className="flex space-x-2">
               <Button onClick={handleAddRiderClick} className="flex-1">Add New Rider</Button>

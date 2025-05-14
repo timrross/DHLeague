@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Race } from '@shared/schema';
+import RaceForm from './RaceForm';
 
 import {
   Card,
@@ -12,8 +13,6 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Table,
   TableBody,
@@ -23,7 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Loader2, Pencil, Trash, Check, X } from 'lucide-react';
+import { Loader2, Pencil, Trash2, Plus } from 'lucide-react';
 
 export default function RaceManagement() {
   const { toast } = useToast();
@@ -31,28 +30,9 @@ export default function RaceManagement() {
 
   // Race form state
   const [showAddRaceForm, setShowAddRaceForm] = useState(false);
-  const [raceName, setRaceName] = useState('');
-  const [location, setLocation] = useState('');
-  const [country, setCountry] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  // Status is now calculated automatically based on dates
-  // We keep this for now to avoid breaking the UI, but it's not used on the server
-  const [status, setStatus] = useState('upcoming');
-  const [imageUrl, setImageUrl] = useState('');
-  const [isEditingRace, setIsEditingRace] = useState(false);
-  const [editRaceId, setEditRaceId] = useState<number | null>(null);
-  
+
   // Inline race edit state
   const [inlineEditRaceId, setInlineEditRaceId] = useState<number | null>(null);
-  const [inlineRaceEditData, setInlineRaceEditData] = useState({
-    name: '',
-    location: '',
-    country: '',
-    startDate: '',
-    endDate: '',
-    imageUrl: '',
-  });
 
   // Fetch races
   const {
@@ -72,14 +52,6 @@ export default function RaceManagement() {
       });
     },
     onSuccess: () => {
-      // Reset form
-      setRaceName('');
-      setLocation('');
-      setCountry('');
-      setStartDate('');
-      setEndDate('');
-      setStatus('upcoming');
-      setImageUrl('');
       setShowAddRaceForm(false);
       
       // Refetch races
@@ -108,6 +80,7 @@ export default function RaceManagement() {
       });
     },
     onSuccess: () => {
+      setInlineEditRaceId(null); // Close the edit form
       queryClient.invalidateQueries({ queryKey: ['/api/races'] });
       toast({
         title: 'Success',
@@ -151,48 +124,19 @@ export default function RaceManagement() {
     setShowAddRaceForm(true);
   };
 
-  // Handle add race form submission
-  const handleAddRace = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!raceName || !location || !country || !startDate || !endDate) {
-      toast({
-        title: 'Error',
-        description: 'Please fill in all required fields',
-        variant: 'destructive',
-      });
-      return;
+  // Handle add race form submission (now accepts data from RaceForm)
+  const handleAddRace = (raceData: any) => {
+    // Add default image URL if none is provided
+    if (!raceData.imageUrl) {
+      raceData.imageUrl = `https://source.unsplash.com/random/1200x800/?mountain,bike,${raceData.location}`;
     }
-    
-    const raceData = {
-      name: raceName,
-      location,
-      country,
-      startDate, // Use string as is
-      endDate, // Use string as is
-      // Status is automatically calculated on the server based on dates
-      imageUrl: imageUrl || `https://source.unsplash.com/random/1200x800/?mountain,bike,${location}`,
-    };
     
     addRaceMutation.mutate(raceData);
   };
 
   // Handle inline editing for a race
   const handleInlineEditRace = (race: any) => {
-    // Format dates for input fields (YYYY-MM-DD)
-    const startDateObj = new Date(race.startDate);
-    const endDateObj = new Date(race.endDate);
-    
     setInlineEditRaceId(race.id);
-    setInlineRaceEditData({
-      name: race.name,
-      location: race.location,
-      country: race.country, 
-      // Status is no longer needed as it's calculated automatically
-      imageUrl: race.imageUrl || '',
-      startDate: startDateObj.toISOString().split('T')[0],
-      endDate: endDateObj.toISOString().split('T')[0]
-    });
   };
   
   // Handle inline edit cancel
@@ -201,147 +145,44 @@ export default function RaceManagement() {
   };
   
   // Handle inline edit save
-  const handleInlineRaceEditSave = (raceId: number) => {
-    // Make sure we're sending the date strings as they are, not as Date objects
-    // This prevents the server-side error with toISOString
-    const raceData = {
-      id: raceId,
-      name: inlineRaceEditData.name,
-      location: inlineRaceEditData.location,
-      country: inlineRaceEditData.country,
-      startDate: inlineRaceEditData.startDate, // Just use the string
-      endDate: inlineRaceEditData.endDate, // Just use the string
-      // Status is automatically calculated on the server based on dates
-      imageUrl: inlineRaceEditData.imageUrl || `https://source.unsplash.com/random/1200x800/?mountain,bike,${inlineRaceEditData.location}`,
-    };
-    
+  const handleInlineRaceEditSave = (raceData: any) => {
     updateRaceMutation.mutate(raceData);
-    setInlineEditRaceId(null);
+  };
+
+  // Helper function to format date display
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
   };
 
   return (
     <>
-      <Card>
+      <Card className="mb-6">
         <CardHeader>
-          <CardTitle>Add Race</CardTitle>
+          <CardTitle>Race Management</CardTitle>
           <CardDescription>
-            Add a new race to the schedule.
+            Add and manage races for the season.
           </CardDescription>
         </CardHeader>
         <CardContent>
           {showAddRaceForm ? (
-            <form onSubmit={handleAddRace}>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                {/* Race Name */}
-                <div className="space-y-2">
-                  <Label htmlFor="name">Race Name*</Label>
-                  <Input 
-                    id="name" 
-                    placeholder="Fort William"
-                    value={raceName}
-                    onChange={(e) => setRaceName(e.target.value)}
-                    required
-                  />
-                </div>
-                {/* Location */}
-                <div className="space-y-2">
-                  <Label htmlFor="location">Location*</Label>
-                  <Input 
-                    id="location" 
-                    placeholder="Fort William"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                {/* Country */}
-                <div className="space-y-2">
-                  <Label htmlFor="country">Country*</Label>
-                  <Input 
-                    id="country" 
-                    value={country}
-                    onChange={(e) => setCountry(e.target.value)}
-                    required
-                  />
-                </div>
-                {/* Info about automatic race status */}
-                <div className="space-y-2">
-                  <Label htmlFor="status-info">Status</Label>
-                  <div className="p-2 bg-gray-50 rounded-md border border-gray-200">
-                    <span className="inline-block px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
-                      Automatic
-                    </span>
-                    <p className="text-xs text-gray-500 mt-2">
-                      Race status will be automatically determined based on start and end dates
-                    </p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                {/* Start Date */}
-                <div className="space-y-2">
-                  <Label htmlFor="startDate">Start Date*</Label>
-                  <Input 
-                    id="startDate" 
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    required
-                  />
-                </div>
-                {/* End Date */}
-                <div className="space-y-2">
-                  <Label htmlFor="endDate">End Date*</Label>
-                  <Input 
-                    id="endDate" 
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2 mb-4">
-                <Label htmlFor="imageUrl">Image URL</Label>
-                <Input 
-                  id="imageUrl" 
-                  placeholder="https://example.com/image.jpg"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Leave blank to use a random image based on location
-                </p>
-              </div>
-              <Button 
-                type="submit"
-                disabled={addRaceMutation.isPending}
-                className="w-full"
-              >
-                {addRaceMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Adding Race...
-                  </>
-                ) : (
-                  'Add Race'
-                )}
-              </Button>
-            </form>
+            <RaceForm
+              onSubmit={handleAddRace}
+              onCancel={() => setShowAddRaceForm(false)}
+              isSubmitting={addRaceMutation.isPending}
+              submitButtonText="Add Race"
+            />
           ) : (
-            <Button onClick={handleAddRaceClick} className="w-full">Add New Race</Button>
+            <Button onClick={handleAddRaceClick}>
+              <Plus className="mr-2 h-4 w-4" /> Add New Race
+            </Button>
           )}
         </CardContent>
       </Card>
-      
+
       <Card>
         <CardHeader>
-          <CardTitle>Race List</CardTitle>
+          <CardTitle>Race Schedule</CardTitle>
           <CardDescription>
             View and manage existing races.
           </CardDescription>
@@ -374,153 +215,66 @@ export default function RaceManagement() {
               <TableBody>
                 {races.map((race: any) => (
                   <React.Fragment key={race.id}>
-                    <TableRow>
-                      <TableCell className="font-medium">{race.name}</TableCell>
-                      <TableCell>{race.location}, {race.country}</TableCell>
-                      <TableCell>
-                        {new Date(race.startDate).toLocaleDateString()} - {new Date(race.endDate).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${
-                          race.status === 'next' 
-                            ? 'bg-blue-100 text-blue-800' 
-                            : race.status === 'ongoing' 
-                            ? 'bg-green-100 text-green-800' 
-                            : race.status === 'completed' 
-                            ? 'bg-gray-100 text-gray-800'
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {race.status.charAt(0).toUpperCase() + race.status.slice(1)}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 mr-1"
-                          onClick={() => handleInlineEditRace(race)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-red-500 hover:text-red-600"
-                          onClick={() => {
-                            if (window.confirm('Are you sure you want to delete this race?')) {
-                              deleteRaceMutation.mutate(race.id);
-                            }
-                          }}
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                    {inlineEditRaceId === race.id && (
+                    {inlineEditRaceId === race.id ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="p-4 bg-gray-50">
-                          <div className="border border-gray-200 rounded-md p-4">
-                            <h4 className="text-sm font-semibold mb-4">Edit Race Details</h4>
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                <Label htmlFor={`race-${race.id}-name`}>Race Name*</Label>
-                                <Input 
-                                  id={`race-${race.id}-name`}
-                                  value={inlineRaceEditData.name}
-                                  onChange={(e) => setInlineRaceEditData({...inlineRaceEditData, name: e.target.value})}
-                                  required
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor={`race-${race.id}-location`}>Location*</Label>
-                                <Input 
-                                  id={`race-${race.id}-location`}
-                                  value={inlineRaceEditData.location}
-                                  onChange={(e) => setInlineRaceEditData({...inlineRaceEditData, location: e.target.value})}
-                                  required
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor={`race-${race.id}-country`}>Country*</Label>
-                                <Input 
-                                  id={`race-${race.id}-country`}
-                                  value={inlineRaceEditData.country}
-                                  onChange={(e) => setInlineRaceEditData({...inlineRaceEditData, country: e.target.value})}
-                                  required
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor={`race-${race.id}-status`}>Status</Label>
-                                <div className="p-2 bg-gray-50 rounded-md border border-gray-200">
-                                  <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${
-                                    race.status === 'next' 
-                                      ? 'bg-blue-100 text-blue-800' 
-                                      : race.status === 'ongoing' 
-                                      ? 'bg-green-100 text-green-800' 
-                                      : race.status === 'completed' 
-                                      ? 'bg-gray-100 text-gray-800'
-                                      : 'bg-yellow-100 text-yellow-800'
-                                  }`}>
-                                    {race.status.charAt(0).toUpperCase() + race.status.slice(1)}
-                                  </span>
-                                  <p className="text-xs text-gray-500 mt-2">
-                                    Status is automatically determined based on start and end dates
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor={`race-${race.id}-startDate`}>Start Date*</Label>
-                                <Input 
-                                  id={`race-${race.id}-startDate`}
-                                  type="date"
-                                  value={inlineRaceEditData.startDate}
-                                  onChange={(e) => setInlineRaceEditData({...inlineRaceEditData, startDate: e.target.value})}
-                                  required
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor={`race-${race.id}-endDate`}>End Date*</Label>
-                                <Input 
-                                  id={`race-${race.id}-endDate`}
-                                  type="date"
-                                  value={inlineRaceEditData.endDate}
-                                  onChange={(e) => setInlineRaceEditData({...inlineRaceEditData, endDate: e.target.value})}
-                                  required
-                                />
-                              </div>
-                              <div className="space-y-2 col-span-2">
-                                <Label htmlFor={`race-${race.id}-imageUrl`}>Image URL</Label>
-                                <Input 
-                                  id={`race-${race.id}-imageUrl`}
-                                  value={inlineRaceEditData.imageUrl}
-                                  onChange={(e) => setInlineRaceEditData({...inlineRaceEditData, imageUrl: e.target.value})}
-                                />
-                              </div>
-                            </div>
-                            <div className="flex justify-end space-x-2 mt-4">
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={handleInlineRaceEditCancel}
-                              >
-                                <X className="h-4 w-4 mr-1" /> Cancel
-                              </Button>
-                              <Button 
-                                size="sm"
-                                onClick={() => handleInlineRaceEditSave(race.id)}
-                                disabled={updateRaceMutation.isPending}
-                              >
-                                {updateRaceMutation.isPending ? (
-                                  <>
-                                    <Loader2 className="h-4 w-4 mr-1 animate-spin" /> Saving...
-                                  </>
-                                ) : (
-                                  <>
-                                    <Check className="h-4 w-4 mr-1" /> Save Changes
-                                  </>
-                                )}
-                              </Button>
-                            </div>
+                        <TableCell colSpan={5}>
+                          <RaceForm
+                            initialData={{
+                              id: race.id,
+                              name: race.name,
+                              location: race.location,
+                              country: race.country,
+                              startDate: race.startDate,
+                              endDate: race.endDate,
+                              imageUrl: race.imageUrl,
+                            }}
+                            onSubmit={handleInlineRaceEditSave}
+                            onCancel={handleInlineRaceEditCancel}
+                            isSubmitting={updateRaceMutation.isPending}
+                            submitButtonText="Save"
+                            cancelButtonText="Cancel"
+                            compact={true}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      <TableRow>
+                        <TableCell className="font-medium">{race.name}</TableCell>
+                        <TableCell>{race.location}, {race.country}</TableCell>
+                        <TableCell>
+                          {formatDate(race.startDate)} to {formatDate(race.endDate)}
+                        </TableCell>
+                        <TableCell>
+                          <span
+                            className={`px-2 py-1 rounded text-xs font-semibold capitalize
+                              ${race.status === 'upcoming' ? 'bg-blue-100 text-blue-800' : 
+                                race.status === 'next' ? 'bg-green-100 text-green-800' : 
+                                race.status === 'ongoing' ? 'bg-orange-100 text-orange-800' : 
+                                'bg-gray-100 text-gray-800'}`}
+                          >
+                            {race.status}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end space-x-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleInlineEditRace(race)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                if (window.confirm(`Are you sure you want to delete ${race.name}?`)) {
+                                  deleteRaceMutation.mutate(race.id);
+                                }
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
