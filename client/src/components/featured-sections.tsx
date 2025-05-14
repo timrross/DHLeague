@@ -9,7 +9,7 @@ export default function FeaturedSections() {
         <div className="h-48 bg-secondary overflow-hidden">
           <img
             src="https://mbaction.com/wp-content/uploads/2020/02/Finals-VDS-2019-1555.jpg"
-            alt="Downhill mountain bike rider in action"
+            alt="UCI Downhill World Cup 2025 - Rider in action"
             className="w-full h-full object-cover transition duration-300 hover:scale-105"
           />
         </div>
@@ -43,7 +43,7 @@ export default function FeaturedSections() {
             RACE SCHEDULE
           </h3>
           <p className="text-gray-600 mb-4">
-            Stay updated with all the rounds of the 2023 UCI Downhill World Cup
+            Stay updated with all the rounds of the 2025 UCI Downhill World Cup
             season.
           </p>
           <Link href="/races">

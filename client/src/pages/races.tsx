@@ -14,7 +14,7 @@ export default function Races() {
         <div className="flex flex-col md:flex-row gap-8">
           {/* Main content */}
           <div className="flex-1">
-            <h2 className="text-2xl md:text-3xl font-heading font-bold text-secondary mb-6">2023 RACE SCHEDULE</h2>
+            <h2 className="text-2xl md:text-3xl font-heading font-bold text-secondary mb-6">2025 RACE SCHEDULE</h2>
             
             {isLoading ? (
               <div className="flex justify-center items-center h-64">

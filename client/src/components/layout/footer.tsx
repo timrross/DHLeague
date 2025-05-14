@@ -97,7 +97,7 @@ export default function Footer() {
         </div>
         
         <div className="border-t border-gray-800 pt-6 text-center text-gray-500 text-sm">
-          <p>&copy; 2023 MTB Fantasy League. All rights reserved.</p>
+          <p>&copy; 2025 MTB Fantasy League. All rights reserved.</p>
           <div className="mt-2 space-x-4">
             <a href="#" className="text-gray-500 hover:text-primary transition">Terms of Service</a>
             <a href="#" className="text-gray-500 hover:text-primary transition">Privacy Policy</a>
