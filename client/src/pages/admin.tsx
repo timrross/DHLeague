@@ -209,6 +209,7 @@ export default function Admin() {
   const [isEditingRider, setIsEditingRider] = useState(false);
   const [showAddRiderForm, setShowAddRiderForm] = useState(false);
   const [editRiderId, setEditRiderId] = useState<number | null>(null);
+  const [inlineEditRiderId, setInlineEditRiderId] = useState<number | null>(null);
   const [riderName, setRiderName] = useState('');
   const [riderGender, setRiderGender] = useState('male');
   const [riderTeam, setRiderTeam] = useState('');
@@ -216,6 +217,17 @@ export default function Admin() {
   const [riderImage, setRiderImage] = useState('');
   const [riderCost, setRiderCost] = useState('');
   const [riderPoints, setRiderPoints] = useState('');
+  
+  // Inline edit state
+  const [inlineEditData, setInlineEditData] = useState({
+    name: '',
+    gender: 'male',
+    team: '',
+    country: '',
+    image: '',
+    cost: '',
+    points: '',
+  });
   
   // Fetch races
   const {
@@ -481,7 +493,7 @@ export default function Admin() {
     addRaceMutation.mutate(raceData);
   };
   
-  // Handle edit rider button click
+  // Handle edit rider button click (for top form)
   const handleEditRider = (rider: any) => {
     setIsEditingRider(true);
     setEditRiderId(rider.id);
@@ -492,6 +504,42 @@ export default function Admin() {
     setRiderImage(rider.image || '');
     setRiderCost(rider.cost.toString());
     setRiderPoints((rider.points || 0).toString());
+  };
+  
+  // Handle inline editing for a rider in the table
+  const handleInlineEditStart = (rider: any) => {
+    setInlineEditRiderId(rider.id);
+    setInlineEditData({
+      name: rider.name,
+      gender: rider.gender,
+      team: rider.team || '',
+      country: rider.country || '',
+      image: rider.image || '',
+      cost: rider.cost.toString(),
+      points: (rider.points || 0).toString(),
+    });
+  };
+  
+  // Handle inline edit cancel
+  const handleInlineEditCancel = () => {
+    setInlineEditRiderId(null);
+  };
+  
+  // Handle inline edit save
+  const handleInlineEditSave = (riderId: number) => {
+    const riderData = {
+      id: riderId,
+      name: inlineEditData.name,
+      gender: inlineEditData.gender,
+      team: inlineEditData.team,
+      country: inlineEditData.country,
+      image: inlineEditData.image,
+      cost: parseInt(inlineEditData.cost),
+      points: parseInt(inlineEditData.points) || 0,
+    };
+    
+    updateRiderMutation.mutate(riderData);
+    setInlineEditRiderId(null);
   };
   
   // Handle update rider form submission
@@ -1441,7 +1489,7 @@ export default function Admin() {
                         <TableCaption>List of all riders</TableCaption>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Name</TableHead>
+                            <TableHead>Rider</TableHead>
                             <TableHead>Gender</TableHead>
                             <TableHead>Team</TableHead>
                             <TableHead>Country</TableHead>
@@ -1452,23 +1500,153 @@ export default function Admin() {
                         </TableHeader>
                         <TableBody>
                           {riders.map((rider: any) => (
-                            <TableRow key={rider.id}>
-                              <TableCell className="font-medium">{rider.name}</TableCell>
-                              <TableCell>{rider.gender}</TableCell>
-                              <TableCell>{rider.team}</TableCell>
-                              <TableCell>{rider.country}</TableCell>
-                              <TableCell>${(rider.cost / 1000).toFixed(0)}k</TableCell>
-                              <TableCell>{rider.points}</TableCell>
-                              <TableCell className="text-right">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="mr-2"
-                                  onClick={() => handleEditRider(rider)}
-                                >
-                                  Edit
-                                </Button>
-                              </TableCell>
+                            <TableRow key={rider.id} className={inlineEditRiderId === rider.id ? 'bg-accent/20' : ''}>
+                              {inlineEditRiderId === rider.id ? (
+                                // INLINE EDIT MODE
+                                <>
+                                  <TableCell>
+                                    <div className="flex flex-col gap-2 min-w-[200px]">
+                                      <div className="flex items-center gap-2">
+                                        {rider.image ? (
+                                          <div className="h-10 w-10 rounded-full overflow-hidden border">
+                                            <img 
+                                              src={rider.image} 
+                                              alt={rider.name}
+                                              className="h-full w-full object-cover"
+                                              onError={(e) => {
+                                                const target = e.target as HTMLImageElement;
+                                                target.onerror = null;
+                                                target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(rider.name)}&background=random`;
+                                              }}
+                                            />
+                                          </div>
+                                        ) : (
+                                          <div className="h-10 w-10 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center text-primary font-medium">
+                                            {rider.name.split(' ').map((n: string) => n[0]).join('')}
+                                          </div>
+                                        )}
+                                        <Input
+                                          value={inlineEditData.name}
+                                          onChange={(e) => setInlineEditData({...inlineEditData, name: e.target.value})}
+                                          className="w-full"
+                                        />
+                                      </div>
+                                      <div className="flex gap-2 items-center">
+                                        <Label htmlFor={`rider-${rider.id}-image`} className="text-xs">Image URL</Label>
+                                        <Input
+                                          id={`rider-${rider.id}-image`}
+                                          value={inlineEditData.image}
+                                          onChange={(e) => setInlineEditData({...inlineEditData, image: e.target.value})}
+                                          className="text-xs"
+                                          placeholder="https://example.com/image.jpg"
+                                        />
+                                      </div>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Select 
+                                      value={inlineEditData.gender} 
+                                      onValueChange={(value) => setInlineEditData({...inlineEditData, gender: value})}
+                                    >
+                                      <SelectTrigger className="w-24">
+                                        <SelectValue placeholder="Gender" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="male">Male</SelectItem>
+                                        <SelectItem value="female">Female</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Input
+                                      value={inlineEditData.team}
+                                      onChange={(e) => setInlineEditData({...inlineEditData, team: e.target.value})}
+                                      className="w-full"
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Input
+                                      value={inlineEditData.country}
+                                      onChange={(e) => setInlineEditData({...inlineEditData, country: e.target.value})}
+                                      className="w-full"
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Input
+                                      value={inlineEditData.cost}
+                                      onChange={(e) => setInlineEditData({...inlineEditData, cost: e.target.value})}
+                                      className="w-24"
+                                      type="number"
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Input
+                                      value={inlineEditData.points}
+                                      onChange={(e) => setInlineEditData({...inlineEditData, points: e.target.value})}
+                                      className="w-24"
+                                      type="number"
+                                    />
+                                  </TableCell>
+                                  <TableCell className="text-right space-x-1">
+                                    <Button
+                                      variant="default"
+                                      size="sm"
+                                      onClick={() => handleInlineEditSave(rider.id)}
+                                    >
+                                      <Check className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={handleInlineEditCancel}
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  </TableCell>
+                                </>
+                              ) : (
+                                // NORMAL VIEW MODE
+                                <>
+                                  <TableCell>
+                                    <div className="flex items-center gap-3">
+                                      {rider.image ? (
+                                        <div className="h-10 w-10 rounded-full overflow-hidden border">
+                                          <img 
+                                            src={rider.image} 
+                                            alt={rider.name}
+                                            className="h-full w-full object-cover"
+                                            onError={(e) => {
+                                              const target = e.target as HTMLImageElement;
+                                              target.onerror = null;
+                                              target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(rider.name)}&background=random`;
+                                            }}
+                                          />
+                                        </div>
+                                      ) : (
+                                        <div className="h-10 w-10 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center text-primary font-medium">
+                                          {rider.name.split(' ').map((n: string) => n[0]).join('')}
+                                        </div>
+                                      )}
+                                      <span className="font-medium">{rider.name}</span>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>{rider.gender === 'male' ? 'Male' : 'Female'}</TableCell>
+                                  <TableCell>{rider.team || '-'}</TableCell>
+                                  <TableCell>{rider.country || '-'}</TableCell>
+                                  <TableCell>${(rider.cost / 1000).toFixed(0)}k</TableCell>
+                                  <TableCell>{rider.points || 0}</TableCell>
+                                  <TableCell className="text-right">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => handleInlineEditStart(rider)}
+                                      title="Edit in row"
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
+                                  </TableCell>
+                                </>
+                              )}
                             </TableRow>
                           ))}
                         </TableBody>
