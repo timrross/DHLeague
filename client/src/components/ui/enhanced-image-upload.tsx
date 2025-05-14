@@ -11,6 +11,8 @@ interface EnhancedImageUploadProps {
   currentImage?: string;
   onImageChange?: (url: string) => void;
   name?: string;
+  size?: "sm" | "md" | "lg";
+  compact?: boolean;
   
   // Legacy props
   endpoint?: string; // Not used but kept for compatibility
@@ -23,6 +25,8 @@ export function EnhancedImageUpload({
   currentImage,
   onImageChange,
   name = "",
+  size = "md",
+  compact = false,
   
   // Legacy props
   value,
@@ -37,6 +41,8 @@ export function EnhancedImageUpload({
       currentImage={finalImage}
       onImageChange={finalChangeHandler}
       name={name}
+      size={size}
+      compact={compact}
     />
   );
 }

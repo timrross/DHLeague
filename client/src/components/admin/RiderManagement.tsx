@@ -173,12 +173,11 @@ export default function RiderManagement() {
         </CardHeader>
         <CardContent>
           {showAddRiderForm ? (
-            <RiderForm
+            <SimpleRiderForm
+              initialData={{}}
               onSubmit={handleAddRider}
               onCancel={() => setShowAddRiderForm(false)}
               isSubmitting={addRiderMutation.isPending}
-              submitButtonText="Add Rider"
-              compact={true}
             />
           ) : (
             <Button onClick={handleAddRiderClick}>
