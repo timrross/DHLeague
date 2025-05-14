@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/sheet";
 import { Menu, Mountain, Shield } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { safeImageUrl } from "@/lib/utils";
 
 const navigation = [
   { name: "Home", href: "/" },
@@ -35,21 +36,21 @@ export default function Header() {
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
         <div className="flex items-center">
           <Link href="/">
-            <a className="flex items-center">
+            <div className="flex items-center cursor-pointer">
               <Mountain className="text-primary h-6 w-6 mr-2" />
               <span className="text-white font-heading font-bold text-xl md:text-2xl">MTB FANTASY</span>
-            </a>
+            </div>
           </Link>
         </div>
         
         <nav className="hidden md:flex space-x-6">
           {navigation.map((item) => (
             <Link key={item.name} href={item.href}>
-              <a className={`text-white hover:text-primary font-body font-semibold transition duration-200 ${
+              <div className={`text-white hover:text-primary font-body font-semibold transition duration-200 cursor-pointer ${
                 location === item.href ? "text-primary" : ""
               }`}>
                 {item.name}
-              </a>
+              </div>
             </Link>
           ))}
         </nav>
@@ -58,17 +59,17 @@ export default function Header() {
           {isAuthenticated ? (
             <div className="hidden md:flex items-center gap-3">
               <Avatar className="h-8 w-8">
-                <AvatarImage src={user?.profileImageUrl} alt={user?.firstName || "User"} />
+                <AvatarImage src={safeImageUrl(user?.profileImageUrl)} alt={user?.firstName || "User"} />
                 <AvatarFallback className="bg-primary text-white">
                   {getInitials(user?.firstName || "User")}
                 </AvatarFallback>
               </Avatar>
               {user?.id === "42624609" && (
                 <Link href="/admin">
-                  <a className="flex items-center text-white hover:text-primary font-body font-semibold transition duration-200">
+                  <div className="flex items-center text-white hover:text-primary font-body font-semibold transition duration-200 cursor-pointer">
                     <Shield className="h-4 w-4 mr-1" />
                     Admin
-                  </a>
+                  </div>
                 </Link>
               )}
               <a href="/api/logout" className="text-white hover:text-primary font-body font-semibold transition duration-200">
@@ -99,14 +100,14 @@ export default function Header() {
                   <nav className="flex flex-col space-y-4">
                     {navigation.map((item) => (
                       <Link key={item.name} href={item.href}>
-                        <a 
-                          className={`text-white hover:text-primary font-body font-semibold transition px-2 py-2 ${
+                        <div 
+                          className={`text-white hover:text-primary font-body font-semibold transition px-2 py-2 cursor-pointer ${
                             location === item.href ? "bg-gray-800 text-primary" : ""
                           }`}
                           onClick={() => setMenuOpen(false)}
                         >
                           {item.name}
-                        </a>
+                        </div>
                       </Link>
                     ))}
                   </nav>
@@ -116,7 +117,7 @@ export default function Header() {
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center gap-3 px-2 py-2">
                         <Avatar className="h-8 w-8">
-                          <AvatarImage src={user?.profileImageUrl} alt={user?.firstName || "User"} />
+                          <AvatarImage src={safeImageUrl(user?.profileImageUrl)} alt={user?.firstName || "User"} />
                           <AvatarFallback className="bg-primary text-white">
                             {getInitials(user?.firstName || "User")}
                           </AvatarFallback>
