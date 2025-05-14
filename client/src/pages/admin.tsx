@@ -520,8 +520,8 @@ export default function Admin() {
       name: raceName,
       location,
       country,
-      startDate: new Date(startDate),
-      endDate: new Date(endDate),
+      startDate, // Use string as is
+      endDate, // Use string as is
       status,
       imageUrl: imageUrl || `https://source.unsplash.com/random/1200x800/?mountain,bike,${location}`,
     };

@@ -433,7 +433,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createRace(race: InsertRace): Promise<Race> {
-    const result = await db.insert(races).values(race).returning();
+    // Process date strings for new races as well
+    const processedRace = { ...race };
+    
+    if (typeof processedRace.startDate === 'string') {
+      processedRace.startDate = new Date(processedRace.startDate);
+    }
+    
+    if (typeof processedRace.endDate === 'string') {
+      processedRace.endDate = new Date(processedRace.endDate);
+    }
+    
+    const result = await db.insert(races).values(processedRace).returning();
     return result[0];
   }
 
