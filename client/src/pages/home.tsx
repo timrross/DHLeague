@@ -3,19 +3,20 @@ import { Link } from "wouter";
 import CountdownTimer from "@/components/countdown-timer";
 import FeaturedSections from "@/components/featured-sections";
 import TopRiders from "@/components/top-riders";
+import { LeaderboardAd } from "@/components/ui/google-ad";
 import { Race, Rider } from "@shared/schema";
 
 export default function Home() {
-  const { data: races, isLoading: racesLoading } = useQuery({
+  const { data: races, isLoading: racesLoading } = useQuery<Race[]>({
     queryKey: ['/api/races'],
   });
 
-  const { data: riders, isLoading: ridersLoading } = useQuery({
+  const { data: riders, isLoading: ridersLoading } = useQuery<Rider[]>({
     queryKey: ['/api/riders'],
   });
 
   // Find the next race
-  const nextRace = races?.find((race: Race) => race.status === 'next');
+  const nextRace = races?.find((race) => race.status === 'next');
 
   return (
     <div className="min-h-screen bg-neutral">
@@ -72,6 +73,11 @@ export default function Home() {
       <div className="container mx-auto px-4 py-8 md:py-12">
         {/* Featured Sections */}
         <FeaturedSections />
+        
+        {/* Advertisement */}
+        <div className="my-8">
+          <LeaderboardAd client="ca-pub-1234567890" />
+        </div>
 
         {/* Top Performers */}
         {!ridersLoading && riders && (

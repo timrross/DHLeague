@@ -3,7 +3,8 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { uciApiService } from "./services/uciApi";
-import { insertTeamSchema, insertTeamRiderSchema } from "@shared/schema";
+import { insertTeamSchema, insertTeamRiderSchema, teamSwaps } from "@shared/schema";
+import { db } from "./db";
 import { z } from "zod";
 import { upload, processImage, downloadImage } from "./imageUpload";
 import path from "path";
@@ -288,10 +289,162 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "No team found for user" });
       }
       
+      // Get the next race to determine lock status
+      const races = await storage.getRaces();
+      const nextRace = races.find(race => race.status === 'next');
+      
+      // Check if team should be locked (1 day before race)
+      if (nextRace) {
+        const oneDay = 24 * 60 * 60 * 1000;
+        const lockDate = new Date(new Date(nextRace.startDate).getTime() - oneDay);
+        
+        // If we're past the lock date and the team is not already marked as locked
+        if (new Date() >= lockDate && !team.isLocked) {
+          // Lock the team for this race
+          await storage.updateTeam(team.id, { 
+            isLocked: true, 
+            lockedAt: new Date(),
+            currentRaceId: nextRace.id,
+            swapsUsed: 0 // Reset swap count for new race
+          });
+          
+          // Get the updated team
+          const updatedTeam = await storage.getUserTeam(userId);
+          return res.json(updatedTeam);
+        }
+      }
+      
       res.json(team);
     } catch (error) {
       console.error("Error fetching user team:", error);
       res.status(500).json({ message: "Failed to fetch team" });
+    }
+  });
+  
+  // Team rider swap endpoint - only allowed when team is locked, limited to 2 swaps per race
+  app.post('/api/teams/:id/swap', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const teamId = parseInt(req.params.id);
+      
+      // Validate request body
+      if (!req.body.removedRiderId || !req.body.addedRiderId) {
+        return res.status(400).json({ message: "Both removedRiderId and addedRiderId are required" });
+      }
+      
+      const removedRiderId = parseInt(req.body.removedRiderId);
+      const addedRiderId = parseInt(req.body.addedRiderId);
+      
+      // Get team and check ownership
+      const team = await storage.getTeamWithRiders(teamId);
+      if (!team) {
+        return res.status(404).json({ message: "Team not found" });
+      }
+      
+      if (team.userId !== userId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+      
+      // Check if team is locked (required for swaps)
+      if (!team.isLocked) {
+        return res.status(400).json({ 
+          message: "Team is not locked. Swaps are only allowed during the locked period (1 day before race)." 
+        });
+      }
+      
+      // Check swap limit (maximum 2 per race)
+      if (team.swapsUsed >= 2) {
+        return res.status(400).json({ 
+          message: "Maximum swap limit reached (2 per race)" 
+        });
+      }
+      
+      // Check if the removed rider is on the team
+      const isRiderOnTeam = team.riders.some(r => r.id === removedRiderId);
+      if (!isRiderOnTeam) {
+        return res.status(400).json({ message: "Selected rider is not on your team" });
+      }
+      
+      // Get added rider
+      const addedRider = await storage.getRider(addedRiderId);
+      if (!addedRider) {
+        return res.status(404).json({ message: "Replacement rider not found" });
+      }
+      
+      // Check if added rider is already on team
+      const isAddedRiderOnTeam = team.riders.some(r => r.id === addedRiderId);
+      if (isAddedRiderOnTeam) {
+        return res.status(400).json({ message: "Replacement rider is already on your team" });
+      }
+      
+      // Get removed rider (already verified to be on team)
+      const removedRider = team.riders.find(r => r.id === removedRiderId);
+      
+      // Check gender balance
+      const maleRiders = team.riders.filter(r => r.gender === 'male');
+      const femaleRiders = team.riders.filter(r => r.gender === 'female');
+      
+      const isRemovingMale = removedRider?.gender === 'male';
+      const isAddingMale = addedRider.gender === 'male';
+      
+      if (isRemovingMale && !isAddingMale && femaleRiders.length >= 4) {
+        return res.status(400).json({ 
+          message: "Cannot add more female riders. Maximum 4 allowed." 
+        });
+      }
+      
+      if (!isRemovingMale && isAddingMale && maleRiders.length >= 4) {
+        return res.status(400).json({ 
+          message: "Cannot add more male riders. Maximum 4 allowed." 
+        });
+      }
+      
+      // Check budget
+      const currentCost = team.riders.reduce((total, r) => total + r.cost, 0);
+      const newCost = currentCost - (removedRider?.cost || 0) + addedRider.cost;
+      
+      if (newCost > 2000000) {
+        return res.status(400).json({ 
+          message: "Swap exceeds budget limit of $2,000,000" 
+        });
+      }
+      
+      // Create a new array of riderIds with the swap applied
+      const updatedRiderIds = team.riders
+        .filter(r => r.id !== removedRiderId)
+        .map(r => r.id);
+      updatedRiderIds.push(addedRiderId);
+      
+      // Create a record of the swap
+      const swapData = {
+        teamId: team.id,
+        raceId: team.currentRaceId || 0,
+        removedRiderId,
+        addedRiderId,
+      };
+      
+      // Record the swap and update the team
+      await db.transaction(async (tx) => {
+        // Insert the swap record
+        await tx.insert(teamSwaps).values(swapData);
+        
+        // Update the team with new riders and increment swap count
+        await storage.updateTeam(
+          team.id, 
+          { swapsUsed: (team.swapsUsed || 0) + 1 }, 
+          updatedRiderIds
+        );
+      });
+      
+      // Get updated team
+      const updatedTeam = await storage.getTeamWithRiders(teamId);
+      res.json(updatedTeam);
+    } catch (error) {
+      console.error("Error swapping rider:", error);
+      res.status(500).json({ 
+        message: "Failed to swap rider", 
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 

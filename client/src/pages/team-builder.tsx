@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -31,24 +30,24 @@ export default function TeamBuilder() {
   const [swapRider, setSwapRider] = useState<Rider | null>(null);
 
   // Fetch all races
-  const { data: races, isLoading: racesLoading } = useQuery({
+  const { data: races, isLoading: racesLoading } = useQuery<Race[]>({
     queryKey: ['/api/races'],
   });
 
   // Determine next race
-  const nextRace = races?.find((race: Race) => race.status === 'next');
+  const nextRace = races?.find((race) => race.status === 'next');
   
   // Calculate lock date (1 day before race start)
   const lockDate = nextRace ? new Date(new Date(nextRace.startDate).getTime() - 24 * 60 * 60 * 1000) : new Date();
   const isTeamLocked = nextRace && new Date() >= lockDate;
   
   // Fetch riders
-  const { data: riders, isLoading: ridersLoading } = useQuery({
+  const { data: riders, isLoading: ridersLoading } = useQuery<Rider[]>({
     queryKey: ['/api/riders'],
   });
 
   // Fetch user's team if authenticated
-  const { data: userTeam, isLoading: teamLoading } = useQuery({
+  const { data: userTeam, isLoading: teamLoading } = useQuery<TeamWithRiders>({
     queryKey: ['/api/teams/user'],
     enabled: isAuthenticated,
   });
@@ -83,7 +82,10 @@ export default function TeamBuilder() {
   // Update team mutation
   const updateTeam = useMutation({
     mutationFn: async (data: { name: string, riderIds: number[] }) => {
-      return apiRequest(`/api/teams/${userTeam?.id}`, {
+      if (!userTeam?.id) {
+        throw new Error("Team not found");
+      }
+      return apiRequest(`/api/teams/${userTeam.id}`, {
         method: 'PATCH',
         body: JSON.stringify(data),
         headers: { 'Content-Type': 'application/json' }
@@ -131,6 +133,10 @@ export default function TeamBuilder() {
   
   const maleRidersCount = selectedRiders.filter(r => r.gender === "male").length;
   const femaleRidersCount = selectedRiders.filter(r => r.gender === "female").length;
+  
+  // Team lock status and swap tracking
+  const swapsUsed = userTeam?.swapsUsed || 0;
+  const swapsRemaining = 2 - swapsUsed;
   const isTeamValid = selectedRiders.length === 6 && 
                      maleRidersCount <= 4 && 
                      femaleRidersCount >= 2 && 
@@ -182,7 +188,6 @@ export default function TeamBuilder() {
     if (userTeam && !isCreatingTeam) {
       // Update existing team
       updateTeam.mutate({
-        id: userTeam.id,
         name: teamName,
         riderIds
       });
@@ -342,11 +347,12 @@ export default function TeamBuilder() {
                       ${usedBudget.toLocaleString()} / ${totalBudget.toLocaleString()}
                     </span>
                   </div>
-                  <Progress 
-                    value={budgetPercentage} 
-                    className="h-2 bg-gray-200"
-                    indicatorClassName={`h-full ${remainingBudget >= 0 ? 'bg-primary' : 'bg-destructive'}`}
-                  />
+                  <div className="relative h-2 w-full overflow-hidden rounded-full bg-gray-200">
+                    <div 
+                      className={`h-full transition-all ${remainingBudget >= 0 ? 'bg-primary' : 'bg-destructive'}`}
+                      style={{ width: `${Math.min(budgetPercentage, 100)}%` }}
+                    />
+                  </div>
                 </div>
                 
                 {/* Team composition */}

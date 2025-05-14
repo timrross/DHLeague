@@ -4,6 +4,7 @@ import { LeaderboardEntry } from "@shared/schema";
 import LeaderboardTable from "@/components/leaderboard-table";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { FooterAd } from "@/components/ui/google-ad";
 
 export default function Leaderboard() {
   const [viewMode, setViewMode] = useState<'global' | 'leagues' | 'friends'>('global');
@@ -70,6 +71,11 @@ export default function Leaderboard() {
               <a href="/api/login" className="text-primary hover:underline">Log In</a>
             </div>
           )}
+        </div>
+        
+        {/* Advertisement - Footer */}
+        <div className="mt-10">
+          <FooterAd client="" />
         </div>
       </div>
     </div>

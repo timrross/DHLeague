@@ -1,16 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import AdSense from 'react-google-adsense';
+import React from 'react';
 
 // Define the available ad formats
 type AdFormat = 'auto' | 'horizontal' | 'vertical' | 'rectangle';
 
-// Ad format dimensions based on Google AdSense standard formats
-const formatStyles: Record<AdFormat, React.CSSProperties> = {
-  auto: { display: 'block', width: '100%', height: 'auto' },
-  horizontal: { display: 'inline-block', width: '728px', height: '90px', maxWidth: '100%' },
-  vertical: { display: 'inline-block', width: '160px', height: '600px', maxWidth: '100%' },
-  rectangle: { display: 'inline-block', width: '300px', height: '250px', maxWidth: '100%' }
-};
+// Simplified ad component to get the app running
+// We'll replace this with proper AdSense integration once the app is stable
+interface GoogleAdProps {
+  client?: string;           // Your AdSense client ID
+  slot?: string;             // Your AdSense ad unit ID
+  format?: AdFormat;         // The ad format
+  className?: string;        // Additional CSS classes
+  responsive?: boolean;      // Whether to use responsive ads
+  showLabel?: boolean;       // Show "Advertisement" label above the ad
+}
 
 // Default ad slots for different positions
 export const adSlots = {
@@ -19,34 +21,29 @@ export const adSlots = {
   footer: 'x345678901'       // For footer/bottom of page
 };
 
-interface GoogleAdProps {
-  client: string;           // Your AdSense client ID
-  slot: string;             // Your AdSense ad unit ID
-  format?: AdFormat;        // The ad format
-  className?: string;       // Additional CSS classes
-  responsive?: boolean;     // Whether to use responsive ads
-  showLabel?: boolean;      // Show "Advertisement" label above the ad
-}
+// Format dimensions based on standard ad sizes
+const getFormatStyle = (format: AdFormat): React.CSSProperties => {
+  switch (format) {
+    case 'horizontal':
+      return { width: '728px', height: '90px', maxWidth: '100%' };
+    case 'vertical':
+      return { width: '160px', height: '600px', maxWidth: '100%' };
+    case 'rectangle':
+      return { width: '300px', height: '250px', maxWidth: '100%' };
+    case 'auto':
+    default:
+      return { width: '100%', height: 'auto', minHeight: '90px' };
+  }
+};
 
 export function GoogleAd({
-  client,
-  slot,
+  client = '',
+  slot = '',
   format = 'auto',
   className = '',
-  responsive = true,
   showLabel = true
 }: GoogleAdProps) {
-  const [adClient, setAdClient] = useState<string>('');
-  
-  // Check if we have the actual client ID or need to get it from environment
-  useEffect(() => {
-    // Use process.env for server-side env variables, but need to check if defined
-    const envClient = process.env.REACT_APP_ADSENSE_CLIENT || 'ca-pub-xxxxxxxxxxxxxxxx';
-    setAdClient(client || envClient);
-  }, [client]);
-  
-  if (!adClient) return null;
-  
+  // Simplified ad placeholder
   return (
     <div className={`ad-container my-4 ${className}`}>
       {showLabel && (
@@ -54,14 +51,23 @@ export function GoogleAd({
           Advertisement
         </div>
       )}
-      <div style={formatStyles[format]}>
-        <AdSense.Google
-          client={adClient}
-          slot={slot}
-          style={formatStyles[format]}
-          responsive={responsive ? 'true' : 'false'}
-          format={responsive ? 'auto' : 'rectangle'}
-        />
+      <div 
+        style={{
+          ...getFormatStyle(format),
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: '#f1f1f1',
+          border: '1px solid #e0e0e0',
+          borderRadius: '4px',
+          color: '#666'
+        }}
+      >
+        <div className="text-center p-4">
+          <p className="text-sm">Ad Space</p>
+          <p className="text-xs mt-1">Client: {client || '[Client ID]'}</p>
+          <p className="text-xs">Slot: {slot || '[Slot ID]'}</p>
+        </div>
       </div>
     </div>
   );
@@ -75,7 +81,6 @@ export function LeaderboardAd({ client, className = '', showLabel = true }: Omit
       slot={adSlots.leaderboard}
       format="horizontal"
       className={`max-w-screen-lg mx-auto ${className}`}
-      responsive={true}
       showLabel={showLabel}
     />
   );
@@ -88,7 +93,6 @@ export function SidebarAd({ client, className = '', showLabel = true }: Omit<Goo
       slot={adSlots.sidebar}
       format="rectangle"
       className={`mb-6 ${className}`}
-      responsive={false}
       showLabel={showLabel}
     />
   );
@@ -101,7 +105,6 @@ export function FooterAd({ client, className = '', showLabel = true }: Omit<Goog
       slot={adSlots.footer}
       format="horizontal"
       className={`max-w-screen-lg mx-auto mt-8 ${className}`}
-      responsive={true}
       showLabel={showLabel}
     />
   );
