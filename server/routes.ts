@@ -759,17 +759,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post('/api/races', isAuthenticated, async (req: any, res) => {
+  app.post('/api/races', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
-      // Check if user is an admin
-      const userId = req.user.claims.sub;
-      if (userId !== "42624609") {
-        return res.status(403).json({ message: "Unauthorized. Admin access required." });
-      }
       
-      const raceData = req.body;
+      // Create a copy of the race data and remove any status
+      // as status will be automatically determined by dates
+      const raceData = { ...req.body };
+      delete raceData.status;
+      
       const newRace = await storage.createRace(raceData);
-      res.status(201).json(newRace);
+      
+      // Update race statuses after creating a new race
+      await updateRaceStatuses();
+      
+      // Get the updated race with the correct status
+      const updatedRace = await storage.getRace(newRace.id);
+      
+      res.status(201).json(updatedRace || newRace);
     } catch (error) {
       console.error("Error creating race:", error);
       res.status(500).json({ 
@@ -779,27 +785,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.put('/api/races/:id', isAuthenticated, async (req: any, res) => {
+  app.put('/api/races/:id', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
-      // Check if user is an admin
-      const userId = req.user.claims.sub;
-      if (userId !== "42624609") {
-        return res.status(403).json({ message: "Unauthorized. Admin access required." });
-      }
       
       const raceId = Number(req.params.id);
       if (isNaN(raceId)) {
         return res.status(400).json({ message: 'Invalid race ID' });
       }
       
-      const raceData = req.body;
+      // Create a copy of the race data and remove any status
+      // as status will be automatically determined by dates
+      const raceData = { ...req.body };
+      delete raceData.status;
+      
       const updatedRace = await storage.updateRace(raceId, raceData);
       
       if (!updatedRace) {
         return res.status(404).json({ message: 'Race not found' });
       }
       
-      res.json(updatedRace);
+      // Update race statuses after updating the race
+      await updateRaceStatuses();
+      
+      // Get the race again with its calculated status
+      const raceWithStatus = await storage.getRace(raceId);
+      
+      res.json(raceWithStatus || updatedRace);
     } catch (error) {
       console.error("Error updating race:", error);
       res.status(500).json({ 
