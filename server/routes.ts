@@ -53,9 +53,10 @@ async function updateRaceStatuses() {
       // Mark the first upcoming race as 'next'
       const nextRaceId = upcomingRaces[0].id;
       
-      // Always update to ensure the database has the correct next race
-      upcomingRaces[0].status = 'next';
-      await storage.updateRace(nextRaceId, { status: 'next' });
+      // Only update if needed to avoid unnecessary database calls
+      if (upcomingRaces[0].status !== 'next') {
+        await storage.updateRace(nextRaceId, { status: 'next' });
+      }
     }
     
     return allRaces;
