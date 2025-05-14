@@ -205,6 +205,18 @@ export default function Admin() {
   const [isEditingRace, setIsEditingRace] = useState(false);
   const [editRaceId, setEditRaceId] = useState<number | null>(null);
   
+  // Inline race edit state
+  const [inlineEditRaceId, setInlineEditRaceId] = useState<number | null>(null);
+  const [inlineRaceEditData, setInlineRaceEditData] = useState({
+    name: '',
+    location: '',
+    country: '',
+    startDate: '',
+    endDate: '',
+    status: 'upcoming',
+    imageUrl: '',
+  });
+  
   // Rider form state
   const [isEditingRider, setIsEditingRider] = useState(false);
   const [showAddRiderForm, setShowAddRiderForm] = useState(false);
@@ -632,7 +644,7 @@ export default function Admin() {
     setRiderPoints('');
   };
   
-  // Handle edit race button click
+  // Handle edit race button click (for the form at the top)
   const handleEditRace = (race: any) => {
     setIsEditingRace(true);
     setEditRaceId(race.id);
@@ -648,6 +660,48 @@ export default function Admin() {
     
     setStartDate(startDateObj.toISOString().split('T')[0]);
     setEndDate(endDateObj.toISOString().split('T')[0]);
+  };
+  
+  // Handle inline edit race button click
+  const handleInlineEditRace = (race: any) => {
+    // Format dates for input fields (YYYY-MM-DD)
+    const startDateObj = new Date(race.startDate);
+    const endDateObj = new Date(race.endDate);
+    
+    setInlineEditRaceId(race.id);
+    setInlineRaceEditData({
+      name: race.name,
+      location: race.location,
+      country: race.country,
+      status: race.status,
+      imageUrl: race.imageUrl || '',
+      startDate: startDateObj.toISOString().split('T')[0],
+      endDate: endDateObj.toISOString().split('T')[0]
+    });
+  };
+  
+  // Handle inline edit cancel
+  const handleInlineRaceEditCancel = () => {
+    setInlineEditRaceId(null);
+  };
+  
+  // Handle inline edit save
+  const handleInlineRaceEditSave = (raceId: number) => {
+    // Make sure we're sending the date strings as they are, not as Date objects
+    // This prevents the server-side error with toISOString
+    const raceData = {
+      id: raceId,
+      name: inlineRaceEditData.name,
+      location: inlineRaceEditData.location,
+      country: inlineRaceEditData.country,
+      startDate: inlineRaceEditData.startDate, // Just use the string
+      endDate: inlineRaceEditData.endDate, // Just use the string
+      status: inlineRaceEditData.status,
+      imageUrl: inlineRaceEditData.imageUrl || `https://source.unsplash.com/random/1200x800/?mountain,bike,${inlineRaceEditData.location}`,
+    };
+    
+    updateRaceMutation.mutate(raceData);
+    setInlineEditRaceId(null);
   };
   
   // Handle update race form submission
@@ -1279,47 +1333,164 @@ export default function Admin() {
                     </TableHeader>
                     <TableBody>
                       {races.map((race: any) => (
-                        <TableRow key={race.id}>
-                          <TableCell className="font-medium">{race.name}</TableCell>
-                          <TableCell>{race.location}, {race.country}</TableCell>
-                          <TableCell>
-                            {new Date(race.startDate).toLocaleDateString()} - {new Date(race.endDate).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell>
-                            <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${
-                              race.status === 'next' 
-                                ? 'bg-blue-100 text-blue-800' 
-                                : race.status === 'ongoing' 
-                                ? 'bg-green-100 text-green-800' 
-                                : race.status === 'completed' 
-                                ? 'bg-gray-100 text-gray-800'
-                                : 'bg-yellow-100 text-yellow-800'
-                            }`}>
-                              {race.status.charAt(0).toUpperCase() + race.status.slice(1)}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="mr-2"
-                              onClick={() => handleEditRace(race)}
-                            >
-                              Edit
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => {
-                                if (window.confirm('Are you sure you want to delete this race?')) {
-                                  deleteRaceMutation.mutate(race.id);
-                                }
-                              }}
-                            >
-                              Delete
-                            </Button>
-                          </TableCell>
-                        </TableRow>
+                        <React.Fragment key={race.id}>
+                          <TableRow>
+                            <TableCell className="font-medium">{race.name}</TableCell>
+                            <TableCell>{race.location}, {race.country}</TableCell>
+                            <TableCell>
+                              {new Date(race.startDate).toLocaleDateString()} - {new Date(race.endDate).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${
+                                race.status === 'next' 
+                                  ? 'bg-blue-100 text-blue-800' 
+                                  : race.status === 'ongoing' 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : race.status === 'completed' 
+                                  ? 'bg-gray-100 text-gray-800'
+                                  : 'bg-yellow-100 text-yellow-800'
+                              }`}>
+                                {race.status.charAt(0).toUpperCase() + race.status.slice(1)}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 mr-1"
+                                onClick={() => handleInlineEditRace(race)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-red-500 hover:text-red-600"
+                                onClick={() => {
+                                  if (window.confirm('Are you sure you want to delete this race?')) {
+                                    deleteRaceMutation.mutate(race.id);
+                                  }
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                          
+                          {/* Expanded edit form row */}
+                          {inlineEditRaceId === race.id && (
+                            <TableRow className="bg-accent/10">
+                              <TableCell colSpan={5} className="p-0">
+                                <div className="p-4">
+                                  <form className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`race-${race.id}-name`}>Race Name*</Label>
+                                        <Input 
+                                          id={`race-${race.id}-name`}
+                                          value={inlineRaceEditData.name}
+                                          onChange={(e) => setInlineRaceEditData({...inlineRaceEditData, name: e.target.value})}
+                                          required
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`race-${race.id}-location`}>Location*</Label>
+                                        <Input 
+                                          id={`race-${race.id}-location`}
+                                          value={inlineRaceEditData.location}
+                                          onChange={(e) => setInlineRaceEditData({...inlineRaceEditData, location: e.target.value})}
+                                          required
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`race-${race.id}-country`}>Country*</Label>
+                                        <Input 
+                                          id={`race-${race.id}-country`}
+                                          value={inlineRaceEditData.country}
+                                          onChange={(e) => setInlineRaceEditData({...inlineRaceEditData, country: e.target.value})}
+                                          required
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`race-${race.id}-status`}>Status*</Label>
+                                        <Select 
+                                          value={inlineRaceEditData.status} 
+                                          onValueChange={(value) => setInlineRaceEditData({...inlineRaceEditData, status: value})}
+                                        >
+                                          <SelectTrigger>
+                                            <SelectValue placeholder="Select status" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="upcoming">Upcoming</SelectItem>
+                                            <SelectItem value="next">Next</SelectItem>
+                                            <SelectItem value="ongoing">Ongoing</SelectItem>
+                                            <SelectItem value="completed">Completed</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`race-${race.id}-startDate`}>Start Date*</Label>
+                                        <Input 
+                                          id={`race-${race.id}-startDate`}
+                                          type="date"
+                                          value={inlineRaceEditData.startDate}
+                                          onChange={(e) => setInlineRaceEditData({...inlineRaceEditData, startDate: e.target.value})}
+                                          required
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor={`race-${race.id}-endDate`}>End Date*</Label>
+                                        <Input 
+                                          id={`race-${race.id}-endDate`}
+                                          type="date"
+                                          value={inlineRaceEditData.endDate}
+                                          onChange={(e) => setInlineRaceEditData({...inlineRaceEditData, endDate: e.target.value})}
+                                          required
+                                        />
+                                      </div>
+                                      <div className="space-y-2 col-span-2">
+                                        <Label htmlFor={`race-${race.id}-imageUrl`}>Image URL</Label>
+                                        <Input 
+                                          id={`race-${race.id}-imageUrl`}
+                                          value={inlineRaceEditData.imageUrl}
+                                          onChange={(e) => setInlineRaceEditData({...inlineRaceEditData, imageUrl: e.target.value})}
+                                          placeholder="https://example.com/image.jpg"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">
+                                          Leave blank to use a random image based on location
+                                        </p>
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="flex justify-end mt-6 gap-2">
+                                      <Button 
+                                        type="button"
+                                        variant="outline" 
+                                        onClick={handleInlineRaceEditCancel}
+                                      >
+                                        Cancel
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        onClick={() => handleInlineRaceEditSave(race.id)}
+                                        disabled={updateRaceMutation.isPending}
+                                      >
+                                        {updateRaceMutation.isPending ? (
+                                          <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Saving...
+                                          </>
+                                        ) : (
+                                          "Save Changes"
+                                        )}
+                                      </Button>
+                                    </div>
+                                  </form>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </React.Fragment>
                       ))}
                     </TableBody>
                   </Table>
