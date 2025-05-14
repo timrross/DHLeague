@@ -17,9 +17,17 @@ interface ImageUploadProps {
   currentImage?: string | null;
   onImageChange: (url: string) => void;
   name?: string; // Optional name to use for avatar fallback
+  size?: "sm" | "md" | "lg"; // Size of the avatar
+  compact?: boolean; // If true, uses a more compact layout
 }
 
-export function ImageUpload({ currentImage, onImageChange, name = "" }: ImageUploadProps) {
+export function ImageUpload({ 
+  currentImage, 
+  onImageChange, 
+  name = "",
+  size = "md",
+  compact = false
+}: ImageUploadProps) {
   const [activeTab, setActiveTab] = useState<string>("upload");
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
@@ -129,14 +137,22 @@ export function ImageUpload({ currentImage, onImageChange, name = "" }: ImageUpl
       {/* Preview area */}
       {previewImage ? (
         <div className="flex items-center space-x-4">
-          <Avatar className="w-24 h-24 rounded-md border">
+          <Avatar className={`rounded-md border ${
+            size === "sm" ? "w-16 h-16" : 
+            size === "lg" ? "w-32 h-32" : 
+            "w-24 h-24"
+          }`}>
             <AvatarImage 
               src={safeImageUrl(previewImage)} 
               alt="Profile" 
               className="object-cover w-full h-full"
             />
             <AvatarFallback 
-              className={`${getColorFromName(name)} text-white text-xl w-full h-full rounded-md flex items-center justify-center`}
+              className={`${getColorFromName(name)} text-white ${
+                size === "sm" ? "text-base" : 
+                size === "lg" ? "text-2xl" : 
+                "text-xl"
+              } w-full h-full rounded-md flex items-center justify-center`}
             >
               {getInitials(name)}
             </AvatarFallback>
@@ -155,9 +171,17 @@ export function ImageUpload({ currentImage, onImageChange, name = "" }: ImageUpl
         </div>
       ) : (
         <div className="flex items-center space-x-4">
-          <Avatar className="w-24 h-24 rounded-md border bg-gray-100">
+          <Avatar className={`rounded-md border bg-gray-100 ${
+            size === "sm" ? "w-16 h-16" : 
+            size === "lg" ? "w-32 h-32" : 
+            "w-24 h-24"
+          }`}>
             <AvatarFallback 
-              className={`${getColorFromName(name)} text-white text-xl w-full h-full rounded-md flex items-center justify-center`}
+              className={`${getColorFromName(name)} text-white ${
+                size === "sm" ? "text-base" : 
+                size === "lg" ? "text-2xl" : 
+                "text-xl"
+              } w-full h-full rounded-md flex items-center justify-center`}
             >
               {getInitials(name)}
             </AvatarFallback>
@@ -169,74 +193,99 @@ export function ImageUpload({ currentImage, onImageChange, name = "" }: ImageUpl
         </div>
       )}
 
-      {/* Tabs for upload options */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="upload">
-            <Upload className="h-4 w-4 mr-2" /> Upload File
-          </TabsTrigger>
-          <TabsTrigger value="url">
-            <Link className="h-4 w-4 mr-2" /> Image URL
-          </TabsTrigger>
-        </TabsList>
-        
-        {/* File Upload Content */}
-        <TabsContent value="upload" className="space-y-4">
-          <div className="grid w-full max-w-sm items-center gap-1.5">
-            <Label htmlFor="picture">Profile Picture</Label>
-            <Input
-              id="picture"
-              type="file"
-              disabled={isUploading}
-              accept="image/*"
-              onChange={handleFileChange}
-              ref={fileInputRef}
-            />
-            <p className="text-xs text-gray-500">
-              Accepted formats: JPG, PNG, GIF, WebP (max 5MB)
-            </p>
-          </div>
-        </TabsContent>
-        
-        {/* URL Content */}
-        <TabsContent value="url" className="space-y-4">
-          <div className="grid w-full items-center gap-1.5">
-            <Label htmlFor="imageUrl">Image URL</Label>
-            <div className="flex space-x-2">
+      {/* Tabs for upload options - Only show if not in compact mode */}
+      {!compact ? (
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="upload">
+              <Upload className="h-4 w-4 mr-2" /> Upload File
+            </TabsTrigger>
+            <TabsTrigger value="url">
+              <Link className="h-4 w-4 mr-2" /> Image URL
+            </TabsTrigger>
+          </TabsList>
+          
+          {/* File Upload Content */}
+          <TabsContent value="upload" className="space-y-4">
+            <div className="grid w-full max-w-sm items-center gap-1.5">
+              <Label htmlFor="picture">Profile Picture</Label>
               <Input
-                id="imageUrl"
-                type="url"
-                placeholder="https://example.com/image.jpg"
+                id="picture"
+                type="file"
                 disabled={isUploading}
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
+                accept="image/*"
+                onChange={handleFileChange}
+                ref={fileInputRef}
               />
-              <Button 
-                onClick={handleUrlSubmit} 
-                disabled={isUploading || !imageUrl.trim()}
-              >
-                {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Import"}
-              </Button>
+              <p className="text-xs text-gray-500">
+                Accepted formats: JPG, PNG, GIF, WebP (max 5MB)
+              </p>
             </div>
-            <p className="text-xs text-gray-500">
-              Enter the URL of an existing image to import it
-            </p>
-          </div>
-        </TabsContent>
-      </Tabs>
+          </TabsContent>
+          
+          {/* URL Content */}
+          <TabsContent value="url" className="space-y-4">
+            <div className="grid w-full items-center gap-1.5">
+              <Label htmlFor="imageUrl">Image URL</Label>
+              <div className="flex space-x-2">
+                <Input
+                  id="imageUrl"
+                  type="url"
+                  placeholder="https://example.com/image.jpg"
+                  disabled={isUploading}
+                  value={imageUrl}
+                  onChange={(e) => setImageUrl(e.target.value)}
+                />
+                <Button 
+                  onClick={handleUrlSubmit} 
+                  disabled={isUploading || !imageUrl.trim()}
+                >
+                  {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Import"}
+                </Button>
+              </div>
+              <p className="text-xs text-gray-500">
+                Enter the URL of an existing image to import it
+              </p>
+            </div>
+          </TabsContent>
+        </Tabs>
+      ) : (
+        /* Simplified upload interface for compact mode */
+        <div className="flex items-center space-x-2">
+          <Input
+            id="picture-compact"
+            type="file"
+            disabled={isUploading}
+            accept="image/*"
+            onChange={handleFileChange}
+            ref={fileInputRef}
+            className="h-8 text-xs py-1"
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+          >
+            <Upload className="h-3 w-3 mr-1" /> Upload
+          </Button>
+        </div>
+      )}
 
       {/* Upload Progress and Error Message */}
       {isUploading && (
-        <div className="w-full bg-gray-200 rounded-full h-1.5 mb-4">
+        <div className={`w-full bg-gray-200 rounded-full ${compact ? 'h-1 mt-1 mb-1' : 'h-1.5 mb-4'}`}>
           <div
-            className="bg-primary h-1.5 rounded-full transition-all duration-300"
-            style={{ width: `${uploadProgress}%` }}
+            className="bg-primary rounded-full transition-all duration-300"
+            style={{ width: `${uploadProgress}%`, height: compact ? '4px' : '6px' }}
           ></div>
         </div>
       )}
       
       {uploadError && (
-        <p className="text-red-500 text-sm mt-2">{uploadError}</p>
+        <p className={`text-red-500 ${compact ? 'text-xs mt-1' : 'text-sm mt-2'}`}>
+          {uploadError}
+        </p>
       )}
     </div>
   );
