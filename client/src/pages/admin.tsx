@@ -522,7 +522,7 @@ export default function Admin() {
       country,
       startDate, // Use string as is
       endDate, // Use string as is
-      status,
+      // Status is automatically calculated on the server based on dates
       imageUrl: imageUrl || `https://source.unsplash.com/random/1200x800/?mountain,bike,${location}`,
     };
     
@@ -1412,21 +1412,23 @@ export default function Admin() {
                                         />
                                       </div>
                                       <div className="space-y-2">
-                                        <Label htmlFor={`race-${race.id}-status`}>Status*</Label>
-                                        <Select 
-                                          value={inlineRaceEditData.status} 
-                                          onValueChange={(value) => setInlineRaceEditData({...inlineRaceEditData, status: value})}
-                                        >
-                                          <SelectTrigger>
-                                            <SelectValue placeholder="Select status" />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            <SelectItem value="upcoming">Upcoming</SelectItem>
-                                            <SelectItem value="next">Next</SelectItem>
-                                            <SelectItem value="ongoing">Ongoing</SelectItem>
-                                            <SelectItem value="completed">Completed</SelectItem>
-                                          </SelectContent>
-                                        </Select>
+                                        <Label htmlFor={`race-${race.id}-status`}>Status</Label>
+                                        <div className="p-2 bg-gray-50 rounded-md border border-gray-200">
+                                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${
+                                            race.status === 'next' 
+                                              ? 'bg-blue-100 text-blue-800' 
+                                              : race.status === 'ongoing' 
+                                              ? 'bg-green-100 text-green-800' 
+                                              : race.status === 'completed' 
+                                              ? 'bg-gray-100 text-gray-800'
+                                              : 'bg-yellow-100 text-yellow-800'
+                                          }`}>
+                                            {race.status.charAt(0).toUpperCase() + race.status.slice(1)}
+                                          </span>
+                                          <p className="text-xs text-gray-500 mt-2">
+                                            Status is automatically determined based on start and end dates
+                                          </p>
+                                        </div>
                                       </div>
                                       <div className="space-y-2">
                                         <Label htmlFor={`race-${race.id}-startDate`}>Start Date*</Label>
