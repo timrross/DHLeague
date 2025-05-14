@@ -9,6 +9,63 @@ import { z } from "zod";
 import { upload, processImage, downloadImage } from "./imageUpload";
 import path from "path";
 
+// Helper function to determine race status based on dates
+function calculateRaceStatus(startDate: Date, endDate: Date): 'upcoming' | 'next' | 'ongoing' | 'completed' {
+  const now = new Date();
+  
+  // If the race is already over
+  if (now > endDate) {
+    return 'completed';
+  }
+  
+  // If the race is currently happening
+  if (now >= startDate && now <= endDate) {
+    return 'ongoing';
+  }
+  
+  // Race is in the future, but we'll return 'upcoming' for now
+  // The 'next' status will be determined when we have all races
+  return 'upcoming';
+}
+
+// Helper function to update race statuses
+async function updateRaceStatuses() {
+  try {
+    // Get all races
+    const allRaces = await storage.getRaces();
+    
+    // Calculate status for each race based on dates
+    allRaces.forEach(race => {
+      const startDate = new Date(race.startDate);
+      const endDate = new Date(race.endDate);
+      
+      // Calculate status based on dates
+      race.status = calculateRaceStatus(startDate, endDate);
+    });
+    
+    // Find the next upcoming race (the closest in the future)
+    const upcomingRaces = allRaces.filter(race => race.status === 'upcoming');
+    
+    if (upcomingRaces.length > 0) {
+      // Sort by start date (ascending)
+      upcomingRaces.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+      
+      // Mark the first upcoming race as 'next'
+      const nextRaceId = upcomingRaces[0].id;
+      
+      // Only update if needed to avoid unnecessary database calls
+      if (upcomingRaces[0].status !== 'next') {
+        await storage.updateRace(nextRaceId, { status: 'next' });
+      }
+    }
+    
+    return allRaces;
+  } catch (error) {
+    console.error("Error updating race statuses:", error);
+    return null;
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
@@ -646,7 +703,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Race routes
   app.get('/api/races', async (req, res) => {
     try {
-      const races = await storage.getRaces();
+      // First update race statuses based on current date and time
+      const updatedRaces = await updateRaceStatuses();
+      
+      // If updating statuses failed, just fetch races directly
+      const races = updatedRaces || await storage.getRaces();
       res.json(races);
     } catch (error) {
       console.error("Error fetching races:", error);
@@ -660,6 +721,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isNaN(raceId)) {
         return res.status(400).json({ message: 'Invalid race ID' });
       }
+      
+      // Make sure statuses are updated
+      await updateRaceStatuses();
       
       const race = await storage.getRace(raceId);
       if (!race) {
@@ -679,6 +743,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isNaN(raceId)) {
         return res.status(400).json({ message: 'Invalid race ID' });
       }
+      
+      // Make sure statuses are updated
+      await updateRaceStatuses();
       
       const raceWithResults = await storage.getRaceWithResults(raceId);
       if (!raceWithResults) {
