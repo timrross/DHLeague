@@ -39,7 +39,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { Loader2, UserCog, Edit, Trash, Check, X, Pencil, RefreshCw } from 'lucide-react';
+import { Loader2, UserCog, Edit, Trash, Check, X, Pencil, RefreshCw, Upload } from 'lucide-react';
 import { ImageUpload } from '@/components/ui/image-upload';
 import { 
   Dialog,
@@ -228,6 +228,9 @@ export default function Admin() {
     cost: '',
     points: '',
   });
+  
+  // Image upload for inline editing
+  const [inlineImageFile, setInlineImageFile] = useState<File | null>(null);
   
   // Fetch races
   const {
@@ -526,20 +529,47 @@ export default function Admin() {
   };
   
   // Handle inline edit save
-  const handleInlineEditSave = (riderId: number) => {
+  const handleInlineEditSave = async (riderId: number) => {
+    let imageUrl = inlineEditData.image;
+    
+    // Handle file upload if a file was selected
+    if (inlineImageFile) {
+      const formData = new FormData();
+      formData.append('image', inlineImageFile);
+      
+      try {
+        const uploadResponse = await apiRequest('/api/upload/rider-image', {
+          method: 'POST',
+          body: formData,
+        });
+        
+        if (uploadResponse && uploadResponse.imageUrl) {
+          imageUrl = uploadResponse.imageUrl;
+        }
+      } catch (error) {
+        console.error('Error uploading image:', error);
+        toast({
+          title: 'Image Upload Failed',
+          description: 'There was an error uploading the rider image',
+          variant: 'destructive'
+        });
+      }
+    }
+    
     const riderData = {
       id: riderId,
       name: inlineEditData.name,
       gender: inlineEditData.gender,
       team: inlineEditData.team,
       country: inlineEditData.country,
-      image: inlineEditData.image,
+      image: imageUrl,
       cost: parseInt(inlineEditData.cost),
       points: parseInt(inlineEditData.points) || 0,
     };
     
     updateRiderMutation.mutate(riderData);
     setInlineEditRiderId(null);
+    setInlineImageFile(null);
   };
   
   // Handle update rider form submission
@@ -1500,154 +1530,222 @@ export default function Admin() {
                         </TableHeader>
                         <TableBody>
                           {riders.map((rider: any) => (
-                            <TableRow key={rider.id} className={inlineEditRiderId === rider.id ? 'bg-accent/20' : ''}>
-                              {inlineEditRiderId === rider.id ? (
-                                // INLINE EDIT MODE
-                                <>
-                                  <TableCell>
-                                    <div className="flex flex-col gap-2 min-w-[200px]">
-                                      <div className="flex items-center gap-2">
-                                        {rider.image ? (
-                                          <div className="h-10 w-10 rounded-full overflow-hidden border">
-                                            <img 
-                                              src={rider.image} 
-                                              alt={rider.name}
-                                              className="h-full w-full object-cover"
-                                              onError={(e) => {
-                                                const target = e.target as HTMLImageElement;
-                                                target.onerror = null;
-                                                target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(rider.name)}&background=random`;
-                                              }}
+                            <React.Fragment key={rider.id}>
+                              {/* Normal row (always visible) */}
+                              <TableRow className={inlineEditRiderId === rider.id ? 'bg-accent/20' : ''}>
+                                <TableCell>
+                                  <div className="flex items-center gap-3">
+                                    {rider.image ? (
+                                      <div className="h-10 w-10 rounded-full overflow-hidden border">
+                                        <img 
+                                          src={rider.image} 
+                                          alt={rider.name}
+                                          className="h-full w-full object-cover"
+                                          onError={(e) => {
+                                            const target = e.target as HTMLImageElement;
+                                            target.onerror = null;
+                                            target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(rider.name)}&background=random`;
+                                          }}
+                                        />
+                                      </div>
+                                    ) : (
+                                      <div className="h-10 w-10 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center text-primary font-medium">
+                                        {rider.name.split(' ').map((n: string) => n[0]).join('')}
+                                      </div>
+                                    )}
+                                    <span className="font-medium">{rider.name}</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell>{rider.gender === 'male' ? 'Male' : 'Female'}</TableCell>
+                                <TableCell>{rider.team || '-'}</TableCell>
+                                <TableCell>{rider.country || '-'}</TableCell>
+                                <TableCell>${(rider.cost / 1000).toFixed(0)}k</TableCell>
+                                <TableCell>{rider.points || 0}</TableCell>
+                                <TableCell className="text-right">
+                                  <Button
+                                    variant={inlineEditRiderId === rider.id ? "default" : "ghost"}
+                                    size="icon"
+                                    onClick={() => inlineEditRiderId === rider.id ? handleInlineEditCancel() : handleInlineEditStart(rider)}
+                                    title={inlineEditRiderId === rider.id ? "Cancel editing" : "Edit rider"}
+                                  >
+                                    {inlineEditRiderId === rider.id ? (
+                                      <X className="h-4 w-4" />
+                                    ) : (
+                                      <Pencil className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                              
+                              {/* Expanded edit form row */}
+                              {inlineEditRiderId === rider.id && (
+                                <TableRow className="bg-accent/10">
+                                  <TableCell colSpan={7} className="p-0">
+                                    <div className="p-4">
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-4">
+                                          <div className="space-y-2">
+                                            <Label htmlFor={`rider-${rider.id}-name`}>Name*</Label>
+                                            <Input
+                                              id={`rider-${rider.id}-name`}
+                                              value={inlineEditData.name}
+                                              onChange={(e) => setInlineEditData({...inlineEditData, name: e.target.value})}
+                                              className="w-full"
+                                              required
                                             />
                                           </div>
-                                        ) : (
-                                          <div className="h-10 w-10 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center text-primary font-medium">
-                                            {rider.name.split(' ').map((n: string) => n[0]).join('')}
+                                          
+                                          <div className="space-y-2">
+                                            <Label htmlFor={`rider-${rider.id}-gender`}>Gender*</Label>
+                                            <Select 
+                                              value={inlineEditData.gender} 
+                                              onValueChange={(value) => setInlineEditData({...inlineEditData, gender: value})}
+                                            >
+                                              <SelectTrigger id={`rider-${rider.id}-gender`}>
+                                                <SelectValue placeholder="Select gender" />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectItem value="male">Male</SelectItem>
+                                                <SelectItem value="female">Female</SelectItem>
+                                              </SelectContent>
+                                            </Select>
                                           </div>
-                                        )}
-                                        <Input
-                                          value={inlineEditData.name}
-                                          onChange={(e) => setInlineEditData({...inlineEditData, name: e.target.value})}
-                                          className="w-full"
-                                        />
+                                          
+                                          <div className="space-y-2">
+                                            <Label htmlFor={`rider-${rider.id}-team`}>Team</Label>
+                                            <Input
+                                              id={`rider-${rider.id}-team`}
+                                              value={inlineEditData.team}
+                                              onChange={(e) => setInlineEditData({...inlineEditData, team: e.target.value})}
+                                              className="w-full"
+                                            />
+                                          </div>
+                                          
+                                          <div className="space-y-2">
+                                            <Label htmlFor={`rider-${rider.id}-country`}>Country</Label>
+                                            <Input
+                                              id={`rider-${rider.id}-country`}
+                                              value={inlineEditData.country}
+                                              onChange={(e) => setInlineEditData({...inlineEditData, country: e.target.value})}
+                                              className="w-full"
+                                            />
+                                          </div>
+                                        </div>
+                                        
+                                        <div className="space-y-4">
+                                          <div className="space-y-2">
+                                            <Label>Profile Image</Label>
+                                            <div className="flex items-center justify-center mb-4">
+                                              {(inlineImageFile || rider.image || inlineEditData.image) ? (
+                                                <div className="relative h-40 w-40 rounded-md overflow-hidden border">
+                                                  <img 
+                                                    src={inlineImageFile ? URL.createObjectURL(inlineImageFile) : (inlineEditData.image || rider.image)} 
+                                                    alt={inlineEditData.name || rider.name}
+                                                    className="h-full w-full object-cover"
+                                                    onError={(e) => {
+                                                      const target = e.target as HTMLImageElement;
+                                                      target.onerror = null;
+                                                      target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(inlineEditData.name || rider.name)}&background=random&size=160`;
+                                                    }}
+                                                  />
+                                                  <Button 
+                                                    variant="destructive" 
+                                                    size="icon" 
+                                                    className="absolute top-2 right-2 h-6 w-6 rounded-full"
+                                                    onClick={() => {
+                                                      setInlineImageFile(null);
+                                                      setInlineEditData({...inlineEditData, image: ''});
+                                                    }}
+                                                  >
+                                                    <X className="h-3 w-3" />
+                                                  </Button>
+                                                </div>
+                                              ) : (
+                                                <div className="h-40 w-40 rounded-md bg-secondary flex flex-col items-center justify-center gap-2 border border-dashed border-muted-foreground/50">
+                                                  <Upload className="h-8 w-8 text-muted-foreground" />
+                                                  <span className="text-sm text-muted-foreground">No image</span>
+                                                </div>
+                                              )}
+                                            </div>
+                                            
+                                            <div className="grid grid-cols-1 gap-4">
+                                              <div className="space-y-2">
+                                                <Label htmlFor={`rider-${rider.id}-image-url`}>Image URL</Label>
+                                                <Input
+                                                  id={`rider-${rider.id}-image-url`}
+                                                  value={inlineEditData.image}
+                                                  onChange={(e) => setInlineEditData({...inlineEditData, image: e.target.value})}
+                                                  placeholder="https://example.com/image.jpg"
+                                                  disabled={!!inlineImageFile}
+                                                />
+                                              </div>
+                                              
+                                              <div className="space-y-2">
+                                                <Label htmlFor={`rider-${rider.id}-image-upload`}>Upload Image</Label>
+                                                <Input
+                                                  id={`rider-${rider.id}-image-upload`}
+                                                  type="file"
+                                                  accept="image/*"
+                                                  onChange={(e) => {
+                                                    if (e.target.files && e.target.files[0]) {
+                                                      setInlineImageFile(e.target.files[0]);
+                                                      setInlineEditData({...inlineEditData, image: ''});
+                                                    }
+                                                  }}
+                                                />
+                                              </div>
+                                            </div>
+                                          </div>
+                                          
+                                          <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                              <Label htmlFor={`rider-${rider.id}-cost`}>Cost* (in $k)</Label>
+                                              <Input
+                                                id={`rider-${rider.id}-cost`}
+                                                value={inlineEditData.cost}
+                                                onChange={(e) => setInlineEditData({...inlineEditData, cost: e.target.value})}
+                                                type="number"
+                                                required
+                                              />
+                                            </div>
+                                            
+                                            <div className="space-y-2">
+                                              <Label htmlFor={`rider-${rider.id}-points`}>Points</Label>
+                                              <Input
+                                                id={`rider-${rider.id}-points`}
+                                                value={inlineEditData.points}
+                                                onChange={(e) => setInlineEditData({...inlineEditData, points: e.target.value})}
+                                                type="number"
+                                              />
+                                            </div>
+                                          </div>
+                                        </div>
                                       </div>
-                                      <div className="flex gap-2 items-center">
-                                        <Label htmlFor={`rider-${rider.id}-image`} className="text-xs">Image URL</Label>
-                                        <Input
-                                          id={`rider-${rider.id}-image`}
-                                          value={inlineEditData.image}
-                                          onChange={(e) => setInlineEditData({...inlineEditData, image: e.target.value})}
-                                          className="text-xs"
-                                          placeholder="https://example.com/image.jpg"
-                                        />
+                                      
+                                      <div className="flex justify-end mt-6 gap-2">
+                                        <Button variant="outline" onClick={handleInlineEditCancel}>
+                                          Cancel
+                                        </Button>
+                                        <Button 
+                                          variant="default"
+                                          onClick={() => handleInlineEditSave(rider.id)}
+                                          disabled={updateRiderMutation.isPending}
+                                        >
+                                          {updateRiderMutation.isPending ? (
+                                            <>
+                                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                              Saving...
+                                            </>
+                                          ) : (
+                                            "Save Changes"
+                                          )}
+                                        </Button>
                                       </div>
                                     </div>
                                   </TableCell>
-                                  <TableCell>
-                                    <Select 
-                                      value={inlineEditData.gender} 
-                                      onValueChange={(value) => setInlineEditData({...inlineEditData, gender: value})}
-                                    >
-                                      <SelectTrigger className="w-24">
-                                        <SelectValue placeholder="Gender" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="male">Male</SelectItem>
-                                        <SelectItem value="female">Female</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </TableCell>
-                                  <TableCell>
-                                    <Input
-                                      value={inlineEditData.team}
-                                      onChange={(e) => setInlineEditData({...inlineEditData, team: e.target.value})}
-                                      className="w-full"
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <Input
-                                      value={inlineEditData.country}
-                                      onChange={(e) => setInlineEditData({...inlineEditData, country: e.target.value})}
-                                      className="w-full"
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <Input
-                                      value={inlineEditData.cost}
-                                      onChange={(e) => setInlineEditData({...inlineEditData, cost: e.target.value})}
-                                      className="w-24"
-                                      type="number"
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <Input
-                                      value={inlineEditData.points}
-                                      onChange={(e) => setInlineEditData({...inlineEditData, points: e.target.value})}
-                                      className="w-24"
-                                      type="number"
-                                    />
-                                  </TableCell>
-                                  <TableCell className="text-right space-x-1">
-                                    <Button
-                                      variant="default"
-                                      size="sm"
-                                      onClick={() => handleInlineEditSave(rider.id)}
-                                    >
-                                      <Check className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={handleInlineEditCancel}
-                                    >
-                                      <X className="h-4 w-4" />
-                                    </Button>
-                                  </TableCell>
-                                </>
-                              ) : (
-                                // NORMAL VIEW MODE
-                                <>
-                                  <TableCell>
-                                    <div className="flex items-center gap-3">
-                                      {rider.image ? (
-                                        <div className="h-10 w-10 rounded-full overflow-hidden border">
-                                          <img 
-                                            src={rider.image} 
-                                            alt={rider.name}
-                                            className="h-full w-full object-cover"
-                                            onError={(e) => {
-                                              const target = e.target as HTMLImageElement;
-                                              target.onerror = null;
-                                              target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(rider.name)}&background=random`;
-                                            }}
-                                          />
-                                        </div>
-                                      ) : (
-                                        <div className="h-10 w-10 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center text-primary font-medium">
-                                          {rider.name.split(' ').map((n: string) => n[0]).join('')}
-                                        </div>
-                                      )}
-                                      <span className="font-medium">{rider.name}</span>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell>{rider.gender === 'male' ? 'Male' : 'Female'}</TableCell>
-                                  <TableCell>{rider.team || '-'}</TableCell>
-                                  <TableCell>{rider.country || '-'}</TableCell>
-                                  <TableCell>${(rider.cost / 1000).toFixed(0)}k</TableCell>
-                                  <TableCell>{rider.points || 0}</TableCell>
-                                  <TableCell className="text-right">
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() => handleInlineEditStart(rider)}
-                                      title="Edit in row"
-                                    >
-                                      <Pencil className="h-4 w-4" />
-                                    </Button>
-                                  </TableCell>
-                                </>
+                                </TableRow>
                               )}
-                            </TableRow>
+                            </React.Fragment>
                           ))}
                         </TableBody>
                       </Table>
