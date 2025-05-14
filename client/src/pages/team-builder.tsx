@@ -474,6 +474,17 @@ export default function TeamBuilder() {
                   )}
                 </div>
                 
+                {/* Team lock countdown */}
+                {nextRace && (
+                  <div className="bg-gray-100 rounded-md p-3 mb-4">
+                    <CountdownTimer 
+                      targetDate={new Date(nextRace.startDate)} 
+                      showLockStatus={true}
+                      title="Team lock status"
+                    />
+                  </div>
+                )}
+                
                 {/* Team name input */}
                 <div className="mb-4">
                   <label className="text-sm font-semibold text-gray-700 block mb-1">Team Name</label>
