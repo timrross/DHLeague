@@ -245,7 +245,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Static file serving
   app.use('/uploads', (req, res, next) => {
-    const filePath = path.join(__dirname, '../public/uploads', path.basename(req.url));
+    const filePath = path.join(process.cwd(), 'public/uploads', path.basename(req.url));
     res.sendFile(filePath, (err) => {
       if (err) {
         next();
