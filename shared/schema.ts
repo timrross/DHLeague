@@ -55,6 +55,10 @@ export const teams = pgTable("teams", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   totalPoints: integer("total_points").default(0),
+  swapsUsed: integer("swaps_used").default(0),
+  currentRaceId: integer("current_race_id"),
+  isLocked: boolean("is_locked").default(false),
+  lockedAt: timestamp("locked_at"),
 });
 
 export const insertTeamSchema = createInsertSchema(teams).omit({
@@ -128,6 +132,24 @@ export type RaceWithResults = Race & {
 };
 
 // Leaderboard entry type
+// Team swap history
+export const teamSwaps = pgTable("team_swaps", {
+  id: serial("id").primaryKey(),
+  teamId: integer("team_id").notNull().references(() => teams.id),
+  raceId: integer("race_id").notNull().references(() => races.id),
+  removedRiderId: integer("removed_rider_id").notNull().references(() => riders.id),
+  addedRiderId: integer("added_rider_id").notNull().references(() => riders.id),
+  swappedAt: timestamp("swapped_at").defaultNow(),
+});
+
+export const insertTeamSwapSchema = createInsertSchema(teamSwaps).omit({
+  id: true,
+  swappedAt: true,
+});
+
+export type TeamSwap = typeof teamSwaps.$inferSelect;
+export type InsertTeamSwap = z.infer<typeof insertTeamSwapSchema>;
+
 export type LeaderboardEntry = {
   rank: number;
   team: Team;
