@@ -424,7 +424,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check swap limit (maximum 2 per race)
-      if (team.swapsUsed >= 2) {
+      const swapsUsed = team.swapsUsed ?? 0;
+      if (swapsUsed >= 2) {
         return res.status(400).json({ 
           message: "Maximum swap limit reached (2 per race)" 
         });
