@@ -4,6 +4,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Rider } from "@shared/schema";
 import RiderForm from "./RiderForm";
+import { SimpleRiderForm } from "./SimpleRiderForm";
 
 import {
   Card,
@@ -143,6 +144,21 @@ export default function RiderManagement() {
 
   // Handle inline edit save
   const handleInlineRiderEditSave = (riderData: any) => {
+    // Add extra debugging to see what we're sending
+    console.log("Submitting rider edit:", riderData);
+    
+    // Ensure there's at least one valid property to update
+    const hasValidFields = Object.values(riderData).some(val => val !== undefined && val !== "");
+    
+    if (!hasValidFields) {
+      toast({
+        title: 'Error',
+        description: 'At least one field must have a value',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     updateRiderMutation.mutate(riderData);
   };
 
@@ -211,7 +227,7 @@ export default function RiderManagement() {
                     {inlineEditRiderId === rider.id ? (
                       <TableRow>
                         <TableCell colSpan={8}>
-                          <RiderForm
+                          <SimpleRiderForm
                             initialData={{
                               id: rider.id,
                               name: rider.name,
@@ -226,9 +242,6 @@ export default function RiderManagement() {
                             onSubmit={handleInlineRiderEditSave}
                             onCancel={handleInlineRiderEditCancel}
                             isSubmitting={updateRiderMutation.isPending}
-                            submitButtonText="Save"
-                            cancelButtonText="Cancel"
-                            compact={true}
                           />
                         </TableCell>
                       </TableRow>
