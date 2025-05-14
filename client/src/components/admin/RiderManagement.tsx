@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Rider } from "@shared/schema";
 import RiderForm from "./RiderForm";
 import { SimpleRiderForm } from "./SimpleRiderForm";
+import { RiderImageUpdater } from "./RiderImageUpdater";
 
 import {
   Card,
@@ -34,6 +35,11 @@ export default function RiderManagement() {
 
   // Inline edit state
   const [inlineEditRiderId, setInlineEditRiderId] = useState<number | null>(
+    null,
+  );
+  
+  // Image edit state
+  const [imageEditRiderId, setImageEditRiderId] = useState<number | null>(
     null,
   );
 
@@ -141,6 +147,16 @@ export default function RiderManagement() {
   const handleInlineRiderEditCancel = () => {
     setInlineEditRiderId(null);
   };
+  
+  // Handle image edit
+  const handleImageEditRider = (rider: any) => {
+    setImageEditRiderId(rider.id);
+  };
+  
+  // Handle image edit cancel
+  const handleImageEditCancel = () => {
+    setImageEditRiderId(null);
+  };
 
   // Handle inline edit save
   const handleInlineRiderEditSave = (riderData: any) => {
@@ -242,6 +258,26 @@ export default function RiderManagement() {
                             onCancel={handleInlineRiderEditCancel}
                             isSubmitting={updateRiderMutation.isPending}
                           />
+                        </TableCell>
+                      </TableRow>
+                    ) : imageEditRiderId === rider.id ? (
+                      <TableRow>
+                        <TableCell colSpan={8}>
+                          <div className="p-4 bg-slate-50 rounded-md">
+                            <h3 className="text-lg font-medium mb-4">Update Image for {rider.name}</h3>
+                            <RiderImageUpdater 
+                              rider={rider}
+                              onSuccess={handleImageEditCancel}
+                            />
+                            <div className="flex justify-end mt-4">
+                              <Button 
+                                variant="outline" 
+                                onClick={handleImageEditCancel}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ) : (
