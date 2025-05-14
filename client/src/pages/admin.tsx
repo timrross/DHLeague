@@ -92,6 +92,35 @@ export default function Admin() {
     };
   }
   
+  // Rider management state
+  const [showAddRiderForm, setShowAddRiderForm] = useState(false);
+  const [isEditingRider, setIsEditingRider] = useState(false);
+  const [editRiderId, setEditRiderId] = useState<number | null>(null);
+  const [riderName, setRiderName] = useState('');
+  const [riderGender, setRiderGender] = useState('male');
+  const [riderTeam, setRiderTeam] = useState('');
+  const [riderCountry, setRiderCountry] = useState('');
+  const [riderImage, setRiderImage] = useState('');
+  const [riderCost, setRiderCost] = useState('50000');
+  const [riderPoints, setRiderPoints] = useState('0');
+  
+  // Inline rider editing
+  const [inlineEditRiderId, setInlineEditRiderId] = useState<number | null>(null);
+  const [inlineEditData, setInlineEditData] = useState<Partial<Rider>>({});
+  
+  // Race management state
+  const [showAddRaceForm, setShowAddRaceForm] = useState(false);
+  const [raceName, setRaceName] = useState('');
+  const [location, setLocation] = useState('');
+  const [country, setCountry] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
+  
+  // Inline race editing
+  const [inlineEditRaceId, setInlineEditRaceId] = useState<number | null>(null);
+  const [inlineRaceEditData, setInlineRaceEditData] = useState<Partial<Race>>({});
+  
   // Fetch users
   const {
     data: users = [] as UserWithTeam[],
@@ -102,14 +131,15 @@ export default function Admin() {
     retry: false
   });
 
-  // Race management state
-  const [showAddRaceForm, setShowAddRaceForm] = useState(false);
-  const [raceName, setRaceName] = useState('');
-  const [location, setLocation] = useState('');
-  const [country, setCountry] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
+  // Fetch riders
+  const {
+    data: riders = [] as Rider[],
+    isLoading: isLoadingRiders,
+    error: ridersError
+  } = useQuery({
+    queryKey: ['/api/riders'],
+    retry: false
+  });
 
   // Fetch races
   const {
@@ -195,6 +225,83 @@ export default function Admin() {
     }
   };
   
+  // Add rider mutation
+  const addRiderMutation = useMutation({
+    mutationFn: async (riderData: any) => {
+      return await apiRequest('/api/riders', {
+        method: 'POST',
+        body: JSON.stringify(riderData)
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/riders'] });
+      setShowAddRiderForm(false);
+      resetRiderForm();
+      toast({
+        title: "Rider Added",
+        description: "Rider has been added successfully"
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to Add Rider",
+        description: "There was an error adding the rider",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Update rider mutation
+  const updateRiderMutation = useMutation({
+    mutationFn: async ({ id, riderData }: { id: number; riderData: any }) => {
+      return await apiRequest(`/api/riders/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(riderData)
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/riders'] });
+      setIsEditingRider(false);
+      setEditRiderId(null);
+      resetRiderForm();
+      setInlineEditRiderId(null);
+      toast({
+        title: "Rider Updated",
+        description: "Rider information has been updated successfully"
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Update Failed",
+        description: "Failed to update rider information",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Delete all riders mutation
+  const deleteAllRidersMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest('/api/riders/all', {
+        method: 'DELETE'
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/riders'] });
+      toast({
+        title: "All Riders Deleted",
+        description: "All riders have been deleted successfully"
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Delete Failed",
+        description: "Failed to delete all riders",
+        variant: "destructive"
+      });
+    }
+  });
+  
   // Add race mutation
   const addRaceMutation = useMutation({
     mutationFn: async (raceData: any) => {
@@ -206,13 +313,7 @@ export default function Admin() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/races'] });
       setShowAddRaceForm(false);
-      // Reset form fields
-      setRaceName('');
-      setLocation('');
-      setCountry('');
-      setStartDate('');
-      setEndDate('');
-      setImageUrl('');
+      resetRaceForm();
       toast({
         title: "Race Added",
         description: "Race has been added successfully"
@@ -222,6 +323,31 @@ export default function Admin() {
       toast({
         title: "Failed to Add Race",
         description: "There was an error adding the race",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Update race mutation
+  const updateRaceMutation = useMutation({
+    mutationFn: async ({ id, raceData }: { id: number; raceData: any }) => {
+      return await apiRequest(`/api/races/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(raceData)
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/races'] });
+      setInlineEditRaceId(null);
+      toast({
+        title: "Race Updated",
+        description: "Race information has been updated successfully"
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Update Failed",
+        description: "Failed to update race information",
         variant: "destructive"
       });
     }
@@ -250,7 +376,144 @@ export default function Admin() {
     }
   });
 
-  // Handle add race form submission
+  // Reset rider form
+  const resetRiderForm = () => {
+    setRiderName('');
+    setRiderGender('male');
+    setRiderTeam('');
+    setRiderCountry('');
+    setRiderImage('');
+    setRiderCost('50000');
+    setRiderPoints('0');
+  };
+  
+  // Reset race form
+  const resetRaceForm = () => {
+    setRaceName('');
+    setLocation('');
+    setCountry('');
+    setStartDate('');
+    setEndDate('');
+    setImageUrl('');
+  };
+
+  // Handle edit rider
+  const handleEditRider = (rider: Rider) => {
+    setIsEditingRider(true);
+    setEditRiderId(rider.id);
+    setRiderName(rider.name);
+    setRiderGender(rider.gender);
+    setRiderTeam(rider.team || '');
+    setRiderCountry(rider.country || '');
+    setRiderImage(rider.imageUrl || '');
+    setRiderCost(rider.cost.toString());
+    setRiderPoints(rider.points.toString());
+    setShowAddRiderForm(true);
+  };
+
+  // Cancel rider edit
+  const cancelRiderEdit = () => {
+    setIsEditingRider(false);
+    setEditRiderId(null);
+    resetRiderForm();
+    setShowAddRiderForm(false);
+  };
+
+  // Handle add rider
+  const handleAddRider = (e: React.FormEvent) => {
+    e.preventDefault();
+    const riderData = {
+      name: riderName,
+      gender: riderGender,
+      team: riderTeam,
+      country: riderCountry,
+      imageUrl: riderImage,
+      cost: parseInt(riderCost),
+      points: parseInt(riderPoints)
+    };
+    addRiderMutation.mutate(riderData);
+  };
+
+  // Handle update rider
+  const handleUpdateRider = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editRiderId) {
+      const riderData = {
+        name: riderName,
+        gender: riderGender,
+        team: riderTeam,
+        country: riderCountry,
+        imageUrl: riderImage,
+        cost: parseInt(riderCost),
+        points: parseInt(riderPoints)
+      };
+      updateRiderMutation.mutate({
+        id: editRiderId,
+        riderData
+      });
+    }
+  };
+
+  // Inline editing for riders
+  const handleInlineEditStart = (rider: Rider) => {
+    setInlineEditRiderId(rider.id);
+    setInlineEditData({
+      name: rider.name,
+      gender: rider.gender,
+      team: rider.team,
+      country: rider.country,
+      imageUrl: rider.imageUrl,
+      cost: rider.cost,
+      points: rider.points
+    });
+  };
+
+  // Handle inline edit cancel
+  const handleInlineEditCancel = () => {
+    setInlineEditRiderId(null);
+    setInlineEditData({});
+  };
+
+  // Handle inline edit save
+  const handleInlineEditSave = () => {
+    if (inlineEditRiderId) {
+      updateRiderMutation.mutate({
+        id: inlineEditRiderId,
+        riderData: inlineEditData
+      });
+    }
+  };
+  
+  // Handle inline race edit start
+  const handleInlineRaceEditStart = (race: Race) => {
+    setInlineEditRaceId(race.id);
+    setInlineRaceEditData({
+      name: race.name,
+      location: race.location,
+      country: race.country,
+      startDate: race.startDate,
+      endDate: race.endDate,
+      imageUrl: race.imageUrl
+    });
+  };
+
+  // Handle inline race edit cancel
+  const handleInlineRaceEditCancel = () => {
+    setInlineEditRaceId(null);
+    setInlineRaceEditData({});
+  };
+
+  // Handle inline race edit save
+  const handleInlineRaceEditSave = () => {
+    if (inlineEditRaceId) {
+      updateRaceMutation.mutate({
+        id: inlineEditRaceId,
+        raceData: inlineRaceEditData
+      });
+    }
+  };
+
+  // Handle add race
   const handleAddRace = (e: React.FormEvent) => {
     e.preventDefault();
     addRaceMutation.mutate({
@@ -692,50 +955,133 @@ export default function Admin() {
                           .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
                           .map((race) => (
                             <TableRow key={race.id} className="group">
-                              <TableCell>{race.name}</TableCell>
-                              <TableCell>{race.location}, {race.country}</TableCell>
-                              <TableCell>
-                                {new Date(race.startDate).toLocaleDateString()} - {new Date(race.endDate).toLocaleDateString()}
-                              </TableCell>
-                              <TableCell>
-                                <Badge
-                                  className={`capitalize ${
-                                    race.status === 'upcoming' ? 'bg-gray-200 text-gray-800' :
-                                    race.status === 'next' ? 'bg-green-200 text-green-800' :
-                                    race.status === 'ongoing' ? 'bg-blue-200 text-blue-800' :
-                                    race.status === 'completed' ? 'bg-purple-200 text-purple-800' : ''
-                                  }`}
-                                >
-                                  {race.status}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex justify-end space-x-2 opacity-60 group-hover:opacity-100 transition-opacity">
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon"
-                                    onClick={() => {
-                                      toast({
-                                        title: "Edit Race",
-                                        description: `Editing ${race.name}`,
-                                      });
-                                    }}
-                                  >
-                                    <Pencil className="h-4 w-4" />
-                                  </Button>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon"
-                                    onClick={() => {
-                                      if (window.confirm(`Are you sure you want to delete the race "${race.name}"?`)) {
-                                        deleteRaceMutation.mutate(race.id);
-                                      }
-                                    }}
-                                  >
-                                    <Trash className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </TableCell>
+                              {inlineEditRaceId === race.id ? (
+                                <>
+                                  <TableCell>
+                                    <Input 
+                                      value={inlineRaceEditData.name as string || race.name}
+                                      onChange={(e) => setInlineRaceEditData({
+                                        ...inlineRaceEditData,
+                                        name: e.target.value
+                                      })}
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex flex-col space-y-2">
+                                      <Input 
+                                        value={inlineRaceEditData.location as string || race.location}
+                                        onChange={(e) => setInlineRaceEditData({
+                                          ...inlineRaceEditData,
+                                          location: e.target.value
+                                        })}
+                                        placeholder="Location"
+                                      />
+                                      <Input 
+                                        value={inlineRaceEditData.country as string || race.country}
+                                        onChange={(e) => setInlineRaceEditData({
+                                          ...inlineRaceEditData,
+                                          country: e.target.value
+                                        })}
+                                        placeholder="Country"
+                                      />
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex flex-col space-y-2">
+                                      <Input 
+                                        type="date"
+                                        value={inlineRaceEditData.startDate as string || race.startDate}
+                                        onChange={(e) => setInlineRaceEditData({
+                                          ...inlineRaceEditData,
+                                          startDate: e.target.value
+                                        })}
+                                      />
+                                      <Input 
+                                        type="date"
+                                        value={inlineRaceEditData.endDate as string || race.endDate}
+                                        onChange={(e) => setInlineRaceEditData({
+                                          ...inlineRaceEditData,
+                                          endDate: e.target.value
+                                        })}
+                                      />
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Input 
+                                      value={inlineRaceEditData.imageUrl as string || race.imageUrl || ''}
+                                      onChange={(e) => setInlineRaceEditData({
+                                        ...inlineRaceEditData,
+                                        imageUrl: e.target.value || null
+                                      })}
+                                      placeholder="Image URL"
+                                    />
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <div className="flex justify-end space-x-2">
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm"
+                                        onClick={handleInlineRaceEditCancel}
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </Button>
+                                      <Button 
+                                        size="sm"
+                                        onClick={handleInlineRaceEditSave}
+                                        disabled={updateRaceMutation.isPending}
+                                      >
+                                        {updateRaceMutation.isPending ? (
+                                          <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                          <Check className="h-4 w-4" />
+                                        )}
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </>
+                              ) : (
+                                <>
+                                  <TableCell>{race.name}</TableCell>
+                                  <TableCell>{race.location}, {race.country}</TableCell>
+                                  <TableCell>
+                                    {new Date(race.startDate).toLocaleDateString()} - {new Date(race.endDate).toLocaleDateString()}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge
+                                      className={`capitalize ${
+                                        race.status === 'upcoming' ? 'bg-gray-200 text-gray-800' :
+                                        race.status === 'next' ? 'bg-green-200 text-green-800' :
+                                        race.status === 'ongoing' ? 'bg-blue-200 text-blue-800' :
+                                        race.status === 'completed' ? 'bg-purple-200 text-purple-800' : ''
+                                      }`}
+                                    >
+                                      {race.status}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <div className="flex justify-end space-x-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                                      <Button 
+                                        variant="ghost" 
+                                        size="icon"
+                                        onClick={() => handleInlineRaceEditStart(race)}
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </Button>
+                                      <Button 
+                                        variant="ghost" 
+                                        size="icon"
+                                        onClick={() => {
+                                          if (window.confirm(`Are you sure you want to delete the race "${race.name}"?`)) {
+                                            deleteRaceMutation.mutate(race.id);
+                                          }
+                                        }}
+                                      >
+                                        <Trash className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </>
+                              )}
                             </TableRow>
                           ))
                       )}
@@ -758,9 +1104,366 @@ export default function Admin() {
                     Add and manage riders in the database
                   </CardDescription>
                 </div>
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      if (showAddRiderForm && isEditingRider) {
+                        cancelRiderEdit();
+                      } else {
+                        setShowAddRiderForm(!showAddRiderForm);
+                        if (!showAddRiderForm) {
+                          resetRiderForm();
+                        }
+                      }
+                    }}
+                  >
+                    {showAddRiderForm ? (
+                      <>
+                        <X className="h-4 w-4 mr-2" />
+                        Cancel
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Rider
+                      </>
+                    )}
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (window.confirm("Are you sure you want to delete ALL riders? This cannot be undone!")) {
+                        deleteAllRidersMutation.mutate();
+                      }
+                    }}
+                    disabled={deleteAllRidersMutation.isPending || riders.length === 0}
+                  >
+                    {deleteAllRidersMutation.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Deleting...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete All Riders
+                      </>
+                    )}
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
-                <p>Rider management coming soon</p>
+                {showAddRiderForm && (
+                  <form onSubmit={isEditingRider ? handleUpdateRider : handleAddRider} className="space-y-4 mb-6">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="name">Name*</Label>
+                        <Input 
+                          id="name" 
+                          value={riderName}
+                          onChange={(e) => setRiderName(e.target.value)}
+                          placeholder="John Doe"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="gender">Gender*</Label>
+                        <Select 
+                          value={riderGender} 
+                          onValueChange={setRiderGender}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select gender" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="male">Male</SelectItem>
+                            <SelectItem value="female">Female</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="team">Team</Label>
+                        <Input 
+                          id="team" 
+                          value={riderTeam}
+                          onChange={(e) => setRiderTeam(e.target.value)}
+                          placeholder="Team Name"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="country">Country</Label>
+                        <Input 
+                          id="country" 
+                          value={riderCountry}
+                          onChange={(e) => setRiderCountry(e.target.value)}
+                          placeholder="Country name"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="cost">Cost* ($)</Label>
+                        <Input 
+                          id="cost" 
+                          type="number"
+                          min="10000"
+                          step="1000"
+                          value={riderCost}
+                          onChange={(e) => setRiderCost(e.target.value)}
+                          placeholder="50000"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="points">Points*</Label>
+                        <Input 
+                          id="points" 
+                          type="number"
+                          min="0"
+                          value={riderPoints}
+                          onChange={(e) => setRiderPoints(e.target.value)}
+                          placeholder="0"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2 col-span-2">
+                        <Label htmlFor="imageUrl">Profile Image URL</Label>
+                        <ImageUpload 
+                          value={riderImage}
+                          onChange={setRiderImage}
+                          filename={riderName.toLowerCase().replace(/\s+/g, '-')}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end space-x-2">
+                      <Button 
+                        type="button" 
+                        variant="outline"
+                        onClick={() => {
+                          if (isEditingRider) {
+                            cancelRiderEdit();
+                          } else {
+                            setShowAddRiderForm(false);
+                            setRiderName('');
+                            setRiderGender('male');
+                            setRiderTeam('');
+                            setRiderCountry('');
+                            setRiderImage('');
+                            setRiderCost('50000');
+                            setRiderPoints('0');
+                          }
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button 
+                        type="submit"
+                        disabled={isEditingRider ? updateRiderMutation.isPending : addRiderMutation.isPending}
+                      >
+                        {isEditingRider ? (
+                          updateRiderMutation.isPending ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Updating Rider...
+                            </>
+                          ) : (
+                            'Update Rider'
+                          )
+                        ) : (
+                          addRiderMutation.isPending ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Adding Rider...
+                            </>
+                          ) : (
+                            'Add Rider'
+                          )
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+                )}
+                
+                <div className="mt-4">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Rider</TableHead>
+                        <TableHead>Team</TableHead>
+                        <TableHead>Gender</TableHead>
+                        <TableHead>Cost</TableHead>
+                        <TableHead>Points</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {isLoadingRiders ? (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center py-10">
+                            <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+                            <p className="mt-2 text-sm text-gray-500">Loading riders...</p>
+                          </TableCell>
+                        </TableRow>
+                      ) : ridersError ? (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center py-10">
+                            <p className="text-red-500">Error loading riders</p>
+                          </TableCell>
+                        </TableRow>
+                      ) : riders.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center py-10">
+                            <p className="text-gray-500">No riders found. Add a rider to get started.</p>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        riders.map((rider) => (
+                          <TableRow key={rider.id} className="group">
+                            {inlineEditRiderId === rider.id ? (
+                              <>
+                                <TableCell>
+                                  <div className="flex items-center space-x-3">
+                                    <Input 
+                                      value={inlineEditData.name as string || rider.name}
+                                      onChange={(e) => setInlineEditData({
+                                        ...inlineEditData,
+                                        name: e.target.value
+                                      })}
+                                    />
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Input 
+                                    value={inlineEditData.team as string || rider.team || ''}
+                                    onChange={(e) => setInlineEditData({
+                                      ...inlineEditData,
+                                      team: e.target.value
+                                    })}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Select 
+                                    value={inlineEditData.gender as string || rider.gender}
+                                    onValueChange={(value) => setInlineEditData({
+                                      ...inlineEditData,
+                                      gender: value
+                                    })}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="male">Male</SelectItem>
+                                      <SelectItem value="female">Female</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </TableCell>
+                                <TableCell>
+                                  <Input 
+                                    type="number"
+                                    min="10000"
+                                    step="1000"
+                                    value={inlineEditData.cost as number || rider.cost}
+                                    onChange={(e) => setInlineEditData({
+                                      ...inlineEditData,
+                                      cost: parseInt(e.target.value)
+                                    })}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Input 
+                                    type="number"
+                                    min="0"
+                                    value={inlineEditData.points as number || rider.points}
+                                    onChange={(e) => setInlineEditData({
+                                      ...inlineEditData,
+                                      points: parseInt(e.target.value)
+                                    })}
+                                  />
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex justify-end space-x-2">
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={handleInlineEditCancel}
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                    <Button 
+                                      size="sm"
+                                      onClick={handleInlineEditSave}
+                                      disabled={updateRiderMutation.isPending}
+                                    >
+                                      {updateRiderMutation.isPending ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                      ) : (
+                                        <Check className="h-4 w-4" />
+                                      )}
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </>
+                            ) : (
+                              <>
+                                <TableCell>
+                                  <div className="flex items-center space-x-3">
+                                    <div className="flex-shrink-0">
+                                      <div className="h-10 w-10 rounded-full overflow-hidden bg-gray-100">
+                                        {rider.imageUrl ? (
+                                          <img 
+                                            src={rider.imageUrl} 
+                                            alt={rider.name} 
+                                            className="h-full w-full object-cover"
+                                          />
+                                        ) : (
+                                          <div className={`h-full w-full flex items-center justify-center text-white font-semibold`} style={{ backgroundColor: `hsl(${rider.name.charCodeAt(0) % 360}, 70%, 50%)` }}>
+                                            {rider.name.substring(0, 2).toUpperCase()}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <div className="font-medium">{rider.name}</div>
+                                      <div className="text-sm text-gray-500">{rider.country || 'Unknown'}</div>
+                                    </div>
+                                  </div>
+                                </TableCell>
+                                <TableCell>{rider.team || '-'}</TableCell>
+                                <TableCell>
+                                  <Badge className={`${rider.gender === 'male' ? 'bg-blue-100 text-blue-800' : 'bg-pink-100 text-pink-800'}`}>
+                                    {rider.gender === 'male' ? 'Male' : 'Female'}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>${rider.cost.toLocaleString()}</TableCell>
+                                <TableCell>{rider.points}</TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex justify-end space-x-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon" 
+                                      onClick={() => handleInlineEditStart(rider)}
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => handleEditRider(rider)}
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </>
+                            )}
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
               </CardContent>
             </Card>
           </div>
