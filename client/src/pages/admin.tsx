@@ -39,7 +39,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { Loader2, UserCog, Edit, Trash, Check, X, Pencil, RefreshCw, Upload, Trash2 } from 'lucide-react';
+import { Loader2, UserCog, Edit, Trash, Check, X, Pencil, RefreshCw, Upload, Trash2, Plus } from 'lucide-react';
 import { ImageUpload } from '@/components/ui/image-upload';
 import { 
   Dialog,
@@ -96,76 +96,32 @@ export default function Admin() {
   const {
     data: users = [] as UserWithTeam[],
     isLoading: isLoadingUsers,
-    error: usersError,
-    refetch: refetchUsers
-  } = useQuery<UserWithTeam[]>({
+    error: usersError
+  } = useQuery({
     queryKey: ['/api/admin/users'],
-    staleTime: 1000 * 60, // 1 minute
-    gcTime: 1000 * 60 * 5, // 5 minutes
-    refetchOnWindowFocus: true,
+    retry: false
   });
 
-  // Update user
-  const updateUserMutation = useMutation({
-    mutationFn: async (userData: any) => {
-      const response = await apiRequest(`/api/admin/users/${userData.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify(userData),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      return response;
-    },
-    onSuccess: () => {
-      // Refresh data
-      refetchUsers();
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
-      
-      toast({
-        title: 'Success',
-        description: 'User updated successfully',
-      });
-      setIsEditingUser(false);
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: `Failed to update user: ${error}`,
-        variant: 'destructive',
-      });
-    },
+  // Race management state
+  const [showAddRaceForm, setShowAddRaceForm] = useState(false);
+  const [raceName, setRaceName] = useState('');
+  const [location, setLocation] = useState('');
+  const [country, setCountry] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
+
+  // Fetch races
+  const {
+    data: races = [] as Race[],
+    isLoading: isLoadingRaces,
+    error: racesError
+  } = useQuery({
+    queryKey: ['/api/races'],
+    retry: false
   });
 
-  // Delete user
-  const deleteUserMutation = useMutation({
-    mutationFn: async (userId: string) => {
-      const response = await apiRequest(`/api/admin/users/${userId}`, {
-        method: 'DELETE',
-      });
-      return response;
-    },
-    onSuccess: () => {
-      // Force refetch users list
-      refetchUsers();
-      
-      toast({
-        title: 'Success',
-        description: 'User deleted successfully',
-      });
-      setIsDeleteDialogOpen(false);
-      setSelectedUser(null);
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: `Failed to delete user: ${error}`,
-        variant: 'destructive',
-      });
-    },
-  });
-
-  // Edit user handler
+  // Handle user edit
   const handleEditUser = (userData: UserWithTeam) => {
     setSelectedUser(userData);
     setEditUserData({
@@ -173,985 +129,486 @@ export default function Admin() {
       lastName: userData.lastName || '',
       email: userData.email || '',
       isAdmin: userData.isAdmin || false,
-      isActive: userData.isActive !== false // Default to true if not explicitly false
+      isActive: userData.isActive !== false // default to true if not specified
     });
     setIsEditingUser(true);
   };
 
-  // Update user handler
-  const handleUpdateUser = () => {
-    if (!selectedUser) return;
-    
-    updateUserMutation.mutate({
-      id: selectedUser.id,
-      ...editUserData
-    });
+  // Update user mutation
+  const updateUserMutation = useMutation({
+    mutationFn: async ({ id, userData }: { id: string; userData: Partial<User> }) => {
+      return await apiRequest(`/api/admin/users/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(userData)
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      setIsEditingUser(false);
+      toast({
+        title: "User Updated",
+        description: "User information has been updated successfully"
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Update Failed",
+        description: "Failed to update user information",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Delete user mutation
+  const deleteUserMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await apiRequest(`/api/admin/users/${id}`, {
+        method: 'DELETE'
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      setIsDeleteDialogOpen(false);
+      setSelectedUser(null);
+      toast({
+        title: "User Deleted",
+        description: "User has been deleted successfully"
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Delete Failed",
+        description: "Failed to delete user",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Handle user form submission
+  const handleUserFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (selectedUser) {
+      updateUserMutation.mutate({
+        id: selectedUser.id,
+        userData: editUserData
+      });
+    }
   };
-
-  // Delete user handler
-  const handleDeleteUser = () => {
-    if (!selectedUser) return;
-    deleteUserMutation.mutate(selectedUser.id);
-  };
   
-  // Race form state
-  const [raceName, setRaceName] = useState('');
-  const [location, setLocation] = useState('');
-  const [country, setCountry] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  // Status is now calculated automatically based on dates
-  // We keep this for now to avoid breaking the UI, but it's not used on the server
-  const [status, setStatus] = useState('upcoming');
-  const [imageUrl, setImageUrl] = useState('');
-  const [isEditingRace, setIsEditingRace] = useState(false);
-  const [editRaceId, setEditRaceId] = useState<number | null>(null);
-  
-  // Inline race edit state
-  const [inlineEditRaceId, setInlineEditRaceId] = useState<number | null>(null);
-  const [inlineRaceEditData, setInlineRaceEditData] = useState({
-    name: '',
-    location: '',
-    country: '',
-    startDate: '',
-    endDate: '',
-    imageUrl: '',
-  });
-  
-  // Rider form state
-  const [isEditingRider, setIsEditingRider] = useState(false);
-  const [showAddRiderForm, setShowAddRiderForm] = useState(false);
-  const [editRiderId, setEditRiderId] = useState<number | null>(null);
-  const [inlineEditRiderId, setInlineEditRiderId] = useState<number | null>(null);
-  const [riderName, setRiderName] = useState('');
-  const [riderGender, setRiderGender] = useState('male');
-  const [riderTeam, setRiderTeam] = useState('');
-  const [riderCountry, setRiderCountry] = useState('');
-  const [riderImage, setRiderImage] = useState('');
-  const [riderCost, setRiderCost] = useState('');
-  const [riderPoints, setRiderPoints] = useState('');
-  
-  // Inline edit state
-  const [inlineEditData, setInlineEditData] = useState({
-    name: '',
-    gender: 'male',
-    team: '',
-    country: '',
-    image: '',
-    cost: '',
-    points: '',
-  });
-  
-  // Fetch races
-  const {
-    data: races = [] as Race[],
-    isLoading: isLoadingRaces,
-    error: racesError
-  } = useQuery<Race[]>({
-    queryKey: ['/api/races'],
-  });
-
-  // Fetch riders
-  const {
-    data: riders = [] as Rider[],
-    isLoading: isLoadingRiders,
-    error: ridersError
-  } = useQuery<Rider[]>({
-    queryKey: ['/api/riders'],
-  });
-
-  // Import races from UCI API
-  const importRacesMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest('/api/admin/import-races', {
-        method: 'POST',
-      });
-      return response;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/races'] });
-      toast({
-        title: 'Success',
-        description: 'Races imported successfully from UCI API',
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: `Failed to import races: ${error}`,
-        variant: 'destructive',
-      });
-    },
-  });
-
-  // Import riders from UCI API
-  const importRidersMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest('/api/admin/import-riders', {
-        method: 'POST',
-      });
-      return response;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/riders'] });
-      toast({
-        title: 'Success',
-        description: 'Riders imported successfully from UCI API',
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: `Failed to import riders: ${error}`,
-        variant: 'destructive',
-      });
-    },
-  });
-  
-  // Delete all riders
-  const deleteAllRidersMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest('/api/admin/riders', {
-        method: 'DELETE',
-      });
-      return response;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/riders'] });
-      toast({
-        title: 'Success',
-        description: 'All riders deleted successfully',
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: `Failed to delete all riders: ${error}`,
-        variant: 'destructive',
-      });
-    },
-  });
-
-  // Add a new race
+  // Add race mutation
   const addRaceMutation = useMutation({
     mutationFn: async (raceData: any) => {
-      const response = await apiRequest('/api/races', {
+      return await apiRequest('/api/races', {
         method: 'POST',
-        body: JSON.stringify(raceData),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        body: JSON.stringify(raceData)
       });
-      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/races'] });
-      toast({
-        title: 'Success',
-        description: 'Race added successfully',
-      });
-      // Reset form
+      setShowAddRaceForm(false);
+      // Reset form fields
       setRaceName('');
       setLocation('');
       setCountry('');
       setStartDate('');
       setEndDate('');
-      setStatus('upcoming');
       setImageUrl('');
+      toast({
+        title: "Race Added",
+        description: "Race has been added successfully"
+      });
     },
     onError: (error) => {
       toast({
-        title: 'Error',
-        description: `Failed to add race: ${error}`,
-        variant: 'destructive',
+        title: "Failed to Add Race",
+        description: "There was an error adding the race",
+        variant: "destructive"
       });
-    },
-  });
-  
-  // Add a new rider
-  const addRiderMutation = useMutation({
-    mutationFn: async (riderData: any) => {
-      const response = await apiRequest('/api/riders', {
-        method: 'POST',
-        body: JSON.stringify(riderData),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      return response;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/riders'] });
-      toast({
-        title: 'Success',
-        description: 'Rider added successfully',
-      });
-      // Reset form
-      setRiderName('');
-      setRiderGender('male');
-      setRiderTeam('');
-      setRiderCountry('');
-      setRiderImage('');
-      setRiderCost('');
-      setRiderPoints('');
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: `Failed to add rider: ${error}`,
-        variant: 'destructive',
-      });
-    },
-  });
-  
-  // Update a rider
-  const updateRiderMutation = useMutation({
-    mutationFn: async (riderData: any) => {
-      const response = await apiRequest(`/api/riders/${riderData.id}`, {
-        method: 'PUT',
-        body: JSON.stringify(riderData),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      return response;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/riders'] });
-      toast({
-        title: 'Success',
-        description: 'Rider updated successfully',
-      });
-      // Reset form
-      setIsEditingRider(false);
-      setEditRiderId(null);
-      setRiderName('');
-      setRiderGender('');
-      setRiderTeam('');
-      setRiderCountry('');
-      setRiderImage('');
-      setRiderCost('');
-      setRiderPoints('');
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: `Failed to update rider: ${error}`,
-        variant: 'destructive',
-      });
-    },
-  });
-  
-  // Update a race
-  const updateRaceMutation = useMutation({
-    mutationFn: async (raceData: any) => {
-      const response = await apiRequest(`/api/races/${raceData.id}`, {
-        method: 'PUT',
-        body: JSON.stringify(raceData),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      return response;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/races'] });
-      toast({
-        title: 'Success',
-        description: 'Race updated successfully',
-      });
-      // Reset form
-      setIsEditingRace(false);
-      setEditRaceId(null);
-      setRaceName('');
-      setLocation('');
-      setCountry('');
-      setStartDate('');
-      setEndDate('');
-      setStatus('upcoming');
-      setImageUrl('');
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: `Failed to update race: ${error}`,
-        variant: 'destructive',
-      });
-    },
+    }
   });
 
-  // Delete a race
+  // Delete race mutation
   const deleteRaceMutation = useMutation({
-    mutationFn: async (raceId: number) => {
-      const response = await apiRequest(`/api/races/${raceId}`, {
-        method: 'DELETE',
+    mutationFn: async (id: number) => {
+      return await apiRequest(`/api/races/${id}`, {
+        method: 'DELETE'
       });
-      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/races'] });
       toast({
-        title: 'Success',
-        description: 'Race deleted successfully',
+        title: "Race Deleted",
+        description: "Race has been deleted successfully"
       });
     },
     onError: (error) => {
       toast({
-        title: 'Error',
-        description: `Failed to delete race: ${error}`,
-        variant: 'destructive',
+        title: "Delete Failed",
+        description: "Failed to delete race",
+        variant: "destructive"
       });
-    },
+    }
   });
 
-  // Handle race form submission
+  // Handle add race form submission
   const handleAddRace = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!raceName || !location || !country || !startDate || !endDate) {
-      toast({
-        title: 'Error',
-        description: 'Please fill in all required fields',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    const raceData = {
+    addRaceMutation.mutate({
       name: raceName,
       location,
       country,
-      startDate, // Use string as is
-      endDate, // Use string as is
-      // Status is automatically calculated on the server based on dates
-      imageUrl: imageUrl || `https://source.unsplash.com/random/1200x800/?mountain,bike,${location}`,
-    };
-    
-    addRaceMutation.mutate(raceData);
-  };
-  
-  // Handle edit rider button click (for top form)
-  const handleEditRider = (rider: any) => {
-    setIsEditingRider(true);
-    setEditRiderId(rider.id);
-    setRiderName(rider.name);
-    setRiderGender(rider.gender);
-    setRiderTeam(rider.team || '');
-    setRiderCountry(rider.country || '');
-    setRiderImage(rider.image || '');
-    setRiderCost(rider.cost.toString());
-    setRiderPoints((rider.points || 0).toString());
-  };
-  
-  // Handle inline editing for a rider in the table
-  const handleInlineEditStart = (rider: any) => {
-    setInlineEditRiderId(rider.id);
-    setInlineEditData({
-      name: rider.name,
-      gender: rider.gender,
-      team: rider.team || '',
-      country: rider.country || '',
-      image: rider.image || '',
-      cost: rider.cost.toString(),
-      points: (rider.points || 0).toString(),
+      startDate,
+      endDate,
+      imageUrl: imageUrl || null
     });
-  };
-  
-  // Handle inline edit cancel
-  const handleInlineEditCancel = () => {
-    setInlineEditRiderId(null);
-  };
-  
-  // Handle inline edit save
-  const handleInlineEditSave = (riderId: number) => {
-    const riderData = {
-      id: riderId,
-      name: inlineEditData.name,
-      gender: inlineEditData.gender,
-      team: inlineEditData.team,
-      country: inlineEditData.country,
-      image: inlineEditData.image,
-      cost: parseInt(inlineEditData.cost),
-      points: parseInt(inlineEditData.points) || 0,
-    };
-    
-    updateRiderMutation.mutate(riderData);
-    setInlineEditRiderId(null);
-  };
-  
-  // Handle update rider form submission
-  const handleUpdateRider = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!riderName || !riderGender || !riderCountry || !riderCost) {
-      toast({
-        title: 'Error',
-        description: 'Please fill in all required fields',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    const riderData = {
-      id: editRiderId,
-      name: riderName,
-      gender: riderGender,
-      team: riderTeam,
-      country: riderCountry,
-      image: riderImage,
-      cost: parseInt(riderCost),
-      points: parseInt(riderPoints) || 0,
-    };
-    
-    updateRiderMutation.mutate(riderData);
-  };
-  
-  // Handle add rider form submission
-  const handleAddRider = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!riderName || !riderGender || !riderCountry || !riderCost) {
-      toast({
-        title: 'Error',
-        description: 'Please fill in all required fields',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    const riderData = {
-      name: riderName,
-      gender: riderGender,
-      team: riderTeam,
-      country: riderCountry,
-      image: riderImage,
-      cost: parseInt(riderCost),
-      points: parseInt(riderPoints) || 0,
-    };
-    
-    addRiderMutation.mutate(riderData);
-  };
-  
-  // Cancel rider edit
-  const cancelRiderEdit = () => {
-    setIsEditingRider(false);
-    setEditRiderId(null);
-    setRiderName('');
-    setRiderGender('');
-    setRiderTeam('');
-    setRiderCountry('');
-    setRiderImage('');
-    setRiderCost('');
-    setRiderPoints('');
-  };
-  
-  // Handle edit race button click (for the form at the top)
-  const handleEditRace = (race: any) => {
-    setIsEditingRace(true);
-    setEditRaceId(race.id);
-    setRaceName(race.name);
-    setLocation(race.location);
-    setCountry(race.country);
-    setStatus(race.status);
-    setImageUrl(race.imageUrl || '');
-    
-    // Format dates for input fields (YYYY-MM-DD)
-    const startDateObj = new Date(race.startDate);
-    const endDateObj = new Date(race.endDate);
-    
-    setStartDate(startDateObj.toISOString().split('T')[0]);
-    setEndDate(endDateObj.toISOString().split('T')[0]);
-  };
-  
-  // Handle inline edit race button click
-  const handleInlineEditRace = (race: any) => {
-    // Format dates for input fields (YYYY-MM-DD)
-    const startDateObj = new Date(race.startDate);
-    const endDateObj = new Date(race.endDate);
-    
-    setInlineEditRaceId(race.id);
-    setInlineRaceEditData({
-      name: race.name,
-      location: race.location,
-      country: race.country, 
-      // Status is no longer needed as it's calculated automatically
-      imageUrl: race.imageUrl || '',
-      startDate: startDateObj.toISOString().split('T')[0],
-      endDate: endDateObj.toISOString().split('T')[0]
-    });
-  };
-  
-  // Handle inline edit cancel
-  const handleInlineRaceEditCancel = () => {
-    setInlineEditRaceId(null);
-  };
-  
-  // Handle inline edit save
-  const handleInlineRaceEditSave = (raceId: number) => {
-    // Make sure we're sending the date strings as they are, not as Date objects
-    // This prevents the server-side error with toISOString
-    const raceData = {
-      id: raceId,
-      name: inlineRaceEditData.name,
-      location: inlineRaceEditData.location,
-      country: inlineRaceEditData.country,
-      startDate: inlineRaceEditData.startDate, // Just use the string
-      endDate: inlineRaceEditData.endDate, // Just use the string
-      // Status is automatically calculated on the server based on dates
-      imageUrl: inlineRaceEditData.imageUrl || `https://source.unsplash.com/random/1200x800/?mountain,bike,${inlineRaceEditData.location}`,
-    };
-    
-    updateRaceMutation.mutate(raceData);
-    setInlineEditRaceId(null);
-  };
-  
-  // Handle update race form submission
-  const handleUpdateRace = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!raceName || !location || !country || !startDate || !endDate) {
-      toast({
-        title: 'Error',
-        description: 'Please fill in all required fields',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    const raceData = {
-      id: editRaceId,
-      name: raceName,
-      location,
-      country,
-      startDate, // Use string as is
-      endDate, // Use string as is
-      status,
-      imageUrl: imageUrl || `https://source.unsplash.com/random/1200x800/?mountain,bike,${location}`,
-    };
-    
-    updateRaceMutation.mutate(raceData);
-  };
-  
-  // Cancel race edit
-  const cancelRaceEdit = () => {
-    setIsEditingRace(false);
-    setEditRaceId(null);
-    setRaceName('');
-    setLocation('');
-    setCountry('');
-    setStartDate('');
-    setEndDate('');
-    setStatus('upcoming');
-    setImageUrl('');
   };
 
-  // If not authenticated, show login prompt
+  // Redirect if not admin
   if (!isAuthenticated) {
     return (
-      <div className="container mx-auto py-10 text-center">
-        <h1 className="text-3xl font-bold mb-4">Admin Area</h1>
-        <p className="mb-4">You need to log in to access this area.</p>
-        <Button asChild>
-          <a href="/api/login">Log In</a>
-        </Button>
+      <div className="container mx-auto py-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Access Denied</CardTitle>
+            <CardDescription>
+              You need to be logged in to access this page.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => window.location.href = '/api/login'}>
+              Log In
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
-  
-  // If not admin, show unauthorized message
-  if (user && !user.isAdmin) {
+
+  if (isAuthenticated && user && !user.isAdmin) {
     return (
-      <div className="container mx-auto py-10 text-center">
-        <h1 className="text-3xl font-bold mb-4">Unauthorized</h1>
-        <p>You do not have permission to access the admin area.</p>
+      <div className="container mx-auto py-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Access Denied</CardTitle>
+            <CardDescription>
+              You need administrator privileges to access this page.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => window.location.href = '/'}>
+              Go to Homepage
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto py-10">
+    <div className="container mx-auto py-8">
       <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
       
       <Tabs defaultValue="users" className="w-full">
-        <TabsList className="mb-6">
-          <TabsTrigger value="users">Manage Users</TabsTrigger>
-          <TabsTrigger value="import">Import Data</TabsTrigger>
-          <TabsTrigger value="races">Manage Races</TabsTrigger>
-          <TabsTrigger value="riders">Manage Riders</TabsTrigger>
-          <TabsTrigger value="results">Manage Results</TabsTrigger>
+        <TabsList className="mb-8">
+          <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="races">Races</TabsTrigger>
+          <TabsTrigger value="riders">Riders</TabsTrigger>
+          <TabsTrigger value="results">Results</TabsTrigger>
         </TabsList>
-        
-        {/* User Management Tab */}
+
+        {/* Manage Users Tab */}
         <TabsContent value="users">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <UserCog className="h-5 w-5" />
-                  <span>User Management</span>
-                </div>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => {
-                    refetchUsers();
-                    toast({
-                      title: "Refreshing",
-                      description: "User list refreshed"
-                    });
-                  }}
-                >
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Refresh
-                </Button>
-              </CardTitle>
-              <CardDescription>
-                Manage all users, control access permissions, and moderate fantasy teams.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoadingUsers ? (
-                <div className="flex justify-center items-center py-10">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-              ) : usersError ? (
-                <div className="text-center py-10 text-destructive">
-                  <p>Error loading users. Please try again.</p>
-                </div>
-              ) : (
-                <div className="space-y-8">
+          <div className="grid gap-6 md:grid-cols-1">
+            <Card>
+              <CardHeader>
+                <CardTitle>User Management</CardTitle>
+                <CardDescription>
+                  Manage user accounts and permissions
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoadingUsers ? (
+                  <div className="text-center py-10">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+                    <p className="mt-2 text-sm text-gray-500">Loading users...</p>
+                  </div>
+                ) : usersError ? (
+                  <div className="text-center py-10">
+                    <p className="text-red-500">Error loading users</p>
+                  </div>
+                ) : users.length === 0 ? (
+                  <div className="text-center py-10">
+                    <p className="text-gray-500">No users found</p>
+                  </div>
+                ) : (
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>ID</TableHead>
-                        <TableHead>Name</TableHead>
+                        <TableHead>User</TableHead>
                         <TableHead>Email</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Role</TableHead>
                         <TableHead>Team</TableHead>
-                        <TableHead>Actions</TableHead>
+                        <TableHead>Points</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {users.map((userData: any) => (
-                        <TableRow key={userData.id}>
-                          <TableCell className="font-mono text-xs">{userData.id}</TableCell>
+                      {users.map((user) => (
+                        <TableRow key={user.id}>
                           <TableCell>
-                            {userData.firstName || userData.lastName ? (
-                              `${userData.firstName || ''} ${userData.lastName || ''}`.trim()
-                            ) : (
-                              <span className="text-muted-foreground italic">Not set</span>
+                            <div className="font-medium">{user.firstName} {user.lastName}</div>
+                            {user.isAdmin && (
+                              <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">
+                                Admin
+                              </Badge>
                             )}
                           </TableCell>
-                          <TableCell>{userData.email || <span className="text-muted-foreground italic">No email</span>}</TableCell>
+                          <TableCell>{user.email}</TableCell>
+                          <TableCell>{user.team?.name || '-'}</TableCell>
+                          <TableCell>{user.team?.totalPoints || 0}</TableCell>
                           <TableCell>
-                            {userData.isActive !== false ? (
-                              <Badge variant="outline" className="bg-green-100 text-green-800">Active</Badge>
-                            ) : (
-                              <Badge variant="destructive" className="bg-red-100 text-red-800">Inactive</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {userData.isAdmin ? (
-                              <Badge className="bg-purple-100 text-purple-800">Admin</Badge>
-                            ) : (
-                              <Badge variant="outline">User</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {userData.team ? (
-                              <Badge variant="outline" className="bg-blue-50 text-blue-700">
-                                {userData.team.name}
+                            {user.isActive !== false ? (
+                              <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
+                                Active
                               </Badge>
                             ) : (
-                              <span className="text-muted-foreground italic">No team</span>
+                              <Badge className="bg-red-100 text-red-800 hover:bg-red-100">
+                                Inactive
+                              </Badge>
                             )}
                           </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleEditUser(userData)}
-                                title="Edit User"
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <AlertDialog open={isDeleteDialogOpen && selectedUser?.id === userData.id} onOpenChange={setIsDeleteDialogOpen}>
-                                <AlertDialogTrigger asChild>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon"
-                                    onClick={() => setSelectedUser(userData)}
-                                    title="Delete User"
-                                    disabled={userData.id === user?.id}
-                                  >
-                                    <Trash className="h-4 w-4 text-destructive" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      This will permanently delete the user account for{' '}
-                                      <span className="font-bold">
-                                        {selectedUser?.firstName || selectedUser?.email || selectedUser?.id}
-                                      </span>
-                                      {selectedUser?.team ? (
-                                        <> and their team <span className="font-bold">{selectedUser.team.name}</span></>
-                                      ) : null}
-                                      . This action cannot be undone.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction 
-                                      onClick={handleDeleteUser}
-                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                    >
-                                      {deleteUserMutation.isPending ? (
-                                        <>
-                                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                          Deleting...
-                                        </>
-                                      ) : (
-                                        "Delete User"
-                                      )}
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </div>
+                          <TableCell className="text-right">
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={() => handleEditUser(user)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={() => {
+                                setSelectedUser(user);
+                                setIsDeleteDialogOpen(true);
+                              }}
+                            >
+                              <Trash className="h-4 w-4" />
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
-                  
-                  {/* Edit User Dialog */}
-                  <Dialog open={isEditingUser} onOpenChange={setIsEditingUser}>
-                    <DialogContent className="sm:max-w-md">
-                      <DialogHeader>
-                        <DialogTitle>Edit User</DialogTitle>
-                        <DialogDescription>
-                          Make changes to user profile and permissions
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="firstName" className="text-right">
-                            First Name
-                          </Label>
-                          <Input
-                            id="firstName"
-                            value={editUserData.firstName}
-                            onChange={(e) => setEditUserData({...editUserData, firstName: e.target.value})}
-                            className="col-span-3"
-                          />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="lastName" className="text-right">
-                            Last Name
-                          </Label>
-                          <Input
-                            id="lastName"
-                            value={editUserData.lastName}
-                            onChange={(e) => setEditUserData({...editUserData, lastName: e.target.value})}
-                            className="col-span-3"
-                          />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="email" className="text-right">
-                            Email
-                          </Label>
-                          <Input
-                            id="email"
-                            type="email"
-                            value={editUserData.email}
-                            onChange={(e) => setEditUserData({...editUserData, email: e.target.value})}
-                            className="col-span-3"
-                          />
-                        </div>
-                        <Separator />
-                        <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="isActive" className="text-right">
-                            Status
-                          </Label>
-                          <div className="flex items-center gap-2 col-span-3">
-                            <Switch
-                              id="isActive"
-                              checked={editUserData.isActive}
-                              onCheckedChange={(checked) => setEditUserData({...editUserData, isActive: checked})}
-                            />
-                            <Label htmlFor="isActive" className="cursor-pointer">
-                              {editUserData.isActive ? 'Active' : 'Inactive'}
-                            </Label>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="isAdmin" className="text-right">
-                            Admin Role
-                          </Label>
-                          <div className="flex items-center gap-2 col-span-3">
-                            <Switch
-                              id="isAdmin"
-                              checked={editUserData.isAdmin}
-                              onCheckedChange={(checked) => setEditUserData({...editUserData, isAdmin: checked})}
-                            />
-                            <Label htmlFor="isAdmin" className="cursor-pointer">
-                              {editUserData.isAdmin ? 'Admin' : 'Standard User'}
-                            </Label>
-                          </div>
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsEditingUser(false)}>
-                          Cancel
-                        </Button>
-                        <Button onClick={handleUpdateUser} disabled={updateUserMutation.isPending}>
-                          {updateUserMutation.isPending ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Saving...
-                            </>
-                          ) : (
-                            "Save Changes"
-                          )}
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        {/* Import Data Tab */}
-        <TabsContent value="import">
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Import Races from UCI API</CardTitle>
-                <CardDescription>
-                  Fetch and import race data from the official UCI MTB downhill calendar.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-gray-500 mb-4">
-                  This will fetch downhill events from the UCI API and add them to your database.
-                  Any existing races with the same name will be updated.
-                </p>
+                )}
               </CardContent>
-              <CardFooter>
-                <Button 
-                  onClick={() => importRacesMutation.mutate()}
-                  disabled={importRacesMutation.isPending}
-                >
-                  {importRacesMutation.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Importing...
-                    </>
-                  ) : (
-                    'Import Races'
-                  )}
-                </Button>
-              </CardFooter>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>Import Riders from UCI API</CardTitle>
-                <CardDescription>
-                  Fetch and import rider data from the official UCI MTB downhill rankings.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-gray-500 mb-4">
-                  This will fetch downhill riders from the UCI API and add them to your database.
-                  Any existing riders with the same name will be updated.
-                </p>
-              </CardContent>
-              <CardFooter>
-                <Button 
-                  onClick={() => importRidersMutation.mutate()}
-                  disabled={importRidersMutation.isPending}
-                >
-                  {importRidersMutation.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Importing...
-                    </>
-                  ) : (
-                    'Import Riders'
-                  )}
-                </Button>
-              </CardFooter>
             </Card>
           </div>
+
+          {/* Edit User Dialog */}
+          <Dialog open={isEditingUser} onOpenChange={setIsEditingUser}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Edit User</DialogTitle>
+                <DialogDescription>
+                  Update user information and permissions
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleUserFormSubmit}>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="firstName" className="text-right">
+                      First Name
+                    </Label>
+                    <Input
+                      id="firstName"
+                      value={editUserData.firstName}
+                      onChange={(e) => setEditUserData({...editUserData, firstName: e.target.value})}
+                      className="col-span-3"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="lastName" className="text-right">
+                      Last Name
+                    </Label>
+                    <Input
+                      id="lastName"
+                      value={editUserData.lastName}
+                      onChange={(e) => setEditUserData({...editUserData, lastName: e.target.value})}
+                      className="col-span-3"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="email" className="text-right">
+                      Email
+                    </Label>
+                    <Input
+                      id="email"
+                      value={editUserData.email}
+                      onChange={(e) => setEditUserData({...editUserData, email: e.target.value})}
+                      className="col-span-3"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="isAdmin" className="text-right">
+                      Admin
+                    </Label>
+                    <div className="col-span-3 flex items-center space-x-2">
+                      <Switch
+                        id="isAdmin"
+                        checked={editUserData.isAdmin}
+                        onCheckedChange={(checked) => setEditUserData({...editUserData, isAdmin: checked})}
+                      />
+                      <Label htmlFor="isAdmin">
+                        {editUserData.isAdmin ? 'Yes' : 'No'}
+                      </Label>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="isActive" className="text-right">
+                      Active
+                    </Label>
+                    <div className="col-span-3 flex items-center space-x-2">
+                      <Switch
+                        id="isActive"
+                        checked={editUserData.isActive}
+                        onCheckedChange={(checked) => setEditUserData({...editUserData, isActive: checked})}
+                      />
+                      <Label htmlFor="isActive">
+                        {editUserData.isActive ? 'Yes' : 'No'}
+                      </Label>
+                    </div>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setIsEditingUser(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={updateUserMutation.isPending}>
+                    {updateUserMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      'Save Changes'
+                    )}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+
+          {/* Delete User Dialog */}
+          <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete the user{selectedUser ? ` ${selectedUser.firstName} ${selectedUser.lastName}` : ''} and all their associated data.
+                  This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => selectedUser && deleteUserMutation.mutate(selectedUser.id)}
+                  className="bg-red-600 hover:bg-red-700"
+                  disabled={deleteUserMutation.isPending}
+                >
+                  {deleteUserMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    'Delete'
+                  )}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </TabsContent>
         
         {/* Manage Races Tab */}
         <TabsContent value="races">
           <div className="grid gap-6 md:grid-cols-1">
             <Card>
-              <CardHeader>
-                <CardTitle>Add New Race</CardTitle>
-                <CardDescription>
-                  Add a new race to the calendar manually.
-                </CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div>
+                  <CardTitle>Race Management</CardTitle>
+                  <CardDescription>
+                    Add and manage races in the calendar
+                  </CardDescription>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowAddRaceForm(!showAddRaceForm)}
+                >
+                  {showAddRaceForm ? (
+                    <>
+                      <X className="h-4 w-4 mr-2" />
+                      Cancel
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Race
+                    </>
+                  )}
+                </Button>
               </CardHeader>
               <CardContent>
-                {isEditingRace ? (
-                  // Edit Race Form
-                  <form onSubmit={handleUpdateRace} className="space-y-4">
+                {showAddRaceForm && (
+                  <form onSubmit={handleAddRace} className="space-y-4 mb-6">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="name">Race Name*</Label>
+                        <Label htmlFor="add-race-name">Race Name*</Label>
                         <Input 
-                          id="name" 
+                          id="add-race-name" 
                           value={raceName}
                           onChange={(e) => setRaceName(e.target.value)}
                           required
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="location">Location*</Label>
+                        <Label htmlFor="add-race-location">Location*</Label>
                         <Input 
-                          id="location" 
+                          id="add-race-location" 
                           value={location}
                           onChange={(e) => setLocation(e.target.value)}
                           required
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="country">Country*</Label>
+                        <Label htmlFor="add-race-country">Country*</Label>
                         <Input 
-                          id="country" 
+                          id="add-race-country" 
                           value={country}
                           onChange={(e) => setCountry(e.target.value)}
                           required
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="status">Status*</Label>
-                        <Select value={status} onValueChange={setStatus}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="upcoming">Upcoming</SelectItem>
-                            <SelectItem value="next">Next</SelectItem>
-                            <SelectItem value="ongoing">Ongoing</SelectItem>
-                            <SelectItem value="completed">Completed</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <Label htmlFor="status-info">Status</Label>
+                        <div className="p-2 bg-gray-50 rounded-md border border-gray-200">
+                          <span className="inline-block px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
+                            Automatic
+                          </span>
+                          <p className="text-xs text-gray-500 mt-2">
+                            Race status will be automatically determined based on start and end dates
+                          </p>
+                        </div>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="startDate">Start Date*</Label>
+                        <Label htmlFor="add-race-startDate">Start Date*</Label>
                         <Input 
-                          id="startDate" 
+                          id="add-race-startDate" 
                           type="date"
                           value={startDate}
                           onChange={(e) => setStartDate(e.target.value)}
@@ -1159,9 +616,9 @@ export default function Admin() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="endDate">End Date*</Label>
+                        <Label htmlFor="add-race-endDate">End Date*</Label>
                         <Input 
-                          id="endDate" 
+                          id="add-race-endDate" 
                           type="date"
                           value={endDate}
                           onChange={(e) => setEndDate(e.target.value)}
@@ -1169,109 +626,9 @@ export default function Admin() {
                         />
                       </div>
                       <div className="space-y-2 col-span-2">
-                        <Label htmlFor="imageUrl">Image URL</Label>
+                        <Label htmlFor="add-race-imageUrl">Image URL</Label>
                         <Input 
-                          id="imageUrl" 
-                          value={imageUrl}
-                          onChange={(e) => setImageUrl(e.target.value)}
-                          placeholder="https://example.com/image.jpg"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Leave blank to use a random image based on location
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex justify-end space-x-2">
-                      <Button variant="outline" type="button" onClick={cancelRaceEdit}>
-                        Cancel
-                      </Button>
-                      <Button 
-                        type="submit"
-                        disabled={updateRaceMutation.isPending}
-                      >
-                        {updateRaceMutation.isPending ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Updating...
-                          </>
-                        ) : (
-                          'Update Race'
-                        )}
-                      </Button>
-                    </div>
-                  </form>
-                ) : (
-                  // Add Race Form
-                  <form onSubmit={handleAddRace} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="name">Race Name*</Label>
-                        <Input 
-                          id="name" 
-                          value={raceName}
-                          onChange={(e) => setRaceName(e.target.value)}
-                          placeholder="Fort William World Cup"
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="location">Location*</Label>
-                        <Input 
-                          id="location" 
-                          value={location}
-                          onChange={(e) => setLocation(e.target.value)}
-                          placeholder="Fort William"
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="country">Country*</Label>
-                        <Input 
-                          id="country" 
-                          value={country}
-                          onChange={(e) => setCountry(e.target.value)}
-                          placeholder="Scotland"
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="status">Status*</Label>
-                        <Select value={status} onValueChange={setStatus}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="upcoming">Upcoming</SelectItem>
-                            <SelectItem value="next">Next</SelectItem>
-                            <SelectItem value="ongoing">Ongoing</SelectItem>
-                            <SelectItem value="completed">Completed</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="startDate">Start Date*</Label>
-                        <Input 
-                          id="startDate" 
-                          type="date"
-                          value={startDate}
-                          onChange={(e) => setStartDate(e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="endDate">End Date*</Label>
-                        <Input 
-                          id="endDate" 
-                          type="date"
-                          value={endDate}
-                          onChange={(e) => setEndDate(e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2 col-span-2">
-                        <Label htmlFor="imageUrl">Image URL</Label>
-                        <Input 
-                          id="imageUrl" 
+                          id="add-race-imageUrl" 
                           value={imageUrl}
                           onChange={(e) => setImageUrl(e.target.value)}
                           placeholder="https://example.com/image.jpg"
@@ -1297,32 +654,9 @@ export default function Admin() {
                     </Button>
                   </form>
                 )}
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>Race List</CardTitle>
-                <CardDescription>
-                  View and manage existing races.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {isLoadingRaces ? (
-                  <div className="flex justify-center items-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  </div>
-                ) : racesError ? (
-                  <div className="text-center py-8 text-red-500">
-                    Error loading races
-                  </div>
-                ) : !races || races.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    No races found. Add a race or import from UCI API.
-                  </div>
-                ) : (
+                
+                <div className="mt-4">
                   <Table>
-                    <TableCaption>List of all races</TableCaption>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Name</TableHead>
@@ -1333,596 +667,120 @@ export default function Admin() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {races.map((race: any) => (
-                        <React.Fragment key={race.id}>
-                          <TableRow>
-                            <TableCell className="font-medium">{race.name}</TableCell>
-                            <TableCell>{race.location}, {race.country}</TableCell>
-                            <TableCell>
-                              {new Date(race.startDate).toLocaleDateString()} - {new Date(race.endDate).toLocaleDateString()}
-                            </TableCell>
-                            <TableCell>
-                              <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${
-                                race.status === 'next' 
-                                  ? 'bg-blue-100 text-blue-800' 
-                                  : race.status === 'ongoing' 
-                                  ? 'bg-green-100 text-green-800' 
-                                  : race.status === 'completed' 
-                                  ? 'bg-gray-100 text-gray-800'
-                                  : 'bg-yellow-100 text-yellow-800'
-                              }`}>
-                                {race.status.charAt(0).toUpperCase() + race.status.slice(1)}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 mr-1"
-                                onClick={() => handleInlineEditRace(race)}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-red-500 hover:text-red-600"
-                                onClick={() => {
-                                  if (window.confirm('Are you sure you want to delete this race?')) {
-                                    deleteRaceMutation.mutate(race.id);
-                                  }
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                          
-                          {/* Expanded edit form row */}
-                          {inlineEditRaceId === race.id && (
-                            <TableRow className="bg-accent/10">
-                              <TableCell colSpan={5} className="p-0">
-                                <div className="p-4">
-                                  <form className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
-                                      <div className="space-y-2">
-                                        <Label htmlFor={`race-${race.id}-name`}>Race Name*</Label>
-                                        <Input 
-                                          id={`race-${race.id}-name`}
-                                          value={inlineRaceEditData.name}
-                                          onChange={(e) => setInlineRaceEditData({...inlineRaceEditData, name: e.target.value})}
-                                          required
-                                        />
-                                      </div>
-                                      <div className="space-y-2">
-                                        <Label htmlFor={`race-${race.id}-location`}>Location*</Label>
-                                        <Input 
-                                          id={`race-${race.id}-location`}
-                                          value={inlineRaceEditData.location}
-                                          onChange={(e) => setInlineRaceEditData({...inlineRaceEditData, location: e.target.value})}
-                                          required
-                                        />
-                                      </div>
-                                      <div className="space-y-2">
-                                        <Label htmlFor={`race-${race.id}-country`}>Country*</Label>
-                                        <Input 
-                                          id={`race-${race.id}-country`}
-                                          value={inlineRaceEditData.country}
-                                          onChange={(e) => setInlineRaceEditData({...inlineRaceEditData, country: e.target.value})}
-                                          required
-                                        />
-                                      </div>
-                                      <div className="space-y-2">
-                                        <Label htmlFor={`race-${race.id}-status`}>Status</Label>
-                                        <div className="p-2 bg-gray-50 rounded-md border border-gray-200">
-                                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${
-                                            race.status === 'next' 
-                                              ? 'bg-blue-100 text-blue-800' 
-                                              : race.status === 'ongoing' 
-                                              ? 'bg-green-100 text-green-800' 
-                                              : race.status === 'completed' 
-                                              ? 'bg-gray-100 text-gray-800'
-                                              : 'bg-yellow-100 text-yellow-800'
-                                          }`}>
-                                            {race.status.charAt(0).toUpperCase() + race.status.slice(1)}
-                                          </span>
-                                          <p className="text-xs text-gray-500 mt-2">
-                                            Status is automatically determined based on start and end dates
-                                          </p>
-                                        </div>
-                                      </div>
-                                      <div className="space-y-2">
-                                        <Label htmlFor={`race-${race.id}-startDate`}>Start Date*</Label>
-                                        <Input 
-                                          id={`race-${race.id}-startDate`}
-                                          type="date"
-                                          value={inlineRaceEditData.startDate}
-                                          onChange={(e) => setInlineRaceEditData({...inlineRaceEditData, startDate: e.target.value})}
-                                          required
-                                        />
-                                      </div>
-                                      <div className="space-y-2">
-                                        <Label htmlFor={`race-${race.id}-endDate`}>End Date*</Label>
-                                        <Input 
-                                          id={`race-${race.id}-endDate`}
-                                          type="date"
-                                          value={inlineRaceEditData.endDate}
-                                          onChange={(e) => setInlineRaceEditData({...inlineRaceEditData, endDate: e.target.value})}
-                                          required
-                                        />
-                                      </div>
-                                      <div className="space-y-2 col-span-2">
-                                        <Label htmlFor={`race-${race.id}-imageUrl`}>Image URL</Label>
-                                        <Input 
-                                          id={`race-${race.id}-imageUrl`}
-                                          value={inlineRaceEditData.imageUrl}
-                                          onChange={(e) => setInlineRaceEditData({...inlineRaceEditData, imageUrl: e.target.value})}
-                                          placeholder="https://example.com/image.jpg"
-                                        />
-                                        <p className="text-xs text-gray-500 mt-1">
-                                          Leave blank to use a random image based on location
-                                        </p>
-                                      </div>
-                                    </div>
-                                    
-                                    <div className="flex justify-end mt-6 gap-2">
-                                      <Button 
-                                        type="button"
-                                        variant="outline" 
-                                        onClick={handleInlineRaceEditCancel}
-                                      >
-                                        Cancel
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        onClick={() => handleInlineRaceEditSave(race.id)}
-                                        disabled={updateRaceMutation.isPending}
-                                      >
-                                        {updateRaceMutation.isPending ? (
-                                          <>
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            Saving...
-                                          </>
-                                        ) : (
-                                          "Save Changes"
-                                        )}
-                                      </Button>
-                                    </div>
-                                  </form>
+                      {isLoadingRaces ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-10">
+                            <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+                            <p className="mt-2 text-sm text-gray-500">Loading races...</p>
+                          </TableCell>
+                        </TableRow>
+                      ) : racesError ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-10">
+                            <p className="text-red-500">Error loading races</p>
+                          </TableCell>
+                        </TableRow>
+                      ) : races.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-10">
+                            <p className="text-gray-500">No races found. Add a race to get started.</p>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        // Sort races by start date, earliest first
+                        [...races]
+                          .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
+                          .map((race) => (
+                            <TableRow key={race.id} className="group">
+                              <TableCell>{race.name}</TableCell>
+                              <TableCell>{race.location}, {race.country}</TableCell>
+                              <TableCell>
+                                {new Date(race.startDate).toLocaleDateString()} - {new Date(race.endDate).toLocaleDateString()}
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  className={`capitalize ${
+                                    race.status === 'upcoming' ? 'bg-gray-200 text-gray-800' :
+                                    race.status === 'next' ? 'bg-green-200 text-green-800' :
+                                    race.status === 'ongoing' ? 'bg-blue-200 text-blue-800' :
+                                    race.status === 'completed' ? 'bg-purple-200 text-purple-800' : ''
+                                  }`}
+                                >
+                                  {race.status}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end space-x-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    onClick={() => {
+                                      toast({
+                                        title: "Edit Race",
+                                        description: `Editing ${race.name}`,
+                                      });
+                                    }}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    onClick={() => {
+                                      if (window.confirm(`Are you sure you want to delete the race "${race.name}"?`)) {
+                                        deleteRaceMutation.mutate(race.id);
+                                      }
+                                    }}
+                                  >
+                                    <Trash className="h-4 w-4" />
+                                  </Button>
                                 </div>
                               </TableCell>
                             </TableRow>
-                          )}
-                        </React.Fragment>
-                      ))}
+                          ))
+                      )}
                     </TableBody>
                   </Table>
-                )}
+                </div>
               </CardContent>
             </Card>
           </div>
         </TabsContent>
         
-        {/* Manage Riders Tab */}
+        {/* Riders Management Tab */}
         <TabsContent value="riders">
-          <div className="grid gap-6">
-            {/* Add/Edit Rider Form */}
-            {(isEditingRider || showAddRiderForm) ? (
-              <Card>
-                <CardHeader>
-                  <CardTitle>{isEditingRider ? 'Edit Rider' : 'Add Rider'}</CardTitle>
-                  <CardDescription>{isEditingRider ? 'Update rider information' : 'Add a new rider to the database'}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={isEditingRider ? handleUpdateRider : handleAddRider} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="riderName">Name*</Label>
-                        <Input 
-                          id="riderName" 
-                          value={riderName}
-                          onChange={(e) => setRiderName(e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="riderGender">Gender*</Label>
-                        <Select value={riderGender} onValueChange={setRiderGender}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select gender" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="male">Male</SelectItem>
-                            <SelectItem value="female">Female</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="riderTeam">Team</Label>
-                        <Input 
-                          id="riderTeam" 
-                          value={riderTeam}
-                          onChange={(e) => setRiderTeam(e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="riderCountry">Country*</Label>
-                        <Input 
-                          id="riderCountry" 
-                          value={riderCountry}
-                          onChange={(e) => setRiderCountry(e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="riderCost">Cost* (in $)</Label>
-                        <Input 
-                          id="riderCost" 
-                          type="number"
-                          value={riderCost}
-                          onChange={(e) => setRiderCost(e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="riderPoints">Points</Label>
-                        <Input 
-                          id="riderPoints" 
-                          type="number"
-                          value={riderPoints}
-                          onChange={(e) => setRiderPoints(e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-2 col-span-2">
-                        <Label htmlFor="riderImage">Rider Image</Label>
-                        <ImageUpload
-                          currentImage={riderImage}
-                          onImageChange={(url) => setRiderImage(url)}
-                          name={riderName}
-                        />
-                      </div>
-                    </div>
-                    <div className="flex justify-end space-x-2">
-                      <Button 
-                        variant="outline" 
-                        type="button" 
-                        onClick={() => {
-                          if (isEditingRider) {
-                            cancelRiderEdit();
-                          } else {
-                            setShowAddRiderForm(false);
-                            setRiderName('');
-                            setRiderGender('male');
-                            setRiderTeam('');
-                            setRiderCountry('');
-                            setRiderImage('');
-                            setRiderCost('');
-                            setRiderPoints('');
-                          }
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                      <Button 
-                        type="submit"
-                        disabled={isEditingRider ? updateRiderMutation.isPending : addRiderMutation.isPending}
-                      >
-                        {isEditingRider ? (
-                          updateRiderMutation.isPending ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Updating...
-                            </>
-                          ) : (
-                            'Update Rider'
-                          )
-                        ) : (
-                          addRiderMutation.isPending ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Adding...
-                            </>
-                          ) : (
-                            'Add Rider'
-                          )
-                        )}
-                      </Button>
-                    </div>
-                  </form>
-                </CardContent>
-              </Card>
-            ) : null}
-            
-            {/* Rider List */}
+          <div className="grid gap-6 md:grid-cols-1">
             <Card>
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <CardTitle>Rider List</CardTitle>
-                    <CardDescription>View and manage riders</CardDescription>
-                  </div>
-                  {!showAddRiderForm && !isEditingRider && (
-                    <div className="flex gap-2">
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="destructive">
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete All Riders
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete all riders?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This action cannot be undone. This will permanently delete all riders from the database
-                              and remove all rider assignments from user teams.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => deleteAllRidersMutation.mutate()}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            >
-                              {deleteAllRidersMutation.isPending ? (
-                                <>
-                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                  Deleting...
-                                </>
-                              ) : (
-                                "Delete All"
-                              )}
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                      
-                      <Button
-                        onClick={() => {
-                          setIsEditingRider(false);
-                          setEditRiderId(null);
-                          setRiderName('');
-                          setRiderGender('male');
-                          setRiderTeam('');
-                          setRiderCountry('');
-                          setRiderImage('');
-                          setRiderCost('');
-                          setRiderPoints('');
-                          
-                          // Open Add Rider form
-                          setShowAddRiderForm(true);
-                        }}
-                      >
-                        Add Rider
-                      </Button>
-                    </div>
-                  )}
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div>
+                  <CardTitle>Rider Management</CardTitle>
+                  <CardDescription>
+                    Add and manage riders in the database
+                  </CardDescription>
                 </div>
               </CardHeader>
               <CardContent>
-                {isLoadingRiders ? (
-                  <div className="flex justify-center items-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  </div>
-                ) : ridersError ? (
-                  <div className="text-center py-8 text-red-500">
-                    Error loading riders
-                  </div>
-                ) : !riders || riders.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    No riders found. Import from UCI API.
-                  </div>
-                ) : (
-                  <div>
-                    <div className="mb-4">
-                      <h3 className="text-sm font-medium text-gray-500">Total Riders: {riders.length}</h3>
-                    </div>
-                    
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableCaption>List of all riders</TableCaption>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Rider</TableHead>
-                            <TableHead>Gender</TableHead>
-                            <TableHead>Team</TableHead>
-                            <TableHead>Country</TableHead>
-                            <TableHead>Cost</TableHead>
-                            <TableHead>Points</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {riders.map((rider: any) => (
-                            <React.Fragment key={rider.id}>
-                              {/* Normal row (always visible) */}
-                              <TableRow className={inlineEditRiderId === rider.id ? 'bg-accent/20' : ''}>
-                                <TableCell>
-                                  <div className="flex items-center gap-3">
-                                    {rider.image ? (
-                                      <div className="h-10 w-10 rounded-full overflow-hidden border">
-                                        <img 
-                                          src={rider.image} 
-                                          alt={rider.name}
-                                          className="h-full w-full object-cover"
-                                          onError={(e) => {
-                                            const target = e.target as HTMLImageElement;
-                                            target.onerror = null;
-                                            target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(rider.name)}&background=random`;
-                                          }}
-                                        />
-                                      </div>
-                                    ) : (
-                                      <div className="h-10 w-10 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center text-primary font-medium">
-                                        {rider.name.split(' ').map((n: string) => n[0]).join('')}
-                                      </div>
-                                    )}
-                                    <span className="font-medium">{rider.name}</span>
-                                  </div>
-                                </TableCell>
-                                <TableCell>{rider.gender === 'male' ? 'Male' : 'Female'}</TableCell>
-                                <TableCell>{rider.team || '-'}</TableCell>
-                                <TableCell>{rider.country || '-'}</TableCell>
-                                <TableCell>${(rider.cost / 1000).toFixed(0)}k</TableCell>
-                                <TableCell>{rider.points || 0}</TableCell>
-                                <TableCell className="text-right">
-                                  <Button
-                                    variant={inlineEditRiderId === rider.id ? "default" : "ghost"}
-                                    size="icon"
-                                    onClick={() => inlineEditRiderId === rider.id ? handleInlineEditCancel() : handleInlineEditStart(rider)}
-                                    title={inlineEditRiderId === rider.id ? "Cancel editing" : "Edit rider"}
-                                  >
-                                    {inlineEditRiderId === rider.id ? (
-                                      <X className="h-4 w-4" />
-                                    ) : (
-                                      <Pencil className="h-4 w-4" />
-                                    )}
-                                  </Button>
-                                </TableCell>
-                              </TableRow>
-                              
-                              {/* Expanded edit form row */}
-                              {inlineEditRiderId === rider.id && (
-                                <TableRow className="bg-accent/10">
-                                  <TableCell colSpan={7} className="p-0">
-                                    <div className="p-4">
-                                      <form className="space-y-4">
-                                        <div className="grid grid-cols-2 gap-4">
-                                          <div className="space-y-2">
-                                            <Label htmlFor={`rider-${rider.id}-name`}>Name*</Label>
-                                            <Input 
-                                              id={`rider-${rider.id}-name`}
-                                              value={inlineEditData.name}
-                                              onChange={(e) => setInlineEditData({...inlineEditData, name: e.target.value})}
-                                              required
-                                            />
-                                          </div>
-                                          <div className="space-y-2">
-                                            <Label htmlFor={`rider-${rider.id}-gender`}>Gender*</Label>
-                                            <Select 
-                                              value={inlineEditData.gender} 
-                                              onValueChange={(value) => setInlineEditData({...inlineEditData, gender: value})}
-                                            >
-                                              <SelectTrigger>
-                                                <SelectValue placeholder="Select gender" />
-                                              </SelectTrigger>
-                                              <SelectContent>
-                                                <SelectItem value="male">Male</SelectItem>
-                                                <SelectItem value="female">Female</SelectItem>
-                                              </SelectContent>
-                                            </Select>
-                                          </div>
-                                          <div className="space-y-2">
-                                            <Label htmlFor={`rider-${rider.id}-team`}>Team</Label>
-                                            <Input 
-                                              id={`rider-${rider.id}-team`}
-                                              value={inlineEditData.team}
-                                              onChange={(e) => setInlineEditData({...inlineEditData, team: e.target.value})}
-                                            />
-                                          </div>
-                                          <div className="space-y-2">
-                                            <Label htmlFor={`rider-${rider.id}-country`}>Country*</Label>
-                                            <Input 
-                                              id={`rider-${rider.id}-country`}
-                                              value={inlineEditData.country}
-                                              onChange={(e) => setInlineEditData({...inlineEditData, country: e.target.value})}
-                                              required
-                                            />
-                                          </div>
-                                          <div className="space-y-2">
-                                            <Label htmlFor={`rider-${rider.id}-cost`}>Cost* (in $)</Label>
-                                            <Input 
-                                              id={`rider-${rider.id}-cost`}
-                                              type="number"
-                                              value={inlineEditData.cost}
-                                              onChange={(e) => setInlineEditData({...inlineEditData, cost: e.target.value})}
-                                              required
-                                            />
-                                          </div>
-                                          <div className="space-y-2">
-                                            <Label htmlFor={`rider-${rider.id}-points`}>Points</Label>
-                                            <Input 
-                                              id={`rider-${rider.id}-points`}
-                                              type="number"
-                                              value={inlineEditData.points}
-                                              onChange={(e) => setInlineEditData({...inlineEditData, points: e.target.value})}
-                                            />
-                                          </div>
-                                          <div className="space-y-2 col-span-2">
-                                            <Label htmlFor={`rider-${rider.id}-image`}>Rider Image</Label>
-                                            <ImageUpload
-                                              currentImage={inlineEditData.image}
-                                              onImageChange={(url) => setInlineEditData({...inlineEditData, image: url})}
-                                              name={inlineEditData.name}
-                                            />
-                                          </div>
-                                        </div>
-                                        
-                                        <div className="flex justify-end mt-6 gap-2">
-                                          <Button 
-                                            type="button"
-                                            variant="outline" 
-                                            onClick={handleInlineEditCancel}
-                                          >
-                                            Cancel
-                                          </Button>
-                                          <Button
-                                            type="button"
-                                            onClick={() => handleInlineEditSave(rider.id)}
-                                            disabled={updateRiderMutation.isPending}
-                                          >
-                                            {updateRiderMutation.isPending ? (
-                                              <>
-                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                Saving...
-                                              </>
-                                            ) : (
-                                              "Save Changes"
-                                            )}
-                                          </Button>
-                                        </div>
-                                      </form>
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              )}
-                            </React.Fragment>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </div>
-                )}
+                <p>Rider management coming soon</p>
               </CardContent>
             </Card>
           </div>
         </TabsContent>
         
-        {/* Manage Results Tab */}
+        {/* Results Management Tab */}
         <TabsContent value="results">
-          <Card>
-            <CardHeader>
-              <CardTitle>Race Results</CardTitle>
-              <CardDescription>
-                Add and manage race results.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <h3 className="text-lg font-medium mb-2">Results Management</h3>
-                <p className="text-gray-500 mb-4">
-                  This feature will be implemented soon. You'll be able to:
-                </p>
-                <ul className="list-disc list-inside mb-4 text-left max-w-md mx-auto">
-                  <li>Enter race results manually</li>
-                  <li>Import results from UCI API</li>
-                  <li>Calculate fantasy points based on results</li>
-                  <li>Update leaderboard automatically</li>
-                </ul>
-                <Button disabled>Coming Soon</Button>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="grid gap-6 md:grid-cols-1">
+            <Card>
+              <CardHeader>
+                <CardTitle>Race Results</CardTitle>
+                <CardDescription>
+                  Manage race results
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p>Results management coming soon</p>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
