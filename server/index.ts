@@ -1,30 +1,23 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
+import { registerRoutes } from "./routes/index";
 import { setupVite, serveStatic, log } from "./vite";
 import getRawBody from "raw-body";
 //import { runMigrations } from "./migrations";
 
 const app = express();
-// --- Safe raw body logger BEFORE express.json() ---
-app.use(async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    if (req.headers["content-type"]?.includes("application/json")) {
-      const raw = await getRawBody(req);
-      console.log("RAW BODY:", raw.toString());
-      // Re-create stream for downstream parsers
-      (req as any).rawBody = raw; // optional, in case you want raw later
-      // Reset the request stream for express.json()
-      (req as any).pipe = undefined; // safety
-      req["body"] = JSON.parse(raw.toString()); // optional if you want to pre-fill
-    }
-  } catch (err) {
-    console.error("Raw body capture failed:", err);
+// Body parsing middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Logger after body parsing
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (req.method !== 'GET') {
+    console.log("Request URL:", req.url);
+    console.log("Request Method:", req.method);
+    console.log("Request Body:", req.body);
   }
   next();
 });
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 // app.use((req, res, next) => {
 //   const start = Date.now();
