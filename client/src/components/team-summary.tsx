@@ -116,7 +116,7 @@ export default function TeamSummary({
         {selectedRiders.map((rider) => (
           <div 
             key={rider.id} 
-            className={`bg-white rounded-md p-3 shadow-sm flex justify-between items-center relative ${
+            className={`bg-white rounded-md p-3 shadow-sm flex flex-col sm:flex-row justify-between relative ${
               swapRider?.id === rider.id 
                 ? 'ring-2 ring-amber-400' 
                 : rider.injured 
@@ -125,12 +125,12 @@ export default function TeamSummary({
             }`}
           >
             {rider.injured && (
-              <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full px-2 py-1 shadow-sm">
+              <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full px-2 py-1 shadow-sm z-10">
                 INJURED
               </div>
             )}
-            <div className="flex items-center">
-              <Avatar className={`w-8 h-8 border-2 mr-2 ${
+            <div className="flex items-center mb-2 sm:mb-0">
+              <Avatar className={`w-8 h-8 border-2 mr-2 flex-shrink-0 ${
                 rider.injured 
                   ? 'border-red-400' 
                   : rider.gender === 'male' 
@@ -142,10 +142,10 @@ export default function TeamSummary({
                   {getInitials(rider.name)}
                 </AvatarFallback>
               </Avatar>
-              <div>
-                <h5 className="font-heading font-bold text-secondary text-sm">{rider.name}</h5>
+              <div className="min-w-0 flex-1">
+                <h5 className="font-heading font-bold text-secondary text-sm truncate">{rider.name}</h5>
                 <div className="flex items-center flex-wrap">
-                  <span className={`${rider.gender === 'male' ? 'text-blue-600' : 'text-pink-600'} text-xs font-medium`}>
+                  <span className={`${rider.gender === 'male' ? 'text-blue-600' : 'text-pink-600'} text-xs font-medium truncate`}>
                     {rider.gender === 'male' ? 'Male' : 'Female'} • {rider.team}
                   </span>
                   {rider.injured && (
@@ -154,12 +154,12 @@ export default function TeamSummary({
                 </div>
               </div>
             </div>
-            <div className="flex items-center">
+            <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto mt-2 sm:mt-0">
               <span className="font-accent font-semibold text-primary text-sm mr-2">${rider.cost.toLocaleString()}</span>
               
               {isTeamLocked ? (
                 <button 
-                  className="text-gray-400 hover:text-blue-500 w-6 h-6 flex items-center justify-center transition duration-200"
+                  className="text-gray-400 hover:text-blue-500 w-8 h-8 flex items-center justify-center transition duration-200"
                   onClick={() => initiateSwap && initiateSwap(rider)}
                   disabled={swapMode}
                 >
@@ -167,7 +167,7 @@ export default function TeamSummary({
                 </button>
               ) : (
                 <button 
-                  className="text-gray-400 hover:text-red-500 w-6 h-6 flex items-center justify-center transition duration-200"
+                  className="text-gray-400 hover:text-red-500 w-8 h-8 flex items-center justify-center transition duration-200"
                   onClick={() => toggleRiderSelection(rider)}
                 >
                   <X className="h-4 w-4" />
