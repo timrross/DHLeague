@@ -14,7 +14,18 @@ import { useToast } from "@/hooks/use-toast";
 import RiderCard from "@/components/rider-card";
 import TeamSummary from "@/components/team-summary";
 import CountdownTimer from "@/components/countdown-timer";
-import { Search, AlertTriangle, Info, RefreshCw } from "lucide-react";
+import { 
+  Search, AlertTriangle, Info, RefreshCw, 
+  RotateCcw, AlertCircle, CheckCircle2
+} from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function TeamBuilder() {
   const [, setLocation] = useLocation();
@@ -28,6 +39,8 @@ export default function TeamBuilder() {
   const [isCreatingTeam, setIsCreatingTeam] = useState(false);
   const [swapMode, setSwapMode] = useState(false);
   const [swapRider, setSwapRider] = useState<Rider | null>(null);
+  const [showJokerDialog, setShowJokerDialog] = useState(false);
+  const [jokerCardUsed, setJokerCardUsed] = useState(false);
 
   // Fetch all races
   const { data: races, isLoading: racesLoading } = useQuery<Race[]>({
@@ -53,21 +66,33 @@ export default function TeamBuilder() {
 
   // Create team mutation
   const createTeam = useMutation({
-    mutationFn: async (data: { name: string, riderIds: number[] }) => {
+    mutationFn: async (data: { name: string, riderIds: number[], useJokerCard?: boolean }) => {
       return apiRequest('/api/teams', {
         method: 'POST',
         body: JSON.stringify(data),
         headers: { 'Content-Type': 'application/json' }
       });
     },
-    onSuccess: () => {
-      toast({
-        title: "Team created successfully!",
-        description: "Your fantasy team has been created.",
-        variant: "default",
-      });
+    onSuccess: (data, variables) => {
+      if (variables.useJokerCard) {
+        toast({
+          title: "Team rebuilt with joker card!",
+          description: "Your fantasy team has been completely reset. You've used your joker card for this season.",
+          variant: "default",
+        });
+        // Update joker card state
+        setJokerCardUsed(true);
+      } else {
+        toast({
+          title: "Team created successfully!",
+          description: "Your fantasy team has been created.",
+          variant: "default",
+        });
+      }
       queryClient.invalidateQueries({ queryKey: ['/api/teams/user'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       setIsCreatingTeam(false);
+      setShowJokerDialog(false);
     },
     onError: (error: any) => {
       toast({
@@ -108,13 +133,18 @@ export default function TeamBuilder() {
     }
   });
 
-  // Initialize selected riders from user's team
+  // Initialize selected riders from user's team and check joker card status
   useEffect(() => {
     if (userTeam && !isCreatingTeam) {
       setSelectedRiders(userTeam.riders || []);
       setTeamName(userTeam.name || "My DH Team");
     }
-  }, [userTeam, isCreatingTeam]);
+    
+    // Check if user has used joker card
+    if (user) {
+      setJokerCardUsed(user.jokerCardUsed || false);
+    }
+  }, [userTeam, isCreatingTeam, user]);
 
   // Filter riders based on search and tab
   const filteredRiders = riders ? (riders as Rider[]).filter((rider: Rider) => {
@@ -367,6 +397,52 @@ export default function TeamBuilder() {
     }
   };
 
+  // Handle joker card use
+  const handleUseJokerCard = () => {
+    if (jokerCardUsed) {
+      toast({
+        title: "Joker card already used",
+        description: "You have already used your joker card for this season.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to use your joker card.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Show joker card dialog
+    setShowJokerDialog(true);
+  };
+  
+  // Handle confirm joker card use
+  const handleConfirmJokerCard = () => {
+    // Use joker card to create a new team
+    if (selectedRiders.length !== 6) {
+      toast({
+        title: "Invalid team",
+        description: "Please select exactly 6 riders for your team.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const riderIds = selectedRiders.map(r => r.id);
+    
+    // Create new team with joker card flag
+    createTeam.mutate({
+      name: teamName,
+      riderIds,
+      useJokerCard: true
+    });
+  };
+  
   // Handle create new team button
   const handleCreateNewTeam = () => {
     setSelectedRiders([]);
