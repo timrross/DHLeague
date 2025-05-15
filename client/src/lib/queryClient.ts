@@ -18,9 +18,18 @@ export async function apiRequest<T = any>(
   options: ApiRequestOptions = {},
 ): Promise<T> {
   console.log(options.body);
+  
+  // Set default headers for JSON content if not explicitly provided
+  const headers = options.headers || {};
+  if (options.body && 
+      !headers['Content-Type'] && 
+      !(options.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+  }
+  
   const res = await fetch(url, {
     method: options.method || "GET",
-    headers: options.headers || {},
+    headers: headers,
     body: options.body,
     credentials: "include",
   });
