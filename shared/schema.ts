@@ -41,6 +41,7 @@ export const riders = pgTable("riders", {
   country: text("country"),
   points: integer("points").default(0),
   form: text("form").default("[]"), // JSON array of last 5 results
+  injured: boolean("injured").default(false)
 });
 
 export const insertRiderSchema = createInsertSchema(riders).omit({

@@ -52,6 +52,29 @@ export async function runMigrations() {
       console.log('rider_id column already exists, skipping migration.');
     }
     
+    // Check if injured column exists
+    const checkInjuredColumn = await db.execute(sql`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'riders' AND column_name = 'injured'
+    `);
+    
+    const hasInjuredColumn = checkInjuredColumn.rows.length > 0;
+    
+    if (!hasInjuredColumn) {
+      console.log('Adding injured column to riders table...');
+      
+      // Add the injured column with default false
+      await db.execute(sql`
+        ALTER TABLE riders 
+        ADD COLUMN injured BOOLEAN DEFAULT FALSE
+      `);
+      
+      console.log('injured column added successfully.');
+    } else {
+      console.log('injured column already exists, skipping migration.');
+    }
+    
     return true;
   } catch (error) {
     console.error('Error running migrations:', error);
