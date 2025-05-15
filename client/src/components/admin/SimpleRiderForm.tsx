@@ -3,6 +3,7 @@ import { Rider } from '@shared/schema';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2 } from "lucide-react";
 import { 
   Select,
@@ -35,6 +36,7 @@ export function SimpleRiderForm({
   const [lastYearStanding, setLastYearStanding] = useState<number>(initialData.lastYearStanding || 0);
   const [points, setPoints] = useState<number>(initialData.points || 0);
   const [image, setImage] = useState(initialData.image || '');
+  const [injured, setInjured] = useState<boolean>(initialData.injured || false);
 
   // Update form if initialData changes (like when editing a different rider)
   useEffect(() => {
@@ -46,6 +48,7 @@ export function SimpleRiderForm({
     setLastYearStanding(initialData.lastYearStanding || 0);
     setPoints(initialData.points || 0);
     setImage(initialData.image || '');
+    setInjured(initialData.injured || false);
   }, [initialData]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -60,7 +63,8 @@ export function SimpleRiderForm({
       cost: Number(cost),
       lastYearStanding: Number(lastYearStanding),
       points: Number(points),
-      image
+      image,
+      injured
     };
     
     onSubmit(riderData);
@@ -155,6 +159,17 @@ export function SimpleRiderForm({
             onChange={(e) => setPoints(Number(e.target.value))}
             className="h-8"
           />
+        </div>
+        
+        <div className="col-span-3 flex items-center space-x-2 pt-4">
+          <Checkbox 
+            id="injured" 
+            checked={injured}
+            onCheckedChange={(checked) => setInjured(checked as boolean)}
+          />
+          <Label htmlFor="injured" className="text-xs font-medium text-red-600">
+            Injured
+          </Label>
         </div>
         
         {/* Row 3 - Profile Image */}
