@@ -6,6 +6,8 @@ const router = Router();
 // Get leaderboard
 router.get("/", async (req: Request, res: Response) => {
   try {
+    // Update team points first to ensure leaderboard is accurate
+    await storage.updateTeamPoints();
     const leaderboard = await storage.getLeaderboard();
     res.json(leaderboard);
   } catch (error) {

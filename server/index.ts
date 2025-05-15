@@ -1,5 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes/index";
+import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import getRawBody from "raw-body";
 //import { runMigrations } from "./migrations";
@@ -29,7 +29,7 @@ app.use(express.urlencoded({ extended: true }));
 // app.use((req, res, next) => {
 //   const start = Date.now();
 //   const path = req.path;
-//   let capturedJsonResponse: Record<string, any> | undefined = undefined;
+//   let capturedJsonResponse: Record<strinqg, any> | undefined = undefined;
 
 //   const originalResJson = res.json;
 //   res.json = function (bodyJson, ...args) {

@@ -5,7 +5,7 @@ import { storage } from "../storage";
 const router = Router();
 
 // Get current authenticated user
-router.get("/user", isAuthenticated, async (req: any, res: Response) => {
+router.get("/user", isAuthenticated, async (req: Request, res: Response) => {
   try {
     const userId = req.user.claims.sub;
     const user = await storage.getUser(userId);
@@ -17,15 +17,15 @@ router.get("/user", isAuthenticated, async (req: any, res: Response) => {
 });
 
 // Check if user is admin
-router.get("/admin", isAuthenticated, async (req: any, res: Response) => {
+router.get("/admin", isAuthenticated, async (req: Request, res: Response) => {
   try {
     const userId = req.user.claims.sub;
     const user = await storage.getUser(userId);
-    
+
     if (!user) {
       return res.json({ isAdmin: false });
     }
-    
+
     res.json({ isAdmin: !!user.isAdmin });
   } catch (error) {
     console.error("Error checking admin status:", error);

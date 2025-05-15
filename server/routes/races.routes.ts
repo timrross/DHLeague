@@ -1,11 +1,52 @@
 import { Router, Request, Response } from "express";
 import { isAuthenticated } from "../replitAuth";
+import { isAdmin } from "../middleware/auth.middleware";
 import { storage } from "../storage";
 import { z } from "zod";
 import { insertRaceSchema, insertResultSchema } from "@shared/schema";
-import { isAdmin } from "../middleware/auth.middleware";
 
 const router = Router();
+
+// Helper function to update race statuses
+async function updateRaceStatuses() {
+  try {
+    // Get all races
+    const allRaces = await storage.getRaces();
+
+    // Calculate status for each race based on dates
+    allRaces.forEach((race) => {
+      const startDate = new Date(race.startDate);
+      const endDate = new Date(race.endDate);
+
+      // Calculate status based on dates
+      race.status = calculateRaceStatus(startDate, endDate);
+    });
+
+    // Find the next upcoming race (the closest in the future)
+    const upcomingRaces = allRaces.filter((race) => race.status === "upcoming");
+
+    if (upcomingRaces.length > 0) {
+      // Sort by start date (ascending)
+      upcomingRaces.sort(
+        (a, b) =>
+          new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
+      );
+
+      // Mark the first upcoming race as 'next'
+      const nextRaceId = upcomingRaces[0].id;
+
+      // Only update if needed to avoid unnecessary database calls
+      if (upcomingRaces[0].status !== "next") {
+        await storage.updateRace(nextRaceId, { status: "next" });
+      }
+    }
+
+    return allRaces;
+  } catch (error) {
+    console.error("Error updating race statuses:", error);
+    return null;
+  }
+}
 
 // Helper function to determine race status based on dates
 function calculateRaceStatus(
@@ -35,64 +76,52 @@ function calculateRaceStatus(
   return isNext ? "next" : "upcoming";
 }
 
-// Get all races
+// Race routes
 router.get("/", async (req: Request, res: Response) => {
   try {
-    const races = await storage.getRaces();
-    
-    // Update race status based on current date
-    const updatedRaces = races.map(race => {
-      const startDate = new Date(race.startDate);
-      const endDate = new Date(race.endDate);
-      const status = calculateRaceStatus(startDate, endDate);
-      
-      return {
-        ...race,
-        status
-      };
-    });
-    
-    res.json(updatedRaces);
+    // First update race statuses based on current date and time
+    const updatedRaces = await updateRaceStatuses();
+
+    // If updating statuses failed, just fetch races directly
+    const races = updatedRaces || (await storage.getRaces());
+    res.json(races);
   } catch (error) {
     console.error("Error fetching races:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Failed to fetch races" });
   }
 });
 
-// Get race by ID
 router.get("/:id", async (req: Request, res: Response) => {
   try {
-    const raceId = parseInt(req.params.id);
+    const raceId = Number(req.params.id);
     if (isNaN(raceId)) {
       return res.status(400).json({ message: "Invalid race ID" });
     }
+
+    // Make sure statuses are updated
+    await updateRaceStatuses();
 
     const race = await storage.getRace(raceId);
     if (!race) {
       return res.status(404).json({ message: "Race not found" });
     }
 
-    const startDate = new Date(race.startDate);
-    const endDate = new Date(race.endDate);
-    const status = calculateRaceStatus(startDate, endDate);
-
-    res.json({
-      ...race,
-      status
-    });
+    res.json(race);
   } catch (error) {
     console.error("Error fetching race:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Failed to fetch race" });
   }
 });
 
-// Get race with results
 router.get("/:id/results", async (req: Request, res: Response) => {
   try {
-    const raceId = parseInt(req.params.id);
+    const raceId = Number(req.params.id);
     if (isNaN(raceId)) {
       return res.status(400).json({ message: "Invalid race ID" });
     }
+
+    // Make sure statuses are updated
+    await updateRaceStatuses();
 
     const raceWithResults = await storage.getRaceWithResults(raceId);
     if (!raceWithResults) {
@@ -101,79 +130,137 @@ router.get("/:id/results", async (req: Request, res: Response) => {
 
     res.json(raceWithResults);
   } catch (error) {
-    console.error("Error fetching race with results:", error);
+    console.error("Error fetching race results:", error);
     res.status(500).json({ message: "Failed to fetch race results" });
   }
 });
 
-// Create a new race (admin only)
-router.post("/", isAuthenticated, isAdmin, async (req: any, res: Response) => {
-  try {
-    const validatedData = insertRaceSchema.parse(req.body);
-    const race = await storage.createRace(validatedData);
-    res.status(201).json(race);
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({ message: "Invalid race data", errors: error.errors });
+router.post(
+  "/api/races",
+  isAuthenticated,
+  isAdmin,
+  async (req: Request, res: Response) => {
+    try {
+      // Create a copy of the race data and remove any status
+      // as status will be automatically determined by dates
+      const raceData = { ...req.body };
+      delete raceData.status;
+
+      const newRace = await storage.createRace(raceData);
+
+      // Update race statuses after creating a new race
+      await updateRaceStatuses();
+
+      // Get the updated race with the correct status
+      const updatedRace = await storage.getRace(newRace.id);
+
+      res.status(201).json(updatedRace || newRace);
+    } catch (error) {
+      console.error("Error creating race:", error);
+      res.status(500).json({
+        message: "Failed to create race",
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
-    console.error("Error creating race:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-});
+  },
+);
 
-// Update race (admin only)
-router.patch("/:id", isAuthenticated, isAdmin, async (req: any, res: Response) => {
-  try {
-    const raceId = parseInt(req.params.id);
-    if (isNaN(raceId)) {
-      return res.status(400).json({ message: "Invalid race ID" });
+router.put(
+  "/:id",
+  isAuthenticated,
+  isAdmin,
+  async (req: Request, res: Response) => {
+    try {
+      const raceId = Number(req.params.id);
+      if (isNaN(raceId)) {
+        return res.status(400).json({ message: "Invalid race ID" });
+      }
+
+      // Create a copy of the race data and remove any status
+      // as status will be automatically determined by dates
+      const raceData = { ...req.body };
+      delete raceData.status;
+
+      // Check if there's at least one valid property to update
+      const hasValidFields = Object.values(raceData).some(
+        (val) => val !== undefined && val !== null && val !== "",
+      );
+
+      if (!hasValidFields) {
+        return res.status(400).json({
+          message: "No valid fields provided for update",
+          error: "At least one field must have a value",
+        });
+      }
+
+      try {
+        const updatedRace = await storage.updateRace(raceId, raceData);
+
+        if (!updatedRace) {
+          return res.status(404).json({ message: "Race not found" });
+        }
+
+        // Update race statuses after updating the race
+        await updateRaceStatuses();
+
+        // Get the race again with its calculated status
+        const raceWithStatus = await storage.getRace(raceId);
+
+        res.json(raceWithStatus);
+      } catch (error: any) {
+        if (error.message && error.message.includes("No values to set")) {
+          return res.status(400).json({
+            message: "No valid fields provided for update",
+            error: error.message,
+          });
+        }
+        throw error; // Let the outer catch handle other errors
+      }
+    } catch (error) {
+      console.error("Error updating race:", error);
+      res.status(500).json({
+        message: "Failed to update race",
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
+  },
+);
 
-    const race = await storage.getRace(raceId);
-    if (!race) {
-      return res.status(404).json({ message: "Race not found" });
+router.post(
+  "/:id/results",
+  isAuthenticated,
+  async (req: Request, res: Response) => {
+    try {
+      // Check if user is an admin
+      const userId = req.user.claims.sub;
+      if (userId !== "42624609") {
+        return res
+          .status(403)
+          .json({ message: "Unauthorized. Admin access required." });
+      }
+
+      const raceId = Number(req.params.id);
+      if (isNaN(raceId)) {
+        return res.status(400).json({ message: "Invalid race ID" });
+      }
+
+      const resultData = req.body;
+      resultData.raceId = raceId;
+
+      const newResult = await storage.addResult(resultData);
+
+      // Update team points after adding a result
+      await storage.updateTeamPoints();
+
+      res.status(201).json(newResult);
+    } catch (error) {
+      console.error("Error adding race result:", error);
+      res.status(500).json({
+        message: "Failed to add race result",
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
-
-    const updatedRace = await storage.updateRace(raceId, req.body);
-    res.json(updatedRace);
-  } catch (error) {
-    console.error("Error updating race:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-// Add race results (admin only)
-router.post("/:id/results", isAuthenticated, isAdmin, async (req: any, res: Response) => {
-  try {
-    const raceId = parseInt(req.params.id);
-    if (isNaN(raceId)) {
-      return res.status(400).json({ message: "Invalid race ID" });
-    }
-
-    const race = await storage.getRace(raceId);
-    if (!race) {
-      return res.status(404).json({ message: "Race not found" });
-    }
-
-    // Validate result data
-    const validatedData = insertResultSchema.parse({
-      ...req.body,
-      raceId
-    });
-
-    const result = await storage.addResult(validatedData);
-    
-    // Update team points after adding results
-    await storage.updateTeamPoints();
-    
-    res.status(201).json(result);
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({ message: "Invalid result data", errors: error.errors });
-    }
-    console.error("Error adding race result:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-});
+  },
+);
 
 export default router;
