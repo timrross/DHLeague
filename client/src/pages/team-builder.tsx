@@ -299,7 +299,17 @@ export default function TeamBuilder() {
       
       // Add rider if team isn't full
       if (selectedRiders.length < 6) {
+        // Add the rider to the selection
         setSelectedRiders([...selectedRiders, rider]);
+        
+        // Warn about injured rider after adding
+        if (rider.injured) {
+          toast({
+            title: "Injured Rider Added",
+            description: "Warning: This rider is currently injured and may not participate in upcoming races.",
+            variant: "destructive",
+          });
+        }
       } else {
         toast({
           title: "Team is full",
@@ -328,6 +338,16 @@ export default function TeamBuilder() {
         variant: "destructive",
       });
       return;
+    }
+    
+    // Check if any riders are injured and warn the user
+    const injuredRiders = selectedRiders.filter(rider => rider.injured);
+    if (injuredRiders.length > 0) {
+      toast({
+        title: `Team includes ${injuredRiders.length} injured rider${injuredRiders.length > 1 ? 's' : ''}`,
+        description: "Injured riders may not participate in upcoming races and could affect your score.",
+        variant: "destructive",
+      });
     }
 
     const riderIds = selectedRiders.map(r => r.id);
