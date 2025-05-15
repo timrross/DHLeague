@@ -3,9 +3,13 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { uciApiService } from "./services/uciApi";
-import { insertTeamSchema, insertTeamRiderSchema, teamSwaps } from "@shared/schema";
+import { 
+  insertTeamSchema, insertTeamRiderSchema, insertRiderSchema, insertRaceSchema,
+  teamSwaps, teams, teamRiders, users
+} from "@shared/schema";
 import { db } from "./db";
 import { z } from "zod";
+import { eq } from "drizzle-orm";
 import { upload, processImage, downloadImage } from "./imageUpload";
 import path from "path";
 
@@ -557,11 +561,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Check swap limit (maximum 2 per race)
-      const swapsUsed = team.swapsUsed ?? 0;
-      if (swapsUsed >= 2) {
+      // Check remaining swaps
+      const swapsRemaining = team.swapsRemaining ?? 0;
+      if (swapsRemaining <= 0) {
         return res.status(400).json({ 
-          message: "Maximum swap limit reached (2 per race)" 
+          message: "No swaps remaining for this race. Each team is limited to 2 swaps per race." 
         });
       }
       
@@ -634,10 +638,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Insert the swap record
         await tx.insert(teamSwaps).values(swapData);
         
-        // Update the team with new riders and increment swap count
+        // Update the team with new riders and decrement remaining swaps
         await storage.updateTeam(
           team.id, 
-          { swapsUsed: (team.swapsUsed || 0) + 1 }, 
+          { swapsRemaining: swapsRemaining - 1 }, 
           updatedRiderIds
         );
       });
@@ -661,7 +665,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate team data
       const teamDataResult = insertTeamSchema.safeParse({
         ...req.body,
-        userId
+        userId,
+        swapsRemaining: 2 // Initialize with 2 swaps per race
       });
       
       if (!teamDataResult.success) {
@@ -682,10 +687,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Check if team name is already taken
+      try {
+        const [teamWithSameName] = await db.select().from(teams).where(eq(teams.name, teamDataResult.data.name));
+        if (teamWithSameName) {
+          return res.status(400).json({ 
+            message: "Team name is already taken. Please choose a different name." 
+          });
+        }
+      } catch (error) {
+        console.error("Error checking team name uniqueness:", error);
+        // Continue if there's an error checking the name
+      }
+      
       // Check if user already has a team
       const existingTeam = await storage.getUserTeam(userId);
       if (existingTeam) {
-        return res.status(400).json({ message: "User already has a team" });
+        // If user already has a team, check if this is a joker card usage
+        if (req.body.useJokerCard === true) {
+          // Check if user has already used their joker card
+          const [user] = await db.select().from(users).where(eq(users.id, userId));
+          
+          if (user && user.jokerCardUsed) {
+            return res.status(400).json({ 
+              message: "You have already used your joker card for this season." 
+            });
+          }
+          
+          // User is using their joker card - delete existing team and mark joker as used
+          await db.transaction(async (tx) => {
+            // Delete old team data
+            await tx.delete(teamRiders).where(eq(teamRiders.teamId, existingTeam.id));
+            await tx.delete(teams).where(eq(teams.id, existingTeam.id));
+            
+            // Mark joker card as used
+            await tx.update(users)
+              .set({ jokerCardUsed: true, updatedAt: new Date() })
+              .where(eq(users.id, userId));
+          });
+          
+          // Continue to create new team
+        } else {
+          return res.status(400).json({ 
+            message: "You already have a team. Each user can only have one team. You can use your joker card to reset your team if you haven't used it yet." 
+          });
+        }
       }
       
       // Create team
@@ -693,7 +739,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(team);
     } catch (error: any) {
       console.error("Error creating team:", error);
-      res.status(error.message.includes('Team ') ? 400 : 500)
+      // Handle specific database constraint errors
+      if (error.message?.includes('unique constraint')) {
+        if (error.message.includes('unique_team_name')) {
+          return res.status(400).json({ 
+            message: "Team name is already taken. Please choose a different name." 
+          });
+        }
+        if (error.message.includes('unique_user_id')) {
+          return res.status(400).json({ 
+            message: "You already have a team. Each user can only have one team." 
+          });
+        }
+      }
+      
+      res.status(error.message?.includes('Team ') ? 400 : 500)
         .json({ message: error.message || "Failed to create team" });
     }
   });
