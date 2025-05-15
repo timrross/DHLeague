@@ -1,5 +1,6 @@
 import axios from "axios";
 import { InsertRace, InsertRider } from "@shared/schema";
+import { generateRiderId } from "@shared/utils";
 
 // Types for UCI API responses
 interface UCIRaceEvent {
@@ -315,8 +316,12 @@ export class UCIApiService {
         const givenName = (rider.givenName || "").trim();
         const familyName = (rider.familyName || "").trim();
         const name = `${givenName} ${familyName}`.trim();
+        
+        // Generate consistent rider ID from name
+        const riderId = generateRiderId(name);
 
         return {
+          riderId,
           name,
           gender,
           team,

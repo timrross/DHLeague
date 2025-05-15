@@ -31,6 +31,7 @@ export const sessions = pgTable(
 // Rider model
 export const riders = pgTable("riders", {
   id: serial("id").primaryKey(),
+  riderId: text("rider_id").notNull(), // Consistent ID across APIs based on name
   name: text("name").notNull(),
   gender: text("gender").notNull(), // "male" or "female"
   team: text("team").notNull(),
