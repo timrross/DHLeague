@@ -414,6 +414,111 @@ export default function TeamBuilder() {
           </div>
         </div>
 
+        {/* Mobile-only team view - shown first on small screens */}
+        <div className="block lg:hidden mb-6">
+          <Card className="bg-white rounded-lg shadow-md overflow-hidden">
+            <CardContent className="p-6">
+              <div className="bg-gray-50 p-5 rounded-lg">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-heading font-bold text-xl text-secondary">YOUR TEAM</h3>
+                  {userTeam && !isCreatingTeam && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCreateNewTeam}
+                      className="text-xs"
+                    >
+                      Create New
+                    </Button>
+                  )}
+                </div>
+                
+                {/* Team lock countdown */}
+                {nextRace && (
+                  <div className="bg-gray-100 rounded-md p-3 mb-4">
+                    <CountdownTimer 
+                      targetDate={new Date(nextRace.startDate)} 
+                      showLockStatus={true}
+                      title="Team lock status"
+                    />
+                  </div>
+                )}
+                
+                {/* Team name input */}
+                <div className="mb-4">
+                  <label className="text-sm font-semibold text-gray-700 block mb-1">Team Name</label>
+                  <Input
+                    type="text"
+                    value={teamName}
+                    onChange={(e) => setTeamName(e.target.value)}
+                    className="w-full border-gray-300"
+                    maxLength={30}
+                  />
+                </div>
+                
+                {/* Budget progress */}
+                <div className="mb-5">
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="font-semibold text-gray-700">Budget Used</span>
+                    <span className="font-accent font-semibold text-gray-700">
+                      ${usedBudget.toLocaleString()} / ${totalBudget.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="relative h-2 w-full overflow-hidden rounded-full bg-gray-200">
+                    <div 
+                      className={`h-full transition-all ${remainingBudget >= 0 ? 'bg-primary' : 'bg-destructive'}`}
+                      style={{ width: `${Math.min(budgetPercentage, 100)}%` }}
+                    />
+                  </div>
+                </div>
+                
+                {/* Team composition */}
+                <TeamSummary 
+                  selectedRiders={selectedRiders} 
+                  toggleRiderSelection={toggleRiderSelection}
+                  isTeamLocked={isTeamLocked}
+                  swapsRemaining={swapsRemaining}
+                  swapMode={swapMode}
+                  initiateSwap={initiateSwap}
+                  cancelSwap={cancelSwap}
+                  swapRider={swapRider}
+                />
+                
+                {/* Action buttons */}
+                <div className="mt-5 space-y-2">
+                  <Button
+                    className="w-full bg-secondary hover:bg-gray-800 text-white font-heading font-bold py-3 rounded-md transition duration-200"
+                    disabled={!isTeamValid || (!isAuthenticated && !authLoading)}
+                    onClick={handleSaveTeam}
+                  >
+                    {userTeam && !isCreatingTeam ? 'UPDATE TEAM' : 'SAVE TEAM'} ({selectedRiders.length}/6 RIDERS)
+                  </Button>
+                  
+                  {isCreatingTeam && userTeam && (
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={handleCancelCreateTeam}
+                    >
+                      CANCEL
+                    </Button>
+                  )}
+                  
+                  {!isAuthenticated && !authLoading && (
+                    <div className="text-center mt-2">
+                      <p className="text-sm text-gray-600 mb-2">You need to log in to save your team</p>
+                      <Link href="/api/login">
+                        <a className="text-primary hover:underline">Log In</a>
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        
+        {/* Desktop layout */}
         <Card className="bg-white rounded-lg shadow-md overflow-hidden">
           <CardContent className="p-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -479,7 +584,7 @@ export default function TeamBuilder() {
                 </div>
               </div>
               
-              <div className="bg-gray-50 p-5 rounded-lg">
+              <div className="hidden lg:block bg-gray-50 p-5 rounded-lg">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-heading font-bold text-xl text-secondary">YOUR TEAM</h3>
                   {userTeam && !isCreatingTeam && (
