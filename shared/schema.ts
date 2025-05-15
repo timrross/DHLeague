@@ -11,6 +11,7 @@ export const users = pgTable("users", {
   profileImageUrl: varchar("profile_image_url"),
   isAdmin: boolean("is_admin").default(false),
   isActive: boolean("is_active").default(true),
+  jokerCardUsed: boolean("joker_card_used").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -54,12 +55,13 @@ export type InsertRider = z.infer<typeof insertRiderSchema>;
 // Team model
 export const teams = pgTable("teams", {
   id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull().references(() => users.id),
-  name: text("name").notNull(),
+  userId: varchar("user_id").notNull().references(() => users.id).unique(), // One team per user
+  name: text("name").notNull().unique(), // Unique team names
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   totalPoints: integer("total_points").default(0),
   swapsUsed: integer("swaps_used").default(0),
+  swapsRemaining: integer("swaps_remaining").default(2), // Default 2 swaps per race
   currentRaceId: integer("current_race_id"),
   isLocked: boolean("is_locked").default(false),
   lockedAt: timestamp("locked_at"),

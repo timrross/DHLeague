@@ -75,6 +75,99 @@ export async function runMigrations() {
       console.log('injured column already exists, skipping migration.');
     }
     
+    // Check if joker_card_used column exists in users table
+    const checkJokerCardColumn = await db.execute(sql`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'users' AND column_name = 'joker_card_used'
+    `);
+    
+    const hasJokerCardColumn = checkJokerCardColumn.rows.length > 0;
+    
+    if (!hasJokerCardColumn) {
+      console.log('Adding joker_card_used column to users table...');
+      
+      // Add the joker_card_used column with default false
+      await db.execute(sql`
+        ALTER TABLE users 
+        ADD COLUMN joker_card_used BOOLEAN DEFAULT FALSE
+      `);
+      
+      console.log('joker_card_used column added successfully.');
+    } else {
+      console.log('joker_card_used column already exists, skipping migration.');
+    }
+    
+    // Check if swaps_remaining column exists in teams table
+    const checkSwapsRemainingColumn = await db.execute(sql`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'teams' AND column_name = 'swaps_remaining'
+    `);
+    
+    const hasSwapsRemainingColumn = checkSwapsRemainingColumn.rows.length > 0;
+    
+    if (!hasSwapsRemainingColumn) {
+      console.log('Adding swaps_remaining column to teams table...');
+      
+      // Add the swaps_remaining column with default 2
+      await db.execute(sql`
+        ALTER TABLE teams 
+        ADD COLUMN swaps_remaining INTEGER DEFAULT 2
+      `);
+      
+      console.log('swaps_remaining column added successfully.');
+    } else {
+      console.log('swaps_remaining column already exists, skipping migration.');
+    }
+    
+    // Add unique constraints to team name and one team per user
+    try {
+      console.log('Adding unique constraints to teams table...');
+      
+      // Check if unique constraints already exist
+      const checkUniqueNameConstraint = await db.execute(sql`
+        SELECT constraint_name
+        FROM information_schema.table_constraints
+        WHERE table_name = 'teams' 
+        AND constraint_type = 'UNIQUE'
+        AND constraint_name = 'unique_team_name'
+      `);
+      
+      if (checkUniqueNameConstraint.rows.length === 0) {
+        // Add unique constraint to team name
+        await db.execute(sql`
+          ALTER TABLE teams
+          ADD CONSTRAINT unique_team_name UNIQUE (name)
+        `);
+        console.log('Unique constraint for team name added successfully.');
+      } else {
+        console.log('Unique constraint for team name already exists.');
+      }
+      
+      const checkUniqueUserConstraint = await db.execute(sql`
+        SELECT constraint_name
+        FROM information_schema.table_constraints
+        WHERE table_name = 'teams' 
+        AND constraint_type = 'UNIQUE'
+        AND constraint_name = 'unique_user_id'
+      `);
+      
+      if (checkUniqueUserConstraint.rows.length === 0) {
+        // Add unique constraint to user_id (one team per user)
+        await db.execute(sql`
+          ALTER TABLE teams
+          ADD CONSTRAINT unique_user_id UNIQUE (user_id)
+        `);
+        console.log('Unique constraint for one team per user added successfully.');
+      } else {
+        console.log('Unique constraint for one team per user already exists.');
+      }
+    } catch (error) {
+      console.error('Error adding unique constraints:', error);
+      // Continue with other migrations even if this one fails
+    }
+    
     return true;
   } catch (error) {
     console.error('Error running migrations:', error);
