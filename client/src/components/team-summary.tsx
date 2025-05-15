@@ -116,12 +116,27 @@ export default function TeamSummary({
         {selectedRiders.map((rider) => (
           <div 
             key={rider.id} 
-            className={`bg-white rounded-md p-3 shadow-sm flex justify-between items-center ${
-              swapRider?.id === rider.id ? 'ring-2 ring-amber-400' : ''
+            className={`bg-white rounded-md p-3 shadow-sm flex justify-between items-center relative ${
+              swapRider?.id === rider.id 
+                ? 'ring-2 ring-amber-400' 
+                : rider.injured 
+                  ? 'ring-2 ring-red-400 bg-red-50' 
+                  : ''
             }`}
           >
+            {rider.injured && (
+              <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full px-2 py-1 shadow-sm">
+                INJURED
+              </div>
+            )}
             <div className="flex items-center">
-              <Avatar className={`w-8 h-8 border-2 mr-2 ${rider.gender === 'male' ? 'border-blue-300' : 'border-pink-300'}`}>
+              <Avatar className={`w-8 h-8 border-2 mr-2 ${
+                rider.injured 
+                  ? 'border-red-400' 
+                  : rider.gender === 'male' 
+                    ? 'border-blue-300' 
+                    : 'border-pink-300'
+              }`}>
                 <AvatarImage src={safeImageUrl(rider.image)} alt={rider.name} className="object-cover" />
                 <AvatarFallback className={getColorFromName(rider.name)}>
                   {getInitials(rider.name)}
@@ -129,9 +144,14 @@ export default function TeamSummary({
               </Avatar>
               <div>
                 <h5 className="font-heading font-bold text-secondary text-sm">{rider.name}</h5>
-                <span className={`${rider.gender === 'male' ? 'text-blue-600' : 'text-pink-600'} text-xs font-medium`}>
-                  {rider.gender === 'male' ? 'Male' : 'Female'} • {rider.team}
-                </span>
+                <div className="flex items-center flex-wrap">
+                  <span className={`${rider.gender === 'male' ? 'text-blue-600' : 'text-pink-600'} text-xs font-medium`}>
+                    {rider.gender === 'male' ? 'Male' : 'Female'} • {rider.team}
+                  </span>
+                  {rider.injured && (
+                    <span className="ml-1 text-red-600 font-medium text-xs">• Injured</span>
+                  )}
+                </div>
               </div>
             </div>
             <div className="flex items-center">

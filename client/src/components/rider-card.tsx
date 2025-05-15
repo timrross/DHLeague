@@ -19,14 +19,28 @@ export default function RiderCard({ rider, isSelected, onClick }: RiderCardProps
   const avatarBgColor = isSelected 
     ? 'bg-primary' 
     : getColorFromName(rider.name);
+    
+  // Determine card style based on selected and injured status
+  const cardBorderClass = isSelected 
+    ? 'border-primary bg-red-50' 
+    : rider.injured 
+      ? 'border-red-400 bg-red-50' 
+      : 'border-gray-200';
 
   return (
     <div 
-      className={`border ${isSelected ? 'border-primary bg-red-50' : 'border-gray-200'} rounded-md p-3 hover:bg-gray-50 transition duration-200 cursor-pointer flex justify-between items-center`}
+      className={`border ${cardBorderClass} rounded-md p-3 hover:bg-gray-50 transition duration-200 cursor-pointer flex justify-between items-center relative`}
       onClick={onClick}
     >
+      {/* Injured badge */}
+      {rider.injured && (
+        <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full px-2 py-1 shadow-sm">
+          INJURED
+        </div>
+      )}
+      
       <div className="flex items-center">
-        <Avatar className={`w-10 h-10 border-2 mr-3 ${isSelected ? 'border-primary' : 'border-transparent'}`}>
+        <Avatar className={`w-10 h-10 border-2 mr-3 ${isSelected ? 'border-primary' : rider.injured ? 'border-red-400' : 'border-transparent'}`}>
           <AvatarImage src={safeImageUrl(rider.image)} alt={rider.name} className="object-cover" />
           <AvatarFallback className={`${avatarBgColor} text-white`}>
             {getInitials(rider.name)}
@@ -39,6 +53,9 @@ export default function RiderCard({ rider, isSelected, onClick }: RiderCardProps
               {rider.gender === 'male' ? 'Male' : 'Female'}
             </span>
             <span className="text-gray-600">{rider.team}</span>
+            {rider.injured && (
+              <span className="ml-2 text-red-600 font-medium text-xs">Injured</span>
+            )}
           </div>
         </div>
       </div>
