@@ -254,7 +254,7 @@ export default function RiderManagement() {
             <div className="text-center py-8 text-red-500">
               Error loading riders
             </div>
-          ) : !riders || riders.length === 0 ? (
+          ) : !Array.isArray(riders) || riders.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               No riders found. Add a rider or import from UCI API.
             </div>
@@ -270,6 +270,7 @@ export default function RiderManagement() {
                   <TableHead>Cost</TableHead>
                   <TableHead>Last Year Standing</TableHead>
                   <TableHead>Points</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -278,7 +279,7 @@ export default function RiderManagement() {
                   <React.Fragment key={rider.id}>
                     {inlineEditRiderId === rider.id ? (
                       <TableRow>
-                        <TableCell colSpan={8}>
+                        <TableCell colSpan={9}>
                           <SimpleRiderForm
                             initialData={{
                               id: rider.id,
@@ -290,6 +291,7 @@ export default function RiderManagement() {
                               lastYearStanding: rider.lastYearStanding,
                               points: rider.points,
                               image: rider.image,
+                              injured: rider.injured || false,
                             }}
                             onSubmit={handleInlineRiderEditSave}
                             onCancel={handleInlineRiderEditCancel}
@@ -328,6 +330,17 @@ export default function RiderManagement() {
                         <TableCell>${rider.cost.toLocaleString()}</TableCell>
                         <TableCell>{rider.lastYearStanding}</TableCell>
                         <TableCell>{rider.points}</TableCell>
+                        <TableCell>
+                          {rider.injured ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                              Injured
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              Active
+                            </span>
+                          )}
+                        </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end space-x-2">
                             <Button

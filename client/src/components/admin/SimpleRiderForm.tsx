@@ -165,7 +165,7 @@ export function SimpleRiderForm({
           <Checkbox 
             id="injured" 
             checked={injured}
-            onCheckedChange={(checked) => setInjured(checked as boolean)}
+            onCheckedChange={(checked: boolean) => setInjured(checked)}
           />
           <Label htmlFor="injured" className="text-xs font-medium text-red-600">
             Injured
