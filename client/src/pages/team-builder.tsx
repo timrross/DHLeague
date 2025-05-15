@@ -14,18 +14,12 @@ import { useToast } from "@/hooks/use-toast";
 import RiderCard from "@/components/rider-card";
 import TeamSummary from "@/components/team-summary";
 import CountdownTimer from "@/components/countdown-timer";
+import JokerCardDialog from "@/components/joker-card-dialog";
+import JokerCardButton from "@/components/joker-card-button";
 import { 
   Search, AlertTriangle, Info, RefreshCw, 
   RotateCcw, AlertCircle, CheckCircle2
 } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 
 export default function TeamBuilder() {
   const [, setLocation] = useLocation();
@@ -759,6 +753,14 @@ export default function TeamBuilder() {
             </div>
           </CardContent>
         </Card>
+        
+        {/* Joker card dialog */}
+        <JokerCardDialog
+          open={showJokerDialog}
+          onOpenChange={setShowJokerDialog}
+          onConfirm={handleConfirmJokerCard}
+          isTeamValid={isTeamValid}
+        />
       </div>
     </div>
   );
