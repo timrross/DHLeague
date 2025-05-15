@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -23,7 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, Pencil, Trash2, Plus } from "lucide-react";
+import { Loader2, Pencil, Trash2, Plus, Search } from "lucide-react";
 
 export default function RiderManagement() {
   const { toast } = useToast();
@@ -37,6 +38,10 @@ export default function RiderManagement() {
     null,
   );
 
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredRiders, setFilteredRiders] = useState<Rider[]>([]);
+
   // Fetch riders
   const {
     data: riders = [] as Rider[],
@@ -45,6 +50,26 @@ export default function RiderManagement() {
   } = useQuery({
     queryKey: ["/api/riders"],
   });
+
+  // Filter riders based on search query
+  useEffect(() => {
+    const riderArray = Array.isArray(riders) ? riders : [];
+    
+    if (searchQuery.trim() === '') {
+      setFilteredRiders(riderArray);
+      return;
+    }
+    
+    const query = searchQuery.toLowerCase().trim();
+    const filtered = riderArray.filter(rider => 
+      rider.name.toLowerCase().includes(query) ||
+      rider.team.toLowerCase().includes(query) ||
+      (rider.country ? rider.country.toLowerCase().includes(query) : false) ||
+      rider.riderId.toLowerCase().includes(query)
+    );
+    
+    setFilteredRiders(filtered);
+  }, [searchQuery, riders]);
 
   // Add rider mutation
   const addRiderMutation = useMutation({
@@ -193,6 +218,34 @@ export default function RiderManagement() {
           <CardDescription>View and manage existing riders.</CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Search Input */}
+          <div className="mb-4 relative">
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search riders by name, team, country..."
+                className="pl-8"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1.5 h-7 w-7 p-0"
+                  onClick={() => setSearchQuery('')}
+                >
+                  ×
+                </Button>
+              )}
+            </div>
+            {searchQuery && (
+              <p className="text-sm text-muted-foreground mt-1">
+                Found {filteredRiders.length} rider{filteredRiders.length !== 1 ? 's' : ''}
+              </p>
+            )}
+          </div>
+
           {isLoadingRiders ? (
             <div className="flex justify-center items-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -221,7 +274,7 @@ export default function RiderManagement() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {riders.map((rider: any) => (
+                {filteredRiders.map((rider: any) => (
                   <React.Fragment key={rider.id}>
                     {inlineEditRiderId === rider.id ? (
                       <TableRow>
