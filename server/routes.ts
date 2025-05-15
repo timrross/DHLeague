@@ -271,18 +271,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           continue;
         }
         
-        // Check if rider already exists by name
-        const existingRiders = await storage.getRiders();
-        const existingRider = existingRiders.find(r => r.name === rider.name);
+        // Check if rider already exists by riderId (more reliable than name)
+        const existingRiderById = await storage.getRiderByRiderId(rider.riderId);
         
-        if (existingRider) {
-          // Update existing rider
-          const updated = await storage.updateRider(existingRider.id, rider);
+        if (existingRiderById) {
+          // Update existing rider by ID
+          const updated = await storage.updateRider(existingRiderById.id, rider);
           results.push({ action: 'updated', rider: updated });
         } else {
-          // Create new rider
-          const created = await storage.createRider(rider);
-          results.push({ action: 'created', rider: created });
+          // As a fallback, also check by name for older entries
+          const existingRiders = await storage.getRiders();
+          const existingRiderByName = existingRiders.find(r => r.name === rider.name);
+          
+          if (existingRiderByName) {
+            // Update existing rider, ensuring rider ID is set
+            const updated = await storage.updateRider(existingRiderByName.id, rider);
+            results.push({ action: 'updated', rider: updated });
+          } else {
+            // Create new rider
+            const created = await storage.createRider(rider);
+            results.push({ action: 'created', rider: created });
+          }
         }
       }
       
@@ -314,7 +323,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const riderId = Number(req.params.id);
       if (isNaN(riderId)) {
-        return res.status(400).json({ message: 'Invalid rider ID' });
+        // This could be a rider ID string instead of a numeric ID
+        const rider = await storage.getRiderByRiderId(req.params.id);
+        if (!rider) {
+          return res.status(404).json({ message: 'Rider not found' });
+        }
+        return res.json(rider);
       }
       
       const rider = await storage.getRider(riderId);
