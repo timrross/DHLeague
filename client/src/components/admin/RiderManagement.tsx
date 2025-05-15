@@ -63,10 +63,10 @@ export default function RiderManagement() {
     const query = searchQuery.toLowerCase().trim();
     const filtered = riderArray.filter(
       (rider) =>
-        rider.name.toLowerCase().includes(query) ||
-        rider.team.toLowerCase().includes(query) ||
+        (rider.name ? rider.name.toLowerCase().includes(query) : false) ||
+        (rider.team ? rider.team.toLowerCase().includes(query) : false) ||
         (rider.country ? rider.country.toLowerCase().includes(query) : false) ||
-        rider.riderId.toLowerCase().includes(query),
+        (rider.riderId ? rider.riderId.toLowerCase().includes(query) : false),
     );
 
     setFilteredRiders(filtered);

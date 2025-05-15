@@ -69,12 +69,8 @@ router.put(
             if (isNaN(riderId)) {
                 return res.status(400).json({ message: "Invalid rider ID" });
             }
-            console.log(riderId);
-            console.log(req.body);
-            //return res.status(200).json({ message: "Rider updated successfully" });
 
             const riderData = req.body;
-            console.log(riderId);
             // Map any mismatched field names
             if (
                 riderData.profileImageUrl !== undefined &&
