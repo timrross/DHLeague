@@ -17,8 +17,9 @@ export async function apiRequest<T = any>(
   url: string,
   options: ApiRequestOptions = {},
 ): Promise<T> {
+  console.log(options.body);
   const res = await fetch(url, {
-    method: options.method || 'GET',
+    method: options.method || "GET",
     headers: options.headers || {},
     body: options.body,
     credentials: "include",

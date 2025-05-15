@@ -39,7 +39,7 @@ export default function RiderManagement() {
   );
 
   // Search state
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [filteredRiders, setFilteredRiders] = useState<Rider[]>([]);
 
   // Fetch riders
@@ -54,20 +54,21 @@ export default function RiderManagement() {
   // Filter riders based on search query
   useEffect(() => {
     const riderArray = Array.isArray(riders) ? riders : [];
-    
-    if (searchQuery.trim() === '') {
+
+    if (searchQuery.trim() === "") {
       setFilteredRiders(riderArray);
       return;
     }
-    
+
     const query = searchQuery.toLowerCase().trim();
-    const filtered = riderArray.filter(rider => 
-      rider.name.toLowerCase().includes(query) ||
-      rider.team.toLowerCase().includes(query) ||
-      (rider.country ? rider.country.toLowerCase().includes(query) : false) ||
-      rider.riderId.toLowerCase().includes(query)
+    const filtered = riderArray.filter(
+      (rider) =>
+        rider.name.toLowerCase().includes(query) ||
+        rider.team.toLowerCase().includes(query) ||
+        (rider.country ? rider.country.toLowerCase().includes(query) : false) ||
+        rider.riderId.toLowerCase().includes(query),
     );
-    
+
     setFilteredRiders(filtered);
   }, [searchQuery, riders]);
 
@@ -102,6 +103,7 @@ export default function RiderManagement() {
   // Update rider mutation
   const updateRiderMutation = useMutation({
     mutationFn: async (riderData: any) => {
+      console.log(riderData);
       return apiRequest(`/api/riders/${riderData.id}`, {
         method: "PUT",
         body: JSON.stringify(riderData),
@@ -171,19 +173,21 @@ export default function RiderManagement() {
   const handleInlineRiderEditSave = (riderData: any) => {
     // Add extra debugging to see what we're sending
     console.log("Submitting rider edit:", riderData);
-    
+
     // Ensure there's at least one valid property to update
-    const hasValidFields = Object.values(riderData).some(val => val !== undefined && val !== "");
-    
+    const hasValidFields = Object.values(riderData).some(
+      (val) => val !== undefined && val !== "",
+    );
+
     if (!hasValidFields) {
       toast({
-        title: 'Error',
-        description: 'At least one field must have a value',
-        variant: 'destructive',
+        title: "Error",
+        description: "At least one field must have a value",
+        variant: "destructive",
       });
       return;
     }
-    
+
     updateRiderMutation.mutate(riderData);
   };
 
@@ -233,7 +237,7 @@ export default function RiderManagement() {
                   variant="ghost"
                   size="sm"
                   className="absolute right-1 top-1.5 h-7 w-7 p-0"
-                  onClick={() => setSearchQuery('')}
+                  onClick={() => setSearchQuery("")}
                 >
                   ×
                 </Button>
@@ -241,7 +245,8 @@ export default function RiderManagement() {
             </div>
             {searchQuery && (
               <p className="text-sm text-muted-foreground mt-1">
-                Found {filteredRiders.length} rider{filteredRiders.length !== 1 ? 's' : ''}
+                Found {filteredRiders.length} rider
+                {filteredRiders.length !== 1 ? "s" : ""}
               </p>
             )}
           </div>
