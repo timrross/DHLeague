@@ -141,6 +141,10 @@ export default function TeamBuilder() {
   }, [userTeam, isCreatingTeam, user]);
 
   // Filter riders based on search and tab
+  console.log("Debug - Riders data:", riders ? riders.length : 0, "riders loaded");
+  console.log("Debug - Auth state:", { isAuthenticated, authLoading });
+  console.log("Debug - Team data:", { userTeam: userTeam ? "exists" : "null", teamLoading });
+  
   const filteredRiders = riders ? (riders as Rider[]).filter((rider: Rider) => {
     const matchesSearch = rider.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          rider.team.toLowerCase().includes(searchTerm.toLowerCase());
