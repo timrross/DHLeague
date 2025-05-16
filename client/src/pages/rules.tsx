@@ -107,9 +107,9 @@ export default function Rules() {
 
               <div className="text-center mt-8">
                 <Link href="/team-builder">
-                  <a className="inline-block bg-primary hover:bg-red-700 text-white font-heading font-bold px-8 py-3 rounded-md transition duration-200">
+                  <span className="inline-block bg-primary hover:bg-red-700 text-white font-heading font-bold px-8 py-3 rounded-md transition duration-200 cursor-pointer">
                     CREATE YOUR TEAM NOW
-                  </a>
+                  </span>
                 </Link>
               </div>
             </div>
