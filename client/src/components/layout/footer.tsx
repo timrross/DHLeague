@@ -62,23 +62,23 @@ export default function Footer() {
             <ul className="space-y-2">
               <li>
                 <Link href="/">
-                  <a className="text-gray-400 hover:text-primary transition">
+                  <span className="text-gray-400 hover:text-primary transition cursor-pointer">
                     Home
-                  </a>
+                  </span>
                 </Link>
               </li>
               <li>
                 <Link href="/rules">
-                  <a className="text-gray-400 hover:text-primary transition">
+                  <span className="text-gray-400 hover:text-primary transition cursor-pointer">
                     How to Play
-                  </a>
+                  </span>
                 </Link>
               </li>
               <li>
                 <Link href="/rules">
-                  <a className="text-gray-400 hover:text-primary transition">
+                  <span className="text-gray-400 hover:text-primary transition cursor-pointer">
                     Rules
-                  </a>
+                  </span>
                 </Link>
               </li>
               <li>
