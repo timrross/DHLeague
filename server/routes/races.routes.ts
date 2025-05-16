@@ -7,8 +7,8 @@ import { insertRaceSchema, insertResultSchema } from "@shared/schema";
 
 const router = Router();
 
-// Helper function to update race statuses
-async function updateRaceStatuses() {
+// Helper function to get races with calculated statuses
+async function getRacesWithStatuses() {
   try {
     // Get all races
     const allRaces = await storage.getRaces();
@@ -18,7 +18,7 @@ async function updateRaceStatuses() {
       const startDate = new Date(race.startDate);
       const endDate = new Date(race.endDate);
 
-      // Calculate status based on dates
+      // Calculate base status based on dates
       race.status = calculateRaceStatus(startDate, endDate);
     });
 
@@ -33,18 +33,13 @@ async function updateRaceStatuses() {
       );
 
       // Mark the first upcoming race as 'next'
-      const nextRaceId = upcomingRaces[0].id;
-
-      // Only update if needed to avoid unnecessary database calls
-      if (upcomingRaces[0].status !== "next") {
-        await storage.updateRace(nextRaceId, { status: "next" });
-      }
+      upcomingRaces[0].status = "next";
     }
 
     return allRaces;
   } catch (error) {
-    console.error("Error updating race statuses:", error);
-    return null;
+    console.error("Error calculating race statuses:", error);
+    return [];
   }
 }
 
@@ -74,11 +69,8 @@ function calculateRaceStatus(
 // Race routes
 router.get("/", async (req: Request, res: Response) => {
   try {
-    // First update race statuses based on current date and time
-    const updatedRaces = await updateRaceStatuses();
-
-    // If updating statuses failed, just fetch races directly
-    const races = updatedRaces || (await storage.getRaces());
+    // Get races with calculated statuses
+    const races = await getRacesWithStatuses();
     res.json(races);
   } catch (error) {
     console.error("Error fetching races:", error);
@@ -93,14 +85,25 @@ router.get("/:id", async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Invalid race ID" });
     }
 
-    // Make sure statuses are updated
-    await updateRaceStatuses();
-
     const race = await storage.getRace(raceId);
     if (!race) {
       return res.status(404).json({ message: "Race not found" });
     }
-
+    
+    // Calculate the status for this race
+    const startDate = new Date(race.startDate);
+    const endDate = new Date(race.endDate);
+    race.status = calculateRaceStatus(startDate, endDate);
+    
+    // Get all races to check if this is the next race
+    const allRaces = await getRacesWithStatuses();
+    const nextRace = allRaces.find(r => r.status === "next");
+    
+    // If this race is the next chronological race, mark it as "next"
+    if (nextRace && nextRace.id === race.id) {
+      race.status = "next";
+    }
+    
     res.json(race);
   } catch (error) {
     console.error("Error fetching race:", error);
@@ -114,9 +117,9 @@ router.get("/:id/results", async (req: Request, res: Response) => {
     if (isNaN(raceId)) {
       return res.status(400).json({ message: "Invalid race ID" });
     }
-
-    // Make sure statuses are updated
-    await updateRaceStatuses();
+    
+    // Get races with calculated statuses
+    await getRacesWithStatuses();
 
     const raceWithResults = await storage.getRaceWithResults(raceId);
     if (!raceWithResults) {

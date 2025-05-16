@@ -99,7 +99,6 @@ export const races = pgTable("races", {
   country: text("country").notNull(),
   startDate: timestamp("start_date").notNull(),
   endDate: timestamp("end_date").notNull(),
-  status: text("status").notNull(), // "upcoming", "next", "completed"
   imageUrl: text("image_url"),
 });
 
@@ -107,7 +106,9 @@ export const insertRaceSchema = createInsertSchema(races).omit({
   id: true,
 });
 
-export type Race = typeof races.$inferSelect;
+export type Race = typeof races.$inferSelect & {
+  status?: "upcoming" | "next" | "ongoing" | "completed";
+};
 export type InsertRace = z.infer<typeof insertRaceSchema>;
 
 // Results model
