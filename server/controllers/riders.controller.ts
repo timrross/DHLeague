@@ -67,12 +67,59 @@ export async function updateRider(req: Request, res: Response) {
       return res.status(400).json({ message: "Invalid rider ID" });
     }
 
-    const updatedRider = await storage.updateRider(riderId, req.body);
-    if (!updatedRider) {
-      return res.status(404).json({ message: "Rider not found" });
+    const riderData = req.body;
+    // Map any mismatched field names
+    if (
+      riderData.profileImageUrl !== undefined &&
+      riderData.image === undefined
+    ) {
+      riderData.image = riderData.profileImageUrl;
     }
 
-    res.json(updatedRider);
+    // Map any numeric fields that might come as strings
+    if (riderData.cost) riderData.cost = Number(riderData.cost);
+    if (riderData.points) riderData.points = Number(riderData.points);
+    if (riderData.lastYearStanding)
+      riderData.lastYearStanding = Number(riderData.lastYearStanding);
+
+    // Debug the data being sent
+    console.log("Updating rider with data:", riderData);
+
+    // Check if there's at least one valid property to update
+    const hasValidFields = Object.values(riderData).some(
+      (val) => val !== undefined && val !== null && val !== "",
+    );
+
+    if (!hasValidFields) {
+      return res.status(400).json({
+        message: "No valid fields provided for update",
+        error: "At least one field must have a value",
+      });
+    }
+
+    try {
+      const updatedRider = await storage.updateRider(
+        riderId,
+        riderData,
+      );
+
+      if (!updatedRider) {
+        return res.status(404).json({ message: "Rider not found" });
+      }
+
+      res.json(updatedRider);
+    } catch (error: any) {
+      if (
+        error.message &&
+        error.message.includes("No values to set")
+      ) {
+        return res.status(400).json({
+          message: "No valid fields provided for update",
+          error: error.message,
+        });
+      }
+      throw error; // Let the outer catch handle other errors
+    }
   } catch (error) {
     console.error("Error updating rider:", error);
     res.status(500).json({

@@ -4,7 +4,7 @@ import { storage } from "../storage";
 /**
  * Get a user's team
  */
-export async function getUserTeam(req: Request, res: Response) {
+export async function getUserTeam(req: any, res: Response) {
   try {
     // User ID is attached to the request by the auth middleware
     const userId = req.user?.claims?.sub;
@@ -23,7 +23,7 @@ export async function getUserTeam(req: Request, res: Response) {
 /**
  * Create a new team
  */
-export async function createTeam(req: Request, res: Response) {
+export async function createTeam(req: any, res: Response) {
   try {
     // User ID is attached to the request by the auth middleware
     const userId = req.user?.claims?.sub;
@@ -75,7 +75,7 @@ export async function createTeam(req: Request, res: Response) {
 /**
  * Update an existing team
  */
-export async function updateTeam(req: Request, res: Response) {
+export async function updateTeam(req: any, res: Response) {
   try {
     // User ID is attached to the request by the auth middleware
     const userId = req.user?.claims?.sub;
@@ -125,7 +125,7 @@ export async function updateTeam(req: Request, res: Response) {
 /**
  * Delete a team
  */
-export async function deleteTeam(req: Request, res: Response) {
+export async function deleteTeam(req: any, res: Response) {
   try {
     // User ID is attached to the request by the auth middleware
     const userId = req.user?.claims?.sub;
@@ -167,7 +167,7 @@ export async function deleteTeam(req: Request, res: Response) {
 /**
  * Swap a rider in a team
  */
-export async function swapTeamRider(req: Request, res: Response) {
+export async function swapTeamRider(req: any, res: Response) {
   try {
     // User ID is attached to the request by the auth middleware
     const userId = req.user?.claims?.sub;
@@ -198,7 +198,7 @@ export async function swapTeamRider(req: Request, res: Response) {
     }
 
     // Check swaps remaining
-    if (team.swapsUsed >= 2) {
+    if (team.swapsUsed && team.swapsUsed >= 2) {
       return res.status(400).json({ message: "No swaps remaining for this race" });
     }
 

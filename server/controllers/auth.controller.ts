@@ -4,7 +4,7 @@ import { storage } from "../storage";
 /**
  * Get the currently authenticated user
  */
-export async function getCurrentUser(req: Request, res: Response) {
+export async function getCurrentUser(req: any, res: Response) {
   try {
     const userId = req.user?.claims?.sub;
     if (!userId) {
@@ -22,7 +22,7 @@ export async function getCurrentUser(req: Request, res: Response) {
 /**
  * Check if the current user is an admin
  */
-export async function checkIsAdmin(req: Request, res: Response) {
+export async function checkIsAdmin(req: any, res: Response) {
   try {
     const userId = req.user?.claims?.sub;
     if (!userId) {
