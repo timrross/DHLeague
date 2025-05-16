@@ -116,7 +116,7 @@ export default function TeamSummary({
         {selectedRiders.map((rider) => (
           <div 
             key={rider.id} 
-            className={`bg-white rounded-md p-3 shadow-sm flex flex-col sm:flex-row justify-between relative ${
+            className={`bg-white rounded-md p-3 shadow-sm flex flex-col md:flex-row justify-between relative ${
               swapRider?.id === rider.id 
                 ? 'ring-2 ring-amber-400' 
                 : rider.injured 
@@ -129,7 +129,7 @@ export default function TeamSummary({
                 INJURED
               </div>
             )}
-            <div className="flex items-center mb-2 sm:mb-0">
+            <div className="flex items-center mb-2 md:mb-0">
               <Avatar className={`w-8 h-8 border-2 mr-2 flex-shrink-0 ${
                 rider.injured 
                   ? 'border-red-400' 
@@ -142,10 +142,10 @@ export default function TeamSummary({
                   {getInitials(rider.name)}
                 </AvatarFallback>
               </Avatar>
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 max-w-full">
                 <h5 className="font-heading font-bold text-secondary text-sm truncate">{rider.name}</h5>
                 <div className="flex items-center flex-wrap">
-                  <span className={`${rider.gender === 'male' ? 'text-blue-600' : 'text-pink-600'} text-xs font-medium truncate`}>
+                  <span className={`${rider.gender === 'male' ? 'text-blue-600' : 'text-pink-600'} text-xs font-medium truncate max-w-full`}>
                     {rider.gender === 'male' ? 'Male' : 'Female'} • {rider.team}
                   </span>
                   {rider.injured && (
@@ -154,7 +154,7 @@ export default function TeamSummary({
                 </div>
               </div>
             </div>
-            <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto mt-2 sm:mt-0">
+            <div className="flex items-center justify-between md:justify-end w-full md:w-auto mt-2 md:mt-0 flex-shrink-0">
               <span className="font-accent font-semibold text-primary text-sm mr-2">${rider.cost.toLocaleString()}</span>
               
               {isTeamLocked ? (
