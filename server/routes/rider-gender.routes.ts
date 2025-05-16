@@ -10,4 +10,7 @@ router.post('/update-genders', isAdmin, updateRiderGenders);
 // Route to update rider genders directly from UCI API (admin only)
 router.post('/update-genders-from-uci', isAdmin, updateRiderGendersFromUci);
 
+// Public route to get rider gender data without updating
+router.get('/fetch-uci-data', updateRiderGendersFromUci);
+
 export default router;
