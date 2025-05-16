@@ -2,9 +2,22 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes/index";
 import { setupVite, serveStatic, log } from "./vite";
 import getRawBody from "raw-body";
+import path from "path";
+import fs from "fs";
 //import { runMigrations } from "./migrations";
 
 const app = express();
+// Special route for ads.txt - add before other middleware
+app.get('/ads.txt', (req, res) => {
+  const adsPath = path.join(process.cwd(), 'public', 'ads.txt');
+  if (fs.existsSync(adsPath)) {
+    res.setHeader('Content-Type', 'text/plain');
+    fs.createReadStream(adsPath).pipe(res);
+  } else {
+    res.status(404).send('ads.txt not found');
+  }
+});
+
 // Body parsing middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
