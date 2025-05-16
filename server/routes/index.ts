@@ -8,6 +8,7 @@ import teamsRoutes from "./teams.routes";
 import racesRoutes from "./races.routes";
 import authRoutes from "./auth.routes";
 import leaderboardRoutes from "./leaderboard.routes";
+import riderGenderRoutes from "./rider-gender.routes";
 import { upload, processImage, downloadImage } from "../imageUpload";
 import path from "path";
 
@@ -20,6 +21,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/races", racesRoutes);
   app.use("/api/auth", authRoutes);
   app.use("/api/leaderboard", leaderboardRoutes);
+  app.use("/api/rider-gender", riderGenderRoutes);
 
   // Static file serving
   app.use("/uploads", (req, res, next) => {
