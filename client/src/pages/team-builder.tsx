@@ -78,8 +78,8 @@ export default function TeamBuilder() {
         setJokerCardUsed(true);
       } else {
         toast({
-          title: "Team created successfully!",
-          description: "Your fantasy team has been created.",
+          title: "✅ Team created successfully!",
+          description: "Your fantasy team has been created and saved.",
           variant: "default",
         });
       }
@@ -111,8 +111,8 @@ export default function TeamBuilder() {
     },
     onSuccess: () => {
       toast({
-        title: "Team updated successfully!",
-        description: "Your fantasy team has been updated.",
+        title: "✅ Team updated successfully!",
+        description: "Your fantasy team has been updated and saved.",
         variant: "default",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/teams/user'] });
@@ -390,11 +390,25 @@ export default function TeamBuilder() {
           name: teamName,
           riderIds
         });
+        
+        // Show immediate feedback toast
+        toast({
+          title: "Saving your team...",
+          description: "Your team is being updated.",
+          variant: "default",
+        });
       } else {
         // Create new team
         createTeam.mutate({
           name: teamName,
           riderIds
+        });
+        
+        // Show immediate feedback toast
+        toast({
+          title: "Saving your team...",
+          description: "Your new team is being created.",
+          variant: "default",
         });
       }
     }
