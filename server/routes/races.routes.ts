@@ -65,15 +65,10 @@ function calculateRaceStatus(
     return "ongoing";
   }
 
-  // Find the next race (the closest upcoming race)
-  const isNext = (() => {
-    const upcoming = new Date(startDate);
-    const msUntilStart = upcoming.getTime() - now.getTime();
-    return msUntilStart > 0 && msUntilStart < 7 * 24 * 60 * 60 * 1000; // Next 7 days
-  })();
-
-  // Otherwise, it's an upcoming race
-  return isNext ? "next" : "upcoming";
+  // For races in the future, we'll just return "upcoming"
+  // The actual "next" race will be determined in updateRaceStatuses()
+  // by finding the closest upcoming race
+  return "upcoming";
 }
 
 // Race routes
