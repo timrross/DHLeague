@@ -714,7 +714,7 @@ export default function TeamBuilder() {
         <div className="hidden lg:grid lg:grid-cols-12 lg:gap-6">
           {/* Rider selection for desktop - left side */}
           <div className="lg:col-span-7">
-            <Card className="mb-8">
+            <Card>
               <CardContent className="p-6">
                 <h3 className="font-heading font-bold text-xl text-secondary mb-4">SELECT RIDERS</h3>
                 
