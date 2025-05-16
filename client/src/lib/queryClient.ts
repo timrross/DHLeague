@@ -17,16 +17,16 @@ export async function apiRequest<T = any>(
   url: string,
   options: ApiRequestOptions = {},
 ): Promise<T> {
-  console.log(options.body);
-  
   // Set default headers for JSON content if not explicitly provided
   const headers = options.headers || {};
-  if (options.body && 
-      !headers['Content-Type'] && 
-      !(options.body instanceof FormData)) {
-    headers['Content-Type'] = 'application/json';
+  if (
+    options.body &&
+    !headers["Content-Type"] &&
+    !(options.body instanceof FormData)
+  ) {
+    headers["Content-Type"] = "application/json";
   }
-  
+
   const res = await fetch(url, {
     method: options.method || "GET",
     headers: headers,
