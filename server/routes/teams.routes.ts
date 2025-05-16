@@ -120,11 +120,27 @@ router.post(
         return res.status(403).json({ message: "Unauthorized" });
       }
 
+      // Import the getRacesWithStatuses function
+      const { getRacesWithStatuses } = await import('./races.routes');
+      
+      // Get all races with calculated statuses
+      const races = await getRacesWithStatuses();
+      
       // Check if team is locked (required for swaps)
       if (!team.isLocked) {
         return res.status(400).json({
           message:
             "Team is not locked. Swaps are only allowed during the locked period (1 day before race).",
+        });
+      }
+      
+      // Find the current race
+      const currentRace = races.find(race => race.id === team.currentRaceId);
+      
+      // Verify the race is currently ongoing
+      if (!currentRace || currentRace.status !== "ongoing") {
+        return res.status(400).json({
+          message: "Race is not currently ongoing. Swaps are only allowed during ongoing races.",
         });
       }
 
@@ -326,6 +342,50 @@ router.post(
         teamDataResult.data,
         riderIdsResult.data,
       );
+      
+      // Import the getRacesWithStatuses function to check race status
+      const { getRacesWithStatuses } = await import('./races.routes');
+      
+      // Get all races with calculated statuses
+      const races = await getRacesWithStatuses();
+      
+      // Check if there's a race that should trigger team locking
+      const upcomingRaces = races.filter(
+        race => race.status === "upcoming" || race.status === "next"
+      );
+      
+      if (upcomingRaces.length > 0) {
+        // Sort by start date to find the next race chronologically
+        upcomingRaces.sort(
+          (a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
+        );
+        
+        // The next race is the first upcoming one
+        const nextRace = upcomingRaces[0];
+        
+        // Calculate lock date (1 day before race)
+        const oneDay = 24 * 60 * 60 * 1000;
+        const lockDate = new Date(
+          new Date(nextRace.startDate).getTime() - oneDay
+        );
+        
+        const now = new Date();
+        
+        // Check if now is past the lock date and lock the team if needed
+        if (now >= lockDate) {
+          await storage.updateTeam(team.id, {
+            isLocked: true,
+            lockedAt: now,
+            currentRaceId: nextRace.id,
+            swapsUsed: 0
+          });
+          
+          // Get the updated team with lock status
+          const updatedTeam = await storage.getTeamWithRiders(team.id);
+          return res.status(201).json(updatedTeam);
+        }
+      }
+      
       res.status(201).json(team);
     } catch (error: any) {
       console.error("Error creating team:", error);
