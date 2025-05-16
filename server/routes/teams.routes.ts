@@ -24,30 +24,60 @@ router.get("/user", isAuthenticated, async (req: Request, res: Response) => {
       return res.status(404).json({ message: "No team found for user" });
     }
 
-    // Get the next race to determine lock status
+    // Get all upcoming races to determine lock status
     const races = await storage.getRaces();
-    const nextRace = races.find((race) => race.status === "next");
-
-    // Check if team should be locked (1 day before race)
-    if (nextRace) {
+    
+    // Filter for upcoming races (including 'next')
+    const upcomingRaces = races.filter(
+      race => race.status === "upcoming" || race.status === "next"
+    );
+    
+    if (upcomingRaces.length > 0) {
+      // Sort by start date to find the next race chronologically
+      upcomingRaces.sort(
+        (a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
+      );
+      
+      // The next race is the first upcoming one
+      const nextRace = upcomingRaces[0];
+      
+      // Calculate lock date (1 day before race)
       const oneDay = 24 * 60 * 60 * 1000;
       const lockDate = new Date(
-        new Date(nextRace.startDate).getTime() - oneDay,
+        new Date(nextRace.startDate).getTime() - oneDay
       );
-
-      // If we're past the lock date and the team is not already marked as locked
-      if (new Date() >= lockDate && !team.isLocked) {
-        // Lock the team for this race
-        await storage.updateTeam(team.id, {
-          isLocked: true,
-          lockedAt: new Date(),
-          currentRaceId: nextRace.id,
-          swapsUsed: 0, // Reset swap count for new race
-        });
-
-        // Get the updated team
-        const updatedTeam = await storage.getUserTeam(userId);
-        return res.json(updatedTeam);
+      
+      const now = new Date();
+      
+      // Check if now is past the lock date
+      if (now >= lockDate) {
+        // Team should be locked if we're past lock date
+        if (!team.isLocked) {
+          // Lock the team for this race
+          await storage.updateTeam(team.id, {
+            isLocked: true,
+            lockedAt: now,
+            currentRaceId: nextRace.id,
+            swapsUsed: 0, // Reset swap count for new race
+          });
+          
+          // Get the updated team
+          const updatedTeam = await storage.getUserTeam(userId);
+          return res.json(updatedTeam);
+        }
+      } else {
+        // If we're not past the lock date but the team is locked, unlock it
+        if (team.isLocked) {
+          await storage.updateTeam(team.id, {
+            isLocked: false,
+            lockedAt: null,
+            swapsRemaining: 2
+          });
+          
+          // Get the updated team
+          const updatedTeam = await storage.getUserTeam(userId);
+          return res.json(updatedTeam);
+        }
       }
     }
 
