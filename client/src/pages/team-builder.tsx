@@ -462,9 +462,25 @@ export default function TeamBuilder() {
   
   // Handle create new team button
   const handleCreateNewTeam = () => {
-    setSelectedRiders([]);
-    setTeamName("My DH Team");
-    setIsCreatingTeam(true);
+    // If user already has a team and has never used joker card, ask if they want to use it
+    if (userTeam && !jokerCardUsed) {
+      if (window.confirm("Creating a new team will replace your current team. Would you like to use your joker card to reset your team?")) {
+        // Show joker card dialog for confirmation
+        setShowJokerDialog(true);
+      }
+    } else if (userTeam && jokerCardUsed) {
+      // If the user has already used their joker card, inform them
+      toast({
+        title: "Joker card already used",
+        description: "You have already used your joker card for this season and cannot create a new team.",
+        variant: "destructive",
+      });
+    } else {
+      // First time creating a team - no joker card needed
+      setSelectedRiders([]);
+      setTeamName("My DH Team");
+      setIsCreatingTeam(true);
+    }
   };
 
   // Handle cancel create team
