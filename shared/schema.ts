@@ -34,6 +34,8 @@ export const riders = pgTable("riders", {
   id: serial("id").primaryKey(),
   riderId: text("rider_id").notNull(), // Consistent ID across APIs based on name
   name: text("name").notNull(),
+  firstName: text("first_name"),      // First name
+  lastName: text("last_name"),        // Last/family name
   gender: text("gender").notNull(), // "male" or "female"
   team: text("team").notNull(),
   cost: integer("cost").notNull(),
