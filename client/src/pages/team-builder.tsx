@@ -500,18 +500,8 @@ export default function TeamBuilder() {
             {/* Team section for mobile */}
             <div>
               <div className="bg-gray-50 p-5 rounded-lg">
-                <div className="flex justify-between items-center mb-4">
+                <div className="mb-4">
                   <h3 className="font-heading font-bold text-xl text-secondary">YOUR TEAM</h3>
-                  {userTeam && !isCreatingTeam && !jokerCardUsed && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleCreateNewTeam}
-                      className="text-xs"
-                    >
-                      Create New
-                    </Button>
-                  )}
                 </div>
                 
                 {/* Team lock countdown */}
@@ -559,29 +549,6 @@ export default function TeamBuilder() {
                             disabled={isTeamLocked && !isCreatingTeam}
                             className="font-heading font-bold"
                           />
-                        </div>
-                        
-                        {/* Selected riders */}
-                        <div className="space-y-2 mb-5">
-                          {selectedRiders.length === 0 ? (
-                            <div className="p-5 text-center bg-white rounded-lg border border-dashed border-gray-300">
-                              <p className="text-gray-500">
-                                Select 6 riders from the list below to build your team
-                              </p>
-                            </div>
-                          ) : (
-                            selectedRiders.map((rider) => (
-                              <RiderCard
-                                key={rider.id}
-                                rider={rider}
-                                selected={true}
-                                onClick={() => toggleRiderSelection(rider)}
-                                swapMode={isTeamLocked}
-                                onSwap={() => initiateSwap(rider)}
-                                showRemoveIcon={!isTeamLocked}
-                              />
-                            ))
-                          )}
                         </div>
                         
                         {/* Team summary */}
@@ -775,18 +742,8 @@ export default function TeamBuilder() {
           {/* Team section for desktop - right side */}
           <div className="lg:col-span-5">
             <div className="bg-gray-50 p-5 rounded-lg">
-              <div className="flex justify-between items-center mb-4">
+              <div className="mb-4">
                 <h3 className="font-heading font-bold text-xl text-secondary">YOUR TEAM</h3>
-                {userTeam && !isCreatingTeam && !jokerCardUsed && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleCreateNewTeam}
-                    className="text-xs"
-                  >
-                    Create New
-                  </Button>
-                )}
               </div>
               
               {/* Team lock countdown */}
