@@ -483,54 +483,22 @@ export default function TeamBuilder() {
     }
   };
 
-  // Handle cancel create team
-  const handleCancelCreateTeam = () => {
-    if (userTeam) {
-      setSelectedRiders(userTeam.riders || []);
-      setTeamName(userTeam.name || "My DH Team");
-    } else {
-      setSelectedRiders([]);
-    }
-    setIsCreatingTeam(false);
-  };
-
-  if (authLoading || ridersLoading || teamLoading) {
-    return (
-      <div className="container mx-auto px-4 py-12 text-center">
-        <div className="h-24 flex items-center justify-center">
-          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-        </div>
-        <p className="text-lg font-semibold">Loading team builder...</p>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-neutral">
-      <div className="container mx-auto px-4 py-8 md:py-12">
-        <div className="flex flex-col md:flex-row items-center justify-between mb-6">
-          <h2 className="text-2xl md:text-3xl font-heading font-bold text-secondary">
-            {userTeam && !isCreatingTeam ? "MANAGE YOUR TEAM" : "BUILD YOUR DREAM TEAM"}
-          </h2>
-          <div className="mt-3 md:mt-0 bg-white px-4 py-2 rounded-full shadow-md">
-            <div className="flex items-center">
-              <span className="font-heading font-bold text-gray-700 mr-2">BUDGET:</span>
-              <span className={`font-accent font-bold text-xl ${remainingBudget >= 0 ? 'text-primary' : 'text-destructive'}`}>
-                ${remainingBudget.toLocaleString()}
-              </span>
-              <span className="font-accent text-sm text-gray-500 ml-1">/ ${totalBudget.toLocaleString()}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Mobile-only team view - shown first on small screens */}
-        <div className="block lg:hidden mb-6">
-          <Card className="bg-white rounded-lg shadow-md overflow-hidden">
-            <CardContent className="p-6">
+      <div className="container mx-auto px-4 py-8">
+        <h2 className="text-2xl md:text-3xl font-heading font-bold text-secondary mb-6">
+          TEAM BUILDER
+        </h2>
+        
+        {/* Mobile view - prioritize team over riders */}
+        <div className="lg:hidden">
+          <div className="mb-6">
+            {/* Team section for mobile */}
+            <div>
               <div className="bg-gray-50 p-5 rounded-lg">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-heading font-bold text-xl text-secondary">YOUR TEAM</h3>
-                  {userTeam && !isCreatingTeam && (
+                  {userTeam && !isCreatingTeam && !jokerCardUsed && (
                     <Button
                       variant="outline"
                       size="sm"
@@ -543,264 +511,431 @@ export default function TeamBuilder() {
                 </div>
                 
                 {/* Team lock countdown */}
-                {nextRace && (
-                  <div className="bg-gray-100 rounded-md p-3 mb-4">
+                {nextRace && isAuthenticated && userTeam && (
+                  <div className="mb-5">
                     <CountdownTimer 
-                      targetDate={new Date(nextRace.startDate)} 
-                      showLockStatus={true}
-                      title="Team lock status"
+                      targetDate={lockDate} 
+                      title={`${nextRace.name} (${new Date(nextRace.startDate).toLocaleDateString()})`}
+                      showLockStatus
                     />
                   </div>
                 )}
                 
-                {/* Team name input */}
-                <div className="mb-4">
-                  <label className="text-sm font-semibold text-gray-700 block mb-1">Team Name</label>
-                  <Input
-                    type="text"
-                    value={teamName}
-                    onChange={(e) => setTeamName(e.target.value)}
-                    className="w-full border-gray-300"
-                    maxLength={30}
-                  />
-                </div>
-                
-                {/* Budget progress */}
-                <div className="mb-5">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="font-semibold text-gray-700">Budget Used</span>
-                    <span className="font-accent font-semibold text-gray-700">
-                      ${usedBudget.toLocaleString()} / ${totalBudget.toLocaleString()}
-                    </span>
+                {/* Loading state */}
+                {teamLoading && isAuthenticated ? (
+                  <div className="flex justify-center items-center py-10">
+                    <RefreshCw className="w-6 h-6 animate-spin text-primary" />
+                    <span className="ml-2">Loading your team...</span>
                   </div>
-                  <div className="relative h-2 w-full overflow-hidden rounded-full bg-gray-200">
-                    <div 
-                      className={`h-full transition-all ${remainingBudget >= 0 ? 'bg-primary' : 'bg-destructive'}`}
-                      style={{ width: `${Math.min(budgetPercentage, 100)}%` }}
-                    />
-                  </div>
-                </div>
-                
-                {/* Team composition */}
-                <TeamSummary 
-                  selectedRiders={selectedRiders} 
-                  toggleRiderSelection={toggleRiderSelection}
-                  isTeamLocked={isTeamLocked}
-                  swapsRemaining={swapsRemaining}
-                  swapMode={swapMode}
-                  initiateSwap={initiateSwap}
-                  cancelSwap={cancelSwap}
-                  swapRider={swapRider}
-                />
-                
-                {/* Action buttons */}
-                <div className="mt-5 space-y-2">
-                  <Button
-                    className="w-full bg-secondary hover:bg-gray-800 text-white font-heading font-bold py-3 rounded-md transition duration-200"
-                    disabled={!isTeamValid || (!isAuthenticated && !authLoading)}
-                    onClick={handleSaveTeam}
-                  >
-                    {userTeam && !isCreatingTeam ? 'UPDATE TEAM' : 'SAVE TEAM'} ({selectedRiders.length}/6 RIDERS)
-                  </Button>
-                  
-                  {isCreatingTeam && userTeam && (
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={handleCancelCreateTeam}
-                    >
-                      CANCEL
-                    </Button>
-                  )}
-                  
-                  {!isAuthenticated && !authLoading && (
-                    <div className="text-center mt-2">
-                      <p className="text-sm text-gray-600 mb-2">You need to log in to save your team</p>
-                      <Link href="/api/login">
-                        <a className="text-primary hover:underline">Log In</a>
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-        
-        {/* Desktop layout */}
-        <Card className="bg-white rounded-lg shadow-md overflow-hidden">
-          <CardContent className="p-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                <div className="mb-6">
-                  <h3 className="font-heading font-bold text-xl text-secondary mb-3">SELECT YOUR RIDERS</h3>
-                  
-                  {/* Rider filter tabs */}
-                  <Tabs defaultValue="all" value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-                    <TabsList className="flex mb-4 border-b border-gray-200 bg-transparent p-0 h-auto">
-                      <TabsTrigger
-                        value="all"
-                        className="px-4 py-2 font-heading font-semibold data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary bg-transparent rounded-none"
-                      >
-                        ALL RIDERS
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="male"
-                        className="px-4 py-2 font-heading font-semibold data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary bg-transparent rounded-none"
-                      >
-                        MEN
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="female"
-                        className="px-4 py-2 font-heading font-semibold data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary bg-transparent rounded-none"
-                      >
-                        WOMEN
-                      </TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-                  
-                  {/* Rider search */}
-                  <div className="mb-4">
-                    <div className="relative">
-                      <Input
-                        type="text"
-                        placeholder="Search riders..."
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
-                      <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    </div>
-                  </div>
-                  
-                  {/* Rider list */}
-                  <div className="space-y-3">
-                    {filteredRiders.map((rider: Rider) => (
-                      <RiderCard
-                        key={rider.id}
-                        rider={rider}
-                        isSelected={selectedRiders.some(r => r.id === rider.id)}
-                        onClick={() => toggleRiderSelection(rider)}
-                      />
-                    ))}
-
-                    {filteredRiders.length === 0 && (
-                      <div className="text-center py-8 text-gray-500">
-                        No riders found matching your search criteria.
+                ) : (
+                  <>
+                    {/* If no team yet */}
+                    {!userTeam && isAuthenticated && !isCreatingTeam && (
+                      <div className="py-8 px-4 bg-white rounded-lg shadow-sm text-center mb-6">
+                        <AlertCircle className="mx-auto h-12 w-12 text-yellow-500 mb-3" />
+                        <h3 className="text-lg font-bold mb-2">No Team Yet</h3>
+                        <p className="text-gray-600 mb-4">
+                          You haven't created your fantasy team for the 2025 season. Select your riders and create your team!
+                        </p>
+                        <Button onClick={() => setIsCreatingTeam(true)}>
+                          Create Your Team
+                        </Button>
                       </div>
                     )}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="hidden lg:block bg-gray-50 p-5 rounded-lg">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-heading font-bold text-xl text-secondary">YOUR TEAM</h3>
-                  {userTeam && !isCreatingTeam && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleCreateNewTeam}
-                      className="text-xs"
-                    >
-                      Create New
-                    </Button>
-                  )}
-                </div>
-                
-                {/* Team lock countdown */}
-                {nextRace && (
-                  <div className="bg-gray-100 rounded-md p-3 mb-4">
-                    <CountdownTimer 
-                      targetDate={new Date(nextRace.startDate)} 
-                      showLockStatus={true}
-                      title="Team lock status"
-                    />
-                  </div>
+                    
+                    {/* If team exists or is being created */}
+                    {((userTeam && isAuthenticated) || isCreatingTeam) && (
+                      <>
+                        {/* Team name */}
+                        <div className="mb-4">
+                          <Input
+                            value={teamName}
+                            onChange={(e) => setTeamName(e.target.value)}
+                            placeholder="Team Name"
+                            disabled={isTeamLocked && !isCreatingTeam}
+                            className="font-heading font-bold"
+                          />
+                        </div>
+                        
+                        {/* Selected riders */}
+                        <div className="space-y-2 mb-5">
+                          {selectedRiders.length === 0 ? (
+                            <div className="p-5 text-center bg-white rounded-lg border border-dashed border-gray-300">
+                              <p className="text-gray-500">
+                                Select 6 riders from the list below to build your team
+                              </p>
+                            </div>
+                          ) : (
+                            selectedRiders.map((rider) => (
+                              <RiderCard
+                                key={rider.id}
+                                rider={rider}
+                                selected={true}
+                                onClick={() => toggleRiderSelection(rider)}
+                                swapMode={isTeamLocked}
+                                onSwap={() => initiateSwap(rider)}
+                                showRemoveIcon={!isTeamLocked}
+                              />
+                            ))
+                          )}
+                        </div>
+                        
+                        {/* Team summary */}
+                        <TeamSummary
+                          selectedRiders={selectedRiders}
+                          totalBudget={totalBudget}
+                          usedBudget={usedBudget}
+                          remainingBudget={remainingBudget}
+                          budgetPercentage={budgetPercentage}
+                          maleRidersCount={maleRidersCount}
+                          femaleRidersCount={femaleRidersCount}
+                        />
+                        
+                        {/* Action buttons */}
+                        <div className="flex flex-col md:flex-row gap-3 mt-5">
+                          {/* Save/update button */}
+                          <Button
+                            className="w-full"
+                            onClick={handleSaveTeam}
+                            disabled={!isTeamValid || createTeam.isPending || updateTeam.isPending}
+                          >
+                            {userTeam && !isCreatingTeam ? 'Update Team' : 'Save Team'}
+                          </Button>
+                          
+                          {/* Joker card button */}
+                          {isAuthenticated && userTeam && (
+                            <JokerCardButton
+                              jokerCardUsed={jokerCardUsed}
+                              onClick={handleUseJokerCard}
+                              className="w-full md:w-auto"
+                            />
+                          )}
+                        </div>
+                        
+                        {/* Swap mode info */}
+                        {swapMode && (
+                          <Alert className="mt-5">
+                            <AlertTriangle className="h-4 w-4" />
+                            <AlertTitle>Swap Mode Active</AlertTitle>
+                            <AlertDescription className="flex justify-between items-center">
+                              <span>Selecting {swapRider?.name}</span>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={cancelSwap}
+                              >
+                                Cancel
+                              </Button>
+                            </AlertDescription>
+                          </Alert>
+                        )}
+                        
+                        {/* Login CTA */}
+                        {!isAuthenticated && (
+                          <Alert className="mt-5 bg-white">
+                            <Info className="h-4 w-4" />
+                            <AlertTitle>Authentication Required</AlertTitle>
+                            <AlertDescription>
+                              <p className="text-sm text-gray-600 mb-2">You need to log in to save your team</p>
+                              <Link href="/api/login">
+                                <Button variant="secondary" size="sm">
+                                  Log In / Sign Up
+                                </Button>
+                              </Link>
+                            </AlertDescription>
+                          </Alert>
+                        )}
+                      </>
+                    )}
+                  </>
                 )}
+              </div>
+            </div>
+          </div>
+          
+          {/* Rider selection for mobile */}
+          <div>
+            <Card className="mb-8">
+              <CardContent className="p-6">
+                <h3 className="font-heading font-bold text-xl text-secondary mb-4">SELECT RIDERS</h3>
                 
-                {/* Team name input */}
-                <div className="mb-4">
-                  <label className="text-sm font-semibold text-gray-700 block mb-1">Team Name</label>
+                {/* Search input */}
+                <div className="relative mb-4">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
-                    type="text"
-                    value={teamName}
-                    onChange={(e) => setTeamName(e.target.value)}
-                    className="w-full border-gray-300"
-                    maxLength={30}
+                    placeholder="Search riders..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
                   />
                 </div>
                 
-                {/* Budget progress */}
-                <div className="mb-5">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="font-semibold text-gray-700">Budget Used</span>
-                    <span className="font-accent font-semibold text-gray-700">
-                      ${usedBudget.toLocaleString()} / ${totalBudget.toLocaleString()}
-                    </span>
+                {/* Tabs for filtering */}
+                <Tabs defaultValue="all" className="mb-4" onValueChange={setSelectedTab}>
+                  <TabsList className="w-full">
+                    <TabsTrigger value="all" className="flex-1">All</TabsTrigger>
+                    <TabsTrigger value="male" className="flex-1">Men</TabsTrigger>
+                    <TabsTrigger value="female" className="flex-1">Women</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+                
+                {/* Riders list */}
+                {ridersLoading ? (
+                  <div className="flex justify-center items-center py-10">
+                    <RefreshCw className="w-6 h-6 animate-spin text-primary" />
+                    <span className="ml-2">Loading riders...</span>
                   </div>
-                  <div className="relative h-2 w-full overflow-hidden rounded-full bg-gray-200">
-                    <div 
-                      className={`h-full transition-all ${remainingBudget >= 0 ? 'bg-primary' : 'bg-destructive'}`}
-                      style={{ width: `${Math.min(budgetPercentage, 100)}%` }}
-                    />
+                ) : (
+                  <div className="space-y-2">
+                    {filteredRiders.length === 0 ? (
+                      <div className="text-center py-10">
+                        <p className="text-gray-500">No riders found</p>
+                      </div>
+                    ) : (
+                      filteredRiders.map((rider: Rider) => (
+                        <RiderCard
+                          key={rider.id}
+                          rider={rider}
+                          selected={selectedRiders.some(r => r.id === rider.id)}
+                          onClick={() => toggleRiderSelection(rider)}
+                          disabled={swapMode && selectedRiders.some(r => r.id === rider.id)}
+                          showSelectIcon
+                        />
+                      ))
+                    )}
                   </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+        
+        {/* Desktop view - riders and team side by side */}
+        <div className="hidden lg:grid lg:grid-cols-12 lg:gap-6">
+          {/* Rider selection for desktop - left side */}
+          <div className="lg:col-span-7">
+            <Card className="mb-8">
+              <CardContent className="p-6">
+                <h3 className="font-heading font-bold text-xl text-secondary mb-4">SELECT RIDERS</h3>
+                
+                {/* Search input */}
+                <div className="relative mb-4">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="Search riders..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
                 </div>
                 
-                {/* Team composition */}
-                <TeamSummary 
-                  selectedRiders={selectedRiders} 
-                  toggleRiderSelection={toggleRiderSelection}
-                  isTeamLocked={isTeamLocked}
-                  swapsRemaining={swapsRemaining}
-                  swapMode={swapMode}
-                  initiateSwap={initiateSwap}
-                  cancelSwap={cancelSwap}
-                  swapRider={swapRider}
-                />
+                {/* Tabs for filtering */}
+                <Tabs defaultValue="all" className="mb-4" onValueChange={setSelectedTab}>
+                  <TabsList className="w-full">
+                    <TabsTrigger value="all" className="flex-1">All</TabsTrigger>
+                    <TabsTrigger value="male" className="flex-1">Men</TabsTrigger>
+                    <TabsTrigger value="female" className="flex-1">Women</TabsTrigger>
+                  </TabsList>
+                </Tabs>
                 
-                {/* Action buttons */}
-                <div className="mt-5 space-y-2">
+                {/* Riders list */}
+                {ridersLoading ? (
+                  <div className="flex justify-center items-center py-10">
+                    <RefreshCw className="w-6 h-6 animate-spin text-primary" />
+                    <span className="ml-2">Loading riders...</span>
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
+                    {filteredRiders.length === 0 ? (
+                      <div className="text-center py-10">
+                        <p className="text-gray-500">No riders found</p>
+                      </div>
+                    ) : (
+                      filteredRiders.map((rider: Rider) => (
+                        <RiderCard
+                          key={rider.id}
+                          rider={rider}
+                          selected={selectedRiders.some(r => r.id === rider.id)}
+                          onClick={() => toggleRiderSelection(rider)}
+                          disabled={swapMode && selectedRiders.some(r => r.id === rider.id)}
+                          showSelectIcon
+                        />
+                      ))
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+          
+          {/* Team section for desktop - right side */}
+          <div className="lg:col-span-5">
+            <div className="bg-gray-50 p-5 rounded-lg">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-heading font-bold text-xl text-secondary">YOUR TEAM</h3>
+                {userTeam && !isCreatingTeam && !jokerCardUsed && (
                   <Button
-                    className="w-full bg-secondary hover:bg-gray-800 text-white font-heading font-bold py-3 rounded-md transition duration-200"
-                    disabled={!isTeamValid || (!isAuthenticated && !authLoading)}
-                    onClick={handleSaveTeam}
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCreateNewTeam}
+                    className="text-xs"
                   >
-                    {userTeam && !isCreatingTeam ? 'UPDATE TEAM' : 'SAVE TEAM'} ({selectedRiders.length}/6 RIDERS)
+                    Create New
                   </Button>
-                  
-                  {isCreatingTeam && userTeam && (
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={handleCancelCreateTeam}
-                    >
-                      CANCEL
-                    </Button>
-                  )}
-                  
-                  {!isAuthenticated && !authLoading && (
-                    <div className="text-center mt-2">
-                      <p className="text-sm text-gray-600 mb-2">You need to log in to save your team</p>
-                      <Link href="/api/login">
-                        <a className="text-primary hover:underline">Log In</a>
-                      </Link>
+                )}
+              </div>
+              
+              {/* Team lock countdown */}
+              {nextRace && isAuthenticated && userTeam && (
+                <div className="mb-5">
+                  <CountdownTimer 
+                    targetDate={lockDate} 
+                    title={`${nextRace.name} (${new Date(nextRace.startDate).toLocaleDateString()})`}
+                    showLockStatus
+                  />
+                </div>
+              )}
+              
+              {/* Loading state */}
+              {teamLoading && isAuthenticated ? (
+                <div className="flex justify-center items-center py-10">
+                  <RefreshCw className="w-6 h-6 animate-spin text-primary" />
+                  <span className="ml-2">Loading your team...</span>
+                </div>
+              ) : (
+                <>
+                  {/* If no team yet */}
+                  {!userTeam && isAuthenticated && !isCreatingTeam && (
+                    <div className="py-8 px-4 bg-white rounded-lg shadow-sm text-center mb-6">
+                      <AlertCircle className="mx-auto h-12 w-12 text-yellow-500 mb-3" />
+                      <h3 className="text-lg font-bold mb-2">No Team Yet</h3>
+                      <p className="text-gray-600 mb-4">
+                        You haven't created your fantasy team for the 2025 season. Select your riders and create your team!
+                      </p>
+                      <Button onClick={() => setIsCreatingTeam(true)}>
+                        Create Your Team
+                      </Button>
                     </div>
                   )}
-                </div>
-              </div>
+                  
+                  {/* If team exists or is being created */}
+                  {((userTeam && isAuthenticated) || isCreatingTeam) && (
+                    <>
+                      {/* Team name */}
+                      <div className="mb-4">
+                        <Input
+                          value={teamName}
+                          onChange={(e) => setTeamName(e.target.value)}
+                          placeholder="Team Name"
+                          disabled={isTeamLocked && !isCreatingTeam}
+                          className="font-heading font-bold"
+                        />
+                      </div>
+                      
+                      {/* Selected riders */}
+                      <div className="space-y-2 mb-5">
+                        {selectedRiders.length === 0 ? (
+                          <div className="p-5 text-center bg-white rounded-lg border border-dashed border-gray-300">
+                            <p className="text-gray-500">
+                              Select 6 riders from the list to build your team
+                            </p>
+                          </div>
+                        ) : (
+                          selectedRiders.map((rider) => (
+                            <RiderCard
+                              key={rider.id}
+                              rider={rider}
+                              selected={true}
+                              onClick={() => toggleRiderSelection(rider)}
+                              swapMode={isTeamLocked}
+                              onSwap={() => initiateSwap(rider)}
+                              showRemoveIcon={!isTeamLocked}
+                            />
+                          ))
+                        )}
+                      </div>
+                      
+                      {/* Team summary */}
+                      <TeamSummary
+                        selectedRiders={selectedRiders}
+                        totalBudget={totalBudget}
+                        usedBudget={usedBudget}
+                        remainingBudget={remainingBudget}
+                        budgetPercentage={budgetPercentage}
+                        maleRidersCount={maleRidersCount}
+                        femaleRidersCount={femaleRidersCount}
+                      />
+                      
+                      {/* Action buttons */}
+                      <div className="flex flex-col md:flex-row gap-3 mt-5">
+                        {/* Save/update button */}
+                        <Button
+                          className="w-full"
+                          onClick={handleSaveTeam}
+                          disabled={!isTeamValid || createTeam.isPending || updateTeam.isPending}
+                        >
+                          {userTeam && !isCreatingTeam ? 'Update Team' : 'Save Team'}
+                        </Button>
+                        
+                        {/* Joker card button */}
+                        {isAuthenticated && userTeam && (
+                          <JokerCardButton
+                            jokerCardUsed={jokerCardUsed}
+                            onClick={handleUseJokerCard}
+                            className="w-full md:w-auto"
+                          />
+                        )}
+                      </div>
+                      
+                      {/* Swap mode info */}
+                      {swapMode && (
+                        <Alert className="mt-5">
+                          <AlertTriangle className="h-4 w-4" />
+                          <AlertTitle>Swap Mode Active</AlertTitle>
+                          <AlertDescription className="flex justify-between items-center">
+                            <span>Selecting {swapRider?.name}</span>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={cancelSwap}
+                            >
+                              Cancel
+                            </Button>
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                      
+                      {/* Login CTA */}
+                      {!isAuthenticated && (
+                        <Alert className="mt-5 bg-white">
+                          <Info className="h-4 w-4" />
+                          <AlertTitle>Authentication Required</AlertTitle>
+                          <AlertDescription>
+                            <p className="text-sm text-gray-600 mb-2">You need to log in to save your team</p>
+                            <Link href="/api/login">
+                              <Button variant="secondary" size="sm">
+                                Log In / Sign Up
+                              </Button>
+                            </Link>
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                    </>
+                  )}
+                </>
+              )}
             </div>
-          </CardContent>
-        </Card>
-        
-        {/* Joker card dialog */}
-        <JokerCardDialog
-          open={showJokerDialog}
-          onOpenChange={setShowJokerDialog}
-          onConfirm={handleConfirmJokerCard}
-          isTeamValid={isTeamValid}
-        />
+          </div>
+        </div>
       </div>
+      
+      {/* Joker card dialog */}
+      <JokerCardDialog
+        open={showJokerDialog}
+        onOpenChange={setShowJokerDialog}
+        onConfirm={handleConfirmJokerCard}
+        isTeamValid={isTeamValid}
+      />
     </div>
   );
 }
