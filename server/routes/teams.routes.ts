@@ -24,8 +24,11 @@ router.get("/user", isAuthenticated, async (req: Request, res: Response) => {
       return res.status(404).json({ message: "No team found for user" });
     }
 
-    // Get all upcoming races to determine lock status
-    const races = await storage.getRaces();
+    // Import the getRacesWithStatuses function from races.routes.ts
+    const { getRacesWithStatuses } = await import('./races.routes');
+    
+    // Get all races with calculated statuses
+    const races = await getRacesWithStatuses();
     
     // Filter for upcoming races (including 'next')
     const upcomingRaces = races.filter(

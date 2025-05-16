@@ -7,8 +7,8 @@ import { insertRaceSchema, insertResultSchema } from "@shared/schema";
 
 const router = Router();
 
-// Helper function to get races with calculated statuses
-async function getRacesWithStatuses() {
+// Helper function to get races with calculated statuses - exported so other routes can use it
+export async function getRacesWithStatuses() {
   try {
     // Get all races
     const allRaces = await storage.getRaces();
@@ -61,7 +61,7 @@ function calculateRaceStatus(
   }
 
   // For races in the future, we'll just return "upcoming"
-  // The actual "next" race will be determined in updateRaceStatuses()
+  // The actual "next" race will be determined in getRacesWithStatuses()
   // by finding the closest upcoming race
   return "upcoming";
 }
@@ -146,11 +146,11 @@ router.post(
 
       const newRace = await storage.createRace(raceData);
 
-      // Update race statuses after creating a new race
-      await updateRaceStatuses();
-
-      // Get the updated race with the correct status
-      const updatedRace = await storage.getRace(newRace.id);
+      // Get all races with calculated statuses after creating a new race
+      const updatedRaces = await getRacesWithStatuses();
+      
+      // Find the newly created race with its computed status
+      const updatedRace = updatedRaces.find(race => race.id === newRace.id);
 
       res.status(201).json(updatedRace || newRace);
     } catch (error) {
@@ -198,11 +198,11 @@ router.put(
           return res.status(404).json({ message: "Race not found" });
         }
 
-        // Update race statuses after updating the race
-        await updateRaceStatuses();
-
-        // Get the race again with its calculated status
-        const raceWithStatus = await storage.getRace(raceId);
+        // Get all races with calculated statuses after updating the race
+        const updatedRaces = await getRacesWithStatuses();
+        
+        // Find the updated race with its computed status
+        const raceWithStatus = updatedRaces.find(race => race.id === raceId);
 
         res.json(raceWithStatus);
       } catch (error: any) {
