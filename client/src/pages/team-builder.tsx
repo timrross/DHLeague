@@ -138,13 +138,14 @@ export default function TeamBuilder() {
     if (user) {
       setJokerCardUsed(user.jokerCardUsed || false);
     }
-  }, [userTeam, isCreatingTeam, user]);
+    
+    // For guest users, allow them to create a team without logging in
+    if (!isAuthenticated && !authLoading) {
+      setIsCreatingTeam(true);
+    }
+  }, [userTeam, isCreatingTeam, user, isAuthenticated, authLoading]);
 
   // Filter riders based on search and tab
-  console.log("Debug - Riders data:", riders ? riders.length : 0, "riders loaded");
-  console.log("Debug - Auth state:", { isAuthenticated, authLoading });
-  console.log("Debug - Team data:", { userTeam: userTeam ? "exists" : "null", teamLoading });
-  
   const filteredRiders = riders ? (riders as Rider[]).filter((rider: Rider) => {
     const matchesSearch = rider.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          rider.team.toLowerCase().includes(searchTerm.toLowerCase());
@@ -494,6 +495,23 @@ export default function TeamBuilder() {
           TEAM BUILDER
         </h2>
         
+        {/* Guest banner */}
+        {!isAuthenticated && !authLoading && (
+          <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded-md">
+            <div className="flex items-start">
+              <div className="flex-shrink-0 mr-3">
+                <Info className="h-5 w-5 text-blue-500" />
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-blue-800">Guest Mode</h3>
+                <p className="text-sm text-blue-700 mt-1">
+                  You're building a team in guest mode. Create an account to save your team and join the 2025 fantasy league!
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {/* Mobile view - prioritize team over riders */}
         <div className="lg:hidden">
           <div className="mb-6">
@@ -564,22 +582,42 @@ export default function TeamBuilder() {
                         
                         {/* Action buttons */}
                         <div className="flex flex-col md:flex-row gap-3 mt-5">
-                          {/* Save/update button */}
-                          <Button
-                            className="w-full"
-                            onClick={handleSaveTeam}
-                            disabled={!isTeamValid || createTeam.isPending || updateTeam.isPending}
-                          >
-                            {userTeam && !isCreatingTeam ? 'Update Team' : 'Save Team'}
-                          </Button>
-                          
-                          {/* Joker card button */}
-                          {isAuthenticated && userTeam && (
-                            <JokerCardButton
-                              jokerCardUsed={jokerCardUsed}
-                              onClick={handleUseJokerCard}
-                              className="w-full md:w-auto"
-                            />
+                          {isAuthenticated ? (
+                            <>
+                              {/* Save/update button for authenticated users */}
+                              <Button
+                                className="w-full"
+                                onClick={handleSaveTeam}
+                                disabled={!isTeamValid || createTeam.isPending || updateTeam.isPending}
+                              >
+                                {userTeam && !isCreatingTeam ? 'Update Team' : 'Save Team'}
+                              </Button>
+                              
+                              {/* Joker card button */}
+                              {userTeam && (
+                                <JokerCardButton
+                                  jokerCardUsed={jokerCardUsed}
+                                  onClick={handleUseJokerCard}
+                                  className="w-full md:w-auto"
+                                />
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              {/* Login CTA button for guests */}
+                              <div className="w-full">
+                                <Link href="/api/login">
+                                  <Button 
+                                    className="w-full"
+                                  >
+                                    Log In to Save Team
+                                  </Button>
+                                </Link>
+                                <p className="text-xs text-gray-500 mt-2 text-center">
+                                  Create an account to save your team and compete in the 2025 fantasy league
+                                </p>
+                              </div>
+                            </>
                           )}
                         </div>
                         
