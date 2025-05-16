@@ -83,23 +83,23 @@ export default function Footer() {
               </li>
               <li>
                 <Link href="/races">
-                  <a className="text-gray-400 hover:text-primary transition">
+                  <span className="text-gray-400 hover:text-primary transition cursor-pointer">
                     Race Schedule
-                  </a>
+                  </span>
                 </Link>
               </li>
               <li>
                 <Link href="/team-builder">
-                  <a className="text-gray-400 hover:text-primary transition">
+                  <span className="text-gray-400 hover:text-primary transition cursor-pointer">
                     Team Builder
-                  </a>
+                  </span>
                 </Link>
               </li>
               <li>
                 <Link href="/leaderboard">
-                  <a className="text-gray-400 hover:text-primary transition">
+                  <span className="text-gray-400 hover:text-primary transition cursor-pointer">
                     Leaderboards
-                  </a>
+                  </span>
                 </Link>
               </li>
             </ul>
