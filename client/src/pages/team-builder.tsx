@@ -104,7 +104,7 @@ export default function TeamBuilder() {
         throw new Error("Team not found");
       }
       return apiRequest(`/api/teams/${userTeam.id}`, {
-        method: 'PATCH',
+        method: 'PUT',
         body: JSON.stringify(data),
         headers: { 'Content-Type': 'application/json' }
       });
@@ -376,18 +376,27 @@ export default function TeamBuilder() {
 
     const riderIds = selectedRiders.map(r => r.id);
     
-    if (userTeam && !isCreatingTeam) {
-      // Update existing team
-      updateTeam.mutate({
-        name: teamName,
-        riderIds
-      });
-    } else {
-      // Create new team
-      createTeam.mutate({
-        name: teamName,
-        riderIds
-      });
+    // Determine action type (create or update)
+    const actionType = userTeam && !isCreatingTeam ? 'update' : 'create';
+    const confirmMessage = actionType === 'update' 
+      ? 'Are you sure you want to update your team with these riders?' 
+      : 'Are you sure you want to save this team?';
+    
+    // Show confirmation dialog
+    if (window.confirm(confirmMessage)) {
+      if (actionType === 'update') {
+        // Update existing team
+        updateTeam.mutate({
+          name: teamName,
+          riderIds
+        });
+      } else {
+        // Create new team
+        createTeam.mutate({
+          name: teamName,
+          riderIds
+        });
+      }
     }
   };
 
