@@ -198,7 +198,8 @@ export async function swapTeamRider(req: any, res: Response) {
     }
 
     // Check swaps remaining
-    if (team.swapsUsed && team.swapsUsed >= 2) {
+    const currentSwapsUsed = team.swapsUsed || 0;
+    if (currentSwapsUsed >= 2) {
       return res.status(400).json({ message: "No swaps remaining for this race" });
     }
 
@@ -265,9 +266,10 @@ export async function swapTeamRider(req: any, res: Response) {
     const newRiderIds = team.riders.map(r => r.id === removedRiderId ? addedRiderId : r.id);
 
     // Update the team with the new rider and increment swaps used
+    const currentSwaps = team.swapsUsed || 0;
     const updatedTeam = await storage.updateTeam(
       teamId, 
-      { swapsUsed: team.swapsUsed + 1 }, 
+      { swapsUsed: currentSwaps + 1 }, 
       newRiderIds
     );
 
