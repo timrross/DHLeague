@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import { storage } from "../storage";
 import { uciApiService } from "../services/uciApi";
+import { rankingUciApiService } from "../services/rankingUciApi";
+import { generateRiderId } from "@shared/utils";
+import { type Rider } from "@shared/schema";
 
 /**
  * Get all users (admin only)
@@ -102,6 +105,41 @@ export async function importRidersFromUci(req: Request, res: Response) {
       const savedRiders = [];
       for (const rider of mappedRiders) {
         savedRiders.push(await storage.createRider(rider));
+      }
+
+      // Now update rider genders from UCI rankings
+      try {
+        // Create a map of existing riders for gender updates
+        const existingRidersMap = new Map<string, Rider>(
+          savedRiders.map((rider: Rider) => [
+            generateRiderId(`${rider.lastName} ${rider.firstName}`),
+            rider
+          ])
+        );
+
+        // Get updates from UCI rankings
+        const updates = await rankingUciApiService.getRiderUpdates(existingRidersMap);
+
+        // Apply the updates
+        const results = await Promise.all(
+          updates.map(async (riderData) => {
+            try {
+              const updatedRider = await storage.updateRider(riderData.id, riderData);
+              return { success: true, riderId: updatedRider?.riderId };
+            } catch (error) {
+              return { success: false, riderId: riderData.id, error };
+            }
+          })
+        );
+
+        // Count successes and failures
+        const succeeded = results.filter(r => r.success).length;
+        const failed = results.filter(r => !r.success).length;
+
+        console.log(`Updated ${succeeded} riders with gender data, ${failed} failures`);
+      } catch (error) {
+        console.error('Error updating rider genders:', error);
+        // Don't throw here, as we still want to return the imported riders
       }
 
       return savedRiders;

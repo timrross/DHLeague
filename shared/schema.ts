@@ -17,17 +17,14 @@ export const users = pgTable("users", {
 });
 
 export type User = typeof users.$inferSelect;
-export type UpsertUser = typeof users.$inferInsert;
+export type InsertUser = typeof users.$inferInsert;
 
 // Session storage table for Replit Auth
-export const sessions = pgTable(
-  "sessions",
-  {
-    sid: varchar("sid").primaryKey(),
-    sess: jsonb("sess").notNull(),
-    expire: timestamp("expire").notNull(),
-  }
-);
+export const sessions = pgTable("sessions", {
+  sid: varchar("sid").primaryKey(),
+  sess: jsonb("sess").notNull(),
+  expire: timestamp("expire").notNull(),
+});
 
 // Rider model
 export const riders = pgTable("riders", {
@@ -36,23 +33,19 @@ export const riders = pgTable("riders", {
   name: text("name").notNull(),
   firstName: text("first_name"),      // First name
   lastName: text("last_name"),        // Last/family name
-  gender: text("gender").notNull(), // "male" or "female"
+  gender: text("gender").notNull(),   // "male" or "female"
   team: text("team").notNull(),
   cost: integer("cost").notNull(),
   lastYearStanding: integer("last_year_standing"),
   image: text("image"),
   country: text("country"),
   points: integer("points").default(0),
-  form: text("form").default("[]"), // JSON array of last 5 results
+  form: text("form").default("[]"),   // JSON array of last 5 results
   injured: boolean("injured").default(false)
 });
 
-export const insertRiderSchema = createInsertSchema(riders).omit({
-  id: true,
-});
-
 export type Rider = typeof riders.$inferSelect;
-export type InsertRider = z.infer<typeof insertRiderSchema>;
+export type InsertRider = typeof riders.$inferInsert;
 
 // Team model
 export const teams = pgTable("teams", {
@@ -69,15 +62,8 @@ export const teams = pgTable("teams", {
   lockedAt: timestamp("locked_at"),
 });
 
-export const insertTeamSchema = createInsertSchema(teams).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-  totalPoints: true,
-});
-
 export type Team = typeof teams.$inferSelect;
-export type InsertTeam = z.infer<typeof insertTeamSchema>;
+export type InsertTeam = typeof teams.$inferInsert;
 
 // TeamRider junction table
 export const teamRiders = pgTable("team_riders", {
@@ -86,12 +72,8 @@ export const teamRiders = pgTable("team_riders", {
   riderId: integer("rider_id").notNull().references(() => riders.id),
 });
 
-export const insertTeamRiderSchema = createInsertSchema(teamRiders).omit({
-  id: true,
-});
-
 export type TeamRider = typeof teamRiders.$inferSelect;
-export type InsertTeamRider = z.infer<typeof insertTeamRiderSchema>;
+export type InsertTeamRider = typeof teamRiders.$inferInsert;
 
 // Race model
 export const races = pgTable("races", {
@@ -104,14 +86,10 @@ export const races = pgTable("races", {
   imageUrl: text("image_url"),
 });
 
-export const insertRaceSchema = createInsertSchema(races).omit({
-  id: true,
-});
-
 export type Race = typeof races.$inferSelect & {
   status?: "upcoming" | "next" | "ongoing" | "completed";
 };
-export type InsertRace = z.infer<typeof insertRaceSchema>;
+export type InsertRace = typeof races.$inferInsert;
 
 // Results model
 export const results = pgTable("results", {
@@ -122,25 +100,9 @@ export const results = pgTable("results", {
   points: integer("points").notNull(),
 });
 
-export const insertResultSchema = createInsertSchema(results).omit({
-  id: true,
-});
-
 export type Result = typeof results.$inferSelect;
-export type InsertResult = z.infer<typeof insertResultSchema>;
+export type InsertResult = typeof results.$inferInsert;
 
-// Extended team type with riders
-export type TeamWithRiders = Team & {
-  riders: Rider[];
-  totalCost: number;
-};
-
-// Extended race type with results
-export type RaceWithResults = Race & {
-  results: (Result & { rider: Rider })[];
-};
-
-// Leaderboard entry type
 // Team swap history
 export const teamSwaps = pgTable("team_swaps", {
   id: serial("id").primaryKey(),
@@ -151,13 +113,18 @@ export const teamSwaps = pgTable("team_swaps", {
   swappedAt: timestamp("swapped_at").defaultNow(),
 });
 
-export const insertTeamSwapSchema = createInsertSchema(teamSwaps).omit({
-  id: true,
-  swappedAt: true,
-});
-
 export type TeamSwap = typeof teamSwaps.$inferSelect;
-export type InsertTeamSwap = z.infer<typeof insertTeamSwapSchema>;
+export type InsertTeamSwap = typeof teamSwaps.$inferInsert;
+
+// Extended types for related data
+export type TeamWithRiders = Team & {
+  riders: Rider[];
+  totalCost: number;
+};
+
+export type RaceWithResults = Race & {
+  results: (Result & { rider: Rider })[];
+};
 
 export type LeaderboardEntry = {
   rank: number;
