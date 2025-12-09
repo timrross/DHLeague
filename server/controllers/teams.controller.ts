@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { storage } from "../storage";
+import { riderDataClient } from "../services/riderDataClient";
 
 /**
  * Get a user's team
@@ -214,7 +215,7 @@ export async function swapTeamRider(req: any, res: Response) {
     }
 
     // Get the rider being added
-    const addedRider = await storage.getRider(addedRiderId);
+    const addedRider = await riderDataClient.getRider(addedRiderId);
     if (!addedRider) {
       return res.status(404).json({ message: "Added rider not found" });
     }
