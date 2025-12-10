@@ -8,12 +8,34 @@ import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 
+<<<<<<< HEAD:server/replitAuth.ts
+=======
+function requireEnv(name: string, value?: string) {
+  if (!value) {
+    throw new Error(`Environment variable ${name} not provided`);
+  }
+  return value;
+}
+
+const issuerUrl = requireEnv(
+  "OIDC_ISSUER_URL",
+  process.env.OIDC_ISSUER_URL ?? process.env.ISSUER_URL,
+);
+const clientId = requireEnv("OIDC_CLIENT_ID", process.env.OIDC_CLIENT_ID);
+const authDomains = requireEnv("AUTH_DOMAINS", process.env.AUTH_DOMAINS);
+const parsedAuthDomains = authDomains
+  .split(",")
+  .map((value) => value.trim())
+  .filter(Boolean);
+
+if (parsedAuthDomains.length === 0) {
+  throw new Error("Environment variable AUTH_DOMAINS must list at least one domain");
+}
+
+>>>>>>> be6bffa120e7dd4019f31dd43b89e1a860bb1767:server/oidcAuth.ts
 const getOidcConfig = memoize(
   async () => {
-    return await client.discovery(
-      new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
-      process.env.REPL_ID!
-    );
+    return await client.discovery(new URL(issuerUrl), clientId);
   },
   { maxAge: 3600 * 1000 }
 );
@@ -80,6 +102,7 @@ export async function setupAuth(app: Express) {
     verified(null, user);
   };
 
+<<<<<<< HEAD:server/replitAuth.ts
   const strategy = new Strategy(
     {
       name: "replitauth",
@@ -90,19 +113,41 @@ export async function setupAuth(app: Express) {
     verify,
   );
   passport.use(strategy);
+=======
+  for (const domain of parsedAuthDomains) {
+    const strategy = new Strategy(
+      {
+        name: `oidc:${domain}`,
+        config,
+        scope: "openid email profile offline_access",
+        callbackURL: `https://${domain}/api/callback`,
+      },
+      verify,
+    );
+    passport.use(strategy);
+  }
+>>>>>>> be6bffa120e7dd4019f31dd43b89e1a860bb1767:server/oidcAuth.ts
 
   passport.serializeUser((user: Express.User, cb) => cb(null, user));
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
   app.get("/api/login", (req, res, next) => {
+<<<<<<< HEAD:server/replitAuth.ts
     passport.authenticate("replitauth", {
+=======
+    passport.authenticate(`oidc:${req.hostname}`, {
+>>>>>>> be6bffa120e7dd4019f31dd43b89e1a860bb1767:server/oidcAuth.ts
       prompt: "login consent",
       scope: ["openid", "email", "profile", "offline_access"],
     })(req, res, next);
   });
 
   app.get("/api/callback", (req, res, next) => {
+<<<<<<< HEAD:server/replitAuth.ts
     passport.authenticate("replitauth", {
+=======
+    passport.authenticate(`oidc:${req.hostname}`, {
+>>>>>>> be6bffa120e7dd4019f31dd43b89e1a860bb1767:server/oidcAuth.ts
       successReturnToOrRedirect: "/",
       failureRedirect: "/api/login",
     })(req, res, next);
@@ -112,7 +157,7 @@ export async function setupAuth(app: Express) {
     req.logout(() => {
       res.redirect(
         client.buildEndSessionUrl(config, {
-          client_id: process.env.REPL_ID!,
+          client_id: clientId,
           post_logout_redirect_uri: `${req.protocol}://${req.hostname}`,
         }).href
       );

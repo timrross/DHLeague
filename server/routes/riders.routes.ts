@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { isAuthenticated } from "../replitAuth";
+import { isAuthenticated } from "../oidcAuth";
 import { isAdmin } from "../middleware/auth.middleware";
 import { 
     getRiders, 
