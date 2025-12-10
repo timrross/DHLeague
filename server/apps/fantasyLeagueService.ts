@@ -5,7 +5,7 @@ import teamsRoutes from "../routes/teams.routes";
 import racesRoutes from "../routes/races.routes";
 import authRoutes from "../routes/auth.routes";
 import leaderboardRoutes from "../routes/leaderboard.routes";
-import { setupAuth, isAuthenticated } from "../replitAuth";
+import { setupAuth, isAuthenticated } from "../oidcAuth";
 import { isAdmin } from "../middleware/auth.middleware";
 import { downloadImage, processImage, upload } from "../imageUpload";
 

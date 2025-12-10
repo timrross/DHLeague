@@ -8,16 +8,31 @@ import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 
-if (!process.env.REPLIT_DOMAINS) {
-  throw new Error("Environment variable REPLIT_DOMAINS not provided");
+function requireEnv(name: string, value?: string) {
+  if (!value) {
+    throw new Error(`Environment variable ${name} not provided`);
+  }
+  return value;
+}
+
+const issuerUrl = requireEnv(
+  "OIDC_ISSUER_URL",
+  process.env.OIDC_ISSUER_URL ?? process.env.ISSUER_URL,
+);
+const clientId = requireEnv("OIDC_CLIENT_ID", process.env.OIDC_CLIENT_ID);
+const authDomains = requireEnv("AUTH_DOMAINS", process.env.AUTH_DOMAINS);
+const parsedAuthDomains = authDomains
+  .split(",")
+  .map((value) => value.trim())
+  .filter(Boolean);
+
+if (parsedAuthDomains.length === 0) {
+  throw new Error("Environment variable AUTH_DOMAINS must list at least one domain");
 }
 
 const getOidcConfig = memoize(
   async () => {
-    return await client.discovery(
-      new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
-      process.env.REPL_ID!
-    );
+    return await client.discovery(new URL(issuerUrl), clientId);
   },
   { maxAge: 3600 * 1000 }
 );
@@ -84,11 +99,10 @@ export async function setupAuth(app: Express) {
     verified(null, user);
   };
 
-  for (const domain of process.env
-    .REPLIT_DOMAINS!.split(",")) {
+  for (const domain of parsedAuthDomains) {
     const strategy = new Strategy(
       {
-        name: `replitauth:${domain}`,
+        name: `oidc:${domain}`,
         config,
         scope: "openid email profile offline_access",
         callbackURL: `https://${domain}/api/callback`,
@@ -102,14 +116,14 @@ export async function setupAuth(app: Express) {
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
   app.get("/api/login", (req, res, next) => {
-    passport.authenticate(`replitauth:${req.hostname}`, {
+    passport.authenticate(`oidc:${req.hostname}`, {
       prompt: "login consent",
       scope: ["openid", "email", "profile", "offline_access"],
     })(req, res, next);
   });
 
   app.get("/api/callback", (req, res, next) => {
-    passport.authenticate(`replitauth:${req.hostname}`, {
+    passport.authenticate(`oidc:${req.hostname}`, {
       successReturnToOrRedirect: "/",
       failureRedirect: "/api/login",
     })(req, res, next);
@@ -119,7 +133,7 @@ export async function setupAuth(app: Express) {
     req.logout(() => {
       res.redirect(
         client.buildEndSessionUrl(config, {
-          client_id: process.env.REPL_ID!,
+          client_id: clientId,
           post_logout_redirect_uri: `${req.protocol}://${req.hostname}`,
         }).href
       );
