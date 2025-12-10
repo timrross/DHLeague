@@ -1,4 +1,4 @@
-import { ImageUpload } from "./image-upload";
+import { ImageUpload } from "../ui/image-upload";
 
 // This adapter component converts from the old props naming to the new props naming
 interface ImageUploadAdapterProps {

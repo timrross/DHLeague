@@ -18,7 +18,7 @@ export default function RaceCard({ race, index }: RaceCardProps) {
   };
 
   // Determine status class
-  const getStatusClass = (status: string) => {
+  const getStatusClass = (status: Race["status"] | undefined) => {
     switch (status) {
       case 'completed':
         return 'bg-green-100 text-green-800';
@@ -32,7 +32,7 @@ export default function RaceCard({ race, index }: RaceCardProps) {
   };
 
   // Determine status text
-  const getStatusText = (status: string) => {
+  const getStatusText = (status: Race["status"] | undefined) => {
     switch (status) {
       case 'completed':
         return 'Completed';
@@ -41,9 +41,11 @@ export default function RaceCard({ race, index }: RaceCardProps) {
       case 'upcoming':
         return 'Upcoming';
       default:
-        return status;
+        return status || 'Pending';
     }
   };
+
+  const raceStatus = race.status ?? 'upcoming';
 
   return (
     <tr className="border-b border-gray-200 hover:bg-gray-50 transition">
@@ -56,8 +58,8 @@ export default function RaceCard({ race, index }: RaceCardProps) {
         {formatDate(race.startDate.toString())} - {formatDate(race.endDate.toString())}
       </td>
       <td className="py-3 px-4">
-        <Badge className={`inline-block text-xs px-2 py-1 rounded-full font-semibold ${getStatusClass(race.status)}`}>
-          {getStatusText(race.status)}
+        <Badge className={`inline-block text-xs px-2 py-1 rounded-full font-semibold ${getStatusClass(raceStatus)}`}>
+          {getStatusText(raceStatus)}
         </Badge>
       </td>
     </tr>
