@@ -1,7 +1,6 @@
 import {
   users,
   type User,
-  type UpsertUser,
   riders,
   type Rider,
   type InsertRider,
@@ -32,7 +31,7 @@ import { generateRiderId } from "@shared/utils";
 export interface IStorage {
   // User operations
   getUser(id: string): Promise<User | undefined>;
-  upsertUser(user: UpsertUser): Promise<User>;
+  upsertUser(user: InsertUser): Promise<User>;
   
   // Rider operations
   getRiders(): Promise<Rider[]>;
@@ -75,7 +74,6 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   constructor() {
     // Database is initialized in db.ts
-    this.initializeSampleData();
   }
 
   // User operations
@@ -84,7 +82,7 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async upsertUser(userData: UpsertUser): Promise<User> {
+  async upsertUser(userData: InsertUser): Promise<User> {
     const result = await db
       .insert(users)
       .values({
