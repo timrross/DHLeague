@@ -39,7 +39,7 @@ export default function RaceManagement() {
     data: races = [],
     isLoading: isLoadingRaces,
     error: racesError,
-  } = useQuery({
+  } = useQuery<Race[]>({
     queryKey: ["/api/races"],
   });
 
@@ -150,8 +150,8 @@ export default function RaceManagement() {
   };
 
   // Helper function to format date display
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+  const formatDate = (dateValue: string | Date) => {
+    const date = new Date(dateValue);
     return date.toLocaleDateString();
   };
 
@@ -212,7 +212,7 @@ export default function RaceManagement() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {races.map((race: any) => (
+                {races.map((race: Race) => (
                   <React.Fragment key={race.id}>
                     {inlineEditRaceId === race.id ? (
                       <TableRow>

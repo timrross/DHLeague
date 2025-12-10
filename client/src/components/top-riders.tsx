@@ -6,9 +6,11 @@ interface TopRidersProps {
 }
 
 export default function TopRiders({ riders }: TopRidersProps) {
+  const getPoints = (rider: Rider) => rider.points ?? 0;
+
   // Sort riders by points (descending) and take top 3
   const topRiders = [...riders]
-    .sort((a, b) => b.points - a.points)
+    .sort((a, b) => getPoints(b) - getPoints(a))
     .slice(0, 3);
 
   // Ensure we have a balanced representation of male/female riders
@@ -21,11 +23,11 @@ export default function TopRiders({ riders }: TopRidersProps) {
     // Get top male and female riders
     const topMale = riders
       .filter(r => r.gender === "male")
-      .sort((a, b) => b.points - a.points)[0];
-    
+      .sort((a, b) => getPoints(b) - getPoints(a))[0];
+
     const topFemale = riders
       .filter(r => r.gender === "female")
-      .sort((a, b) => b.points - a.points)[0];
+      .sort((a, b) => getPoints(b) - getPoints(a))[0];
 
     // Ensure we have both genders represented
     if (!topRiders.some(r => r.gender === "male") && topMale) {
@@ -47,9 +49,11 @@ export default function TopRiders({ riders }: TopRidersProps) {
   // Get CSS class for form indicators based on position
   const getFormClass = (pos: number | string): string => {
     if (pos === 0 || pos === 'D' || pos === 'DNF') return 'bg-red-500'; // DNF
-    if (pos <= 3) return 'bg-green-500'; // Top 3
-    if (pos <= 5) return 'bg-green-500'; // Top 5
-    if (pos <= 10) return 'bg-yellow-500'; // Top 10
+    const numericPos = typeof pos === 'number' ? pos : Number(pos);
+    if (!Number.isFinite(numericPos)) return 'bg-yellow-500';
+    if (numericPos <= 3) return 'bg-green-500'; // Top 3
+    if (numericPos <= 5) return 'bg-green-500'; // Top 5
+    if (numericPos <= 10) return 'bg-yellow-500'; // Top 10
     return 'bg-yellow-500'; // Outside top 10
   };
 
@@ -65,7 +69,7 @@ export default function TopRiders({ riders }: TopRidersProps) {
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {displayRiders.map((rider) => {
-          const formArray = getFormArray(rider.form);
+          const formArray = getFormArray(rider.form ?? '[]');
           
           return (
             <Card key={rider.id} className="bg-white rounded-lg shadow-md overflow-hidden">
@@ -99,7 +103,7 @@ export default function TopRiders({ riders }: TopRidersProps) {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Season Points:</span>
-                    <span className="font-accent font-semibold">{rider.points}</span>
+                    <span className="font-accent font-semibold">{getPoints(rider)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Ownership:</span>

@@ -73,7 +73,7 @@ export default function UserManagement({ currentUser }: UserManagementProps) {
     isLoading: isLoadingUsers,
     error: usersError,
     refetch: refetchUsers
-  } = useQuery({
+  } = useQuery<UserWithTeam[]>({
     queryKey: ['/api/admin/users'],
   });
 
@@ -204,7 +204,7 @@ export default function UserManagement({ currentUser }: UserManagementProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map((user) => (
+                {users.map((user: UserWithTeam) => (
                   <TableRow key={user.id} className={!user.isActive ? 'opacity-60' : ''}>
                     <TableCell className="font-mono text-xs">{user.id}</TableCell>
                     <TableCell>{user.firstName} {user.lastName}</TableCell>
