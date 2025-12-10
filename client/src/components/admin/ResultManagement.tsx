@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-import { Race, Rider } from '@shared/schema';
+import { Race, Rider, Result } from '@shared/schema';
 
 import {
   Card,
@@ -49,7 +49,7 @@ export default function ResultManagement() {
   const {
     data: races = [],
     isLoading: isLoadingRaces,
-  } = useQuery({
+  } = useQuery<Race[]>({
     queryKey: ['/api/races'],
   });
 
@@ -57,7 +57,7 @@ export default function ResultManagement() {
   const {
     data: riders = [],
     isLoading: isLoadingRiders,
-  } = useQuery({
+  } = useQuery<Rider[]>({
     queryKey: ['/api/riders'],
   });
 
@@ -66,7 +66,7 @@ export default function ResultManagement() {
     data: raceResults = [],
     isLoading: isLoadingResults,
     refetch: refetchResults
-  } = useQuery({
+  } = useQuery<(Result & { rider: Rider })[]>({
     queryKey: ['/api/races', selectedRace, 'results'],
     enabled: !!selectedRace,
   });
@@ -130,7 +130,7 @@ export default function ResultManagement() {
   // When a race is selected, get its details
   useEffect(() => {
     if (selectedRace) {
-      const race = races.find((r: Race) => r.id.toString() === selectedRace);
+      const race = races.find((r) => r.id.toString() === selectedRace);
       setSelectedRaceDetails(race || null);
     } else {
       setSelectedRaceDetails(null);
