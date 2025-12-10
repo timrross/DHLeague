@@ -30,6 +30,29 @@ You can adjust deployment targets by editing the env values at the top of the wo
 - `SERVICE_NAME` (default `dhleague`): Systemd service restarted after deployment.
 - `NODE_VERSION` (default `20`): Node.js version used during the build.
 
+## Run locally in Docker
+
+### Single container (app only)
+
+Build and run the app in a container (listens on port `5000`):
+
+```bash
+docker build -t dhleague .
+docker run --rm -p 5000:5000 --env-file .env dhleague
+```
+
+The container image runs the prebuilt server from `dist/index.js` and serves the bundled client from `dist/public`. Provide environment variables (e.g., `DATABASE_URL`, `REPL_ID`, `SESSION_SECRET`, `ISSUER_URL`, `OIDC_CALLBACK_URL`) via `--env-file` or individual `-e` flags.
+
+### App + Postgres via Docker Compose
+
+Spin up the app alongside a local Postgres instance:
+
+```bash
+docker compose up --build
+```
+
+This uses `docker-compose.yml` to build the app image, expose port `5000`, and start a `postgres:16-alpine` container with credentials `postgres/postgres`. The app service receives a `DATABASE_URL` pointing at the companion database; override any values by setting them in your `.env` file or by passing `--env` flags to `docker compose`.
+
 ## Server prerequisites
 
 - Ubuntu host with SSH access from GitHub Actions runners (port 22 unless configured otherwise).
