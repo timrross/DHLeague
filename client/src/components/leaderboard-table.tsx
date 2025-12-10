@@ -64,7 +64,10 @@ export default function LeaderboardTable({ leaderboard, userId }: LeaderboardTab
                 </td>
                 <td className="py-3 px-4 flex items-center gap-2">
                   <Avatar className="h-6 w-6">
-                    <AvatarImage src={entry.user.profileImageUrl} alt={entry.user.firstName || "User"} />
+                    <AvatarImage
+                      src={entry.user.profileImageUrl || undefined}
+                      alt={entry.user.firstName || "User"}
+                    />
                     <AvatarFallback className="bg-primary text-white text-xs">
                       {getInitials(entry.user.firstName || entry.user.email || "User")}
                     </AvatarFallback>
