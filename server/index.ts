@@ -30,12 +30,16 @@ app.use(express.urlencoded({ extended: true }));
   const server = await registerRoutes(app);
 
   app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
-    const status =
+    const rawStatus =
       typeof err === "object" && err !== null && "status" in err
-        ? Number((err as { status?: number }).status)
+        ? (err as { status?: number }).status
         : typeof err === "object" && err !== null && "statusCode" in err
-          ? Number((err as { statusCode?: number }).statusCode)
-          : 500;
+          ? (err as { statusCode?: number }).statusCode
+          : undefined;
+
+    const parsedStatus = Number(rawStatus);
+    const status =
+      Number.isInteger(parsedStatus) && parsedStatus > 0 ? parsedStatus : 500;
     const message =
       typeof err === "object" && err !== null && "message" in err
         ? String((err as { message?: string }).message)
