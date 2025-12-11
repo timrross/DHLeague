@@ -4,14 +4,15 @@ import CountdownTimer from "@/components/countdown-timer";
 import FeaturedSections from "@/components/featured-sections";
 import TopRiders from "@/components/top-riders";
 import { LeaderboardAd } from "@/components/ui/google-ad";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Race, Rider } from "@shared/schema";
 
 export default function Home() {
-  const { data: races, isLoading: racesLoading } = useQuery<Race[]>({
+  const { data: races, isLoading: racesLoading, isError: racesError, error: racesErrorDetail } = useQuery<Race[]>({
     queryKey: ['/api/races'],
   });
 
-  const { data: riders, isLoading: ridersLoading } = useQuery<Rider[]>({
+  const { data: riders, isLoading: ridersLoading, isError: ridersError, error: ridersErrorDetail } = useQuery<Rider[]>({
     queryKey: ['/api/riders'],
   });
 
@@ -49,7 +50,30 @@ export default function Home() {
       </section>
 
       {/* Next Race Countdown */}
-      {nextRace && (
+      {racesLoading && (
+        <section className="bg-primary text-white py-4">
+          <div className="container mx-auto px-4">
+            <div className="flex justify-center">
+              <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {racesError && (
+        <section className="bg-primary text-white py-4">
+          <div className="container mx-auto px-4">
+            <Alert variant="destructive" className="bg-white text-secondary">
+              <AlertTitle>Unable to load next race</AlertTitle>
+              <AlertDescription className="text-sm text-secondary/80">
+                {racesErrorDetail instanceof Error ? racesErrorDetail.message : "An unexpected error occurred while fetching the next race."}
+              </AlertDescription>
+            </Alert>
+          </div>
+        </section>
+      )}
+
+      {!racesLoading && !racesError && nextRace && (
         <section className="bg-primary text-white py-4">
           <div className="container mx-auto px-4">
             <div className="flex flex-col md:flex-row justify-between items-center">
@@ -70,6 +94,14 @@ export default function Home() {
         </section>
       )}
 
+      {!racesLoading && !racesError && !nextRace && (
+        <section className="bg-primary text-white py-4">
+          <div className="container mx-auto px-4">
+            <p className="font-body font-semibold">No upcoming race found. Check back soon!</p>
+          </div>
+        </section>
+      )}
+
       <div className="container mx-auto px-4 py-8 md:py-12">
         {/* Featured Sections */}
         <FeaturedSections />
@@ -80,7 +112,22 @@ export default function Home() {
         </div>
 
         {/* Top Performers */}
-        {!ridersLoading && riders && (
+        {ridersLoading && (
+          <div className="flex justify-center py-8">
+            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        )}
+
+        {ridersError && (
+          <Alert variant="destructive" className="my-4">
+            <AlertTitle>Unable to load top riders</AlertTitle>
+            <AlertDescription>
+              {ridersErrorDetail instanceof Error ? ridersErrorDetail.message : "An unexpected error occurred while fetching riders."}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {!ridersLoading && !ridersError && riders && (
           <TopRiders riders={riders as Rider[]} />
         )}
       </div>
