@@ -1,6 +1,8 @@
 # DHLeague
 
-This project combines a Vite React client with an Express-based server.
+This project combines a Vite React client with an Express-based server. The
+production site will live at **https://mtbfantasy.com**, with both the client
+and API endpoints served from that domain.
 
 The server bundles two logical services that are mounted under distinct base
 paths:
@@ -36,8 +38,9 @@ At runtime the app expects the following environment variables:
 - `SESSION_SECRET`: Session signing secret for auth flows.
 - `RIDER_DATA_BASE_URL`: Base URL where the rider data service is reachable; defaults to `http://localhost:5000/api/rider-data`
   when the services run together.
+- `AUTH_DOMAINS`: Comma-separated list of allowed hostnames for login callbacks. Include `mtbfantasy.com` in production.
 - `ISSUER_URL`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_CALLBACK_URL`: OIDC values required for login; ask the admin
-  for the tenant-specific credentials before deploying.
+  for the tenant-specific credentials before deploying. In production the callback should be `https://mtbfantasy.com/api/callback`.
 
 ## Configurable paths and service name
 
