@@ -9,6 +9,7 @@ import RaceDetail from "@/pages/race-detail";
 import Leaderboard from "@/pages/leaderboard";
 import Rules from "@/pages/rules";
 import Admin from "@/pages/admin";
+import Login from "@/pages/login";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import AdProvider from "@/components/layout/ad-provider";
@@ -29,6 +30,7 @@ function App() {
             <Route path="/leaderboard" component={Leaderboard} />
             <Route path="/rules" component={Rules} />
             <Route path="/admin" component={Admin} />
+            <Route path="/login" component={Login} />
             <Route component={NotFound} />
           </Switch>
         </main>
