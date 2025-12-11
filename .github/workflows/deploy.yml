@@ -6,8 +6,8 @@ on:
   workflow_dispatch:
 
 env:
-  NODE_VERSION: "20"
-  WEB_ROOT: /var/www/html
+  NODE_VERSION: "24"
+  WEB_ROOT: /var/www/dhleague_www
   APP_ROOT: /var/www/dhleague
   SERVICE_NAME: dhleague
 
