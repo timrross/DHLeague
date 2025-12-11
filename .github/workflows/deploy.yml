@@ -66,12 +66,19 @@ jobs:
 
       - name: Upload client bundle to web root
         run: |
-          rsync -avz --delete dist/public/ "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${WEB_ROOT}/"
+          rsync -rlvz --delete --no-perms --no-owner --no-group \
+            dist/public/ \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${WEB_ROOT}/"
 
       - name: Upload server bundle and manifests
         run: |
-          rsync -avz --delete dist/index.* package.json package-lock.json "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${APP_ROOT}/"
-          rsync -avz dist/public/ "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${APP_ROOT}/public/"
+          rsync -rlvz --delete --no-perms --no-owner --no-group \
+            dist/index.* package.json package-lock.json \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${APP_ROOT}/"
+
+          rsync -rlvz --delete --no-perms --no-owner --no-group \
+            dist/public/ \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${APP_ROOT}/public/"
 
       - name: Install production dependencies and restart service
         run: |
