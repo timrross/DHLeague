@@ -1,13 +1,13 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes/index";
 import { setupVite, serveStatic, log } from "./vite";
-import getRawBody from "raw-body";
 import path from "path";
 import fs from "fs";
 //import { runMigrations } from "./migrations";
 
 const app = express();
 const isDevEnv = process.env.NODE_ENV?.toLowerCase() === "development";
+app.disable("x-powered-by");
 // Special route for ads.txt - add before other middleware
 app.get('/ads.txt', (req, res) => {
   const adsPath = path.join(process.cwd(), 'public', 'ads.txt');
@@ -29,12 +29,26 @@ app.use(express.urlencoded({ extended: true }));
 
   const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+  app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+    const status =
+      typeof err === "object" && err !== null && "status" in err
+        ? Number((err as { status?: number }).status)
+        : typeof err === "object" && err !== null && "statusCode" in err
+          ? Number((err as { statusCode?: number }).statusCode)
+          : 500;
+    const message =
+      typeof err === "object" && err !== null && "message" in err
+        ? String((err as { message?: string }).message)
+        : "Internal Server Error";
+
+    log(`[${status}] ${message}`, "error");
+    if (err instanceof Error && err.stack) {
+      console.error(err.stack);
+    } else if (err) {
+      console.error(err);
+    }
 
     res.status(status).json({ message });
-    throw err;
   });
 
   // importantly only setup vite in development and after
@@ -60,4 +74,16 @@ app.use(express.urlencoded({ extended: true }));
       log(`serving on port ${port}`);
     },
   );
-})();
+})().catch((error: unknown) => {
+  const message =
+    typeof error === "object" && error !== null && "message" in error
+      ? String((error as { message?: string }).message)
+      : "Unexpected server error";
+  log(`Server failed to start: ${message}`, "startup");
+  if (error instanceof Error && error.stack) {
+    console.error(error.stack);
+  } else {
+    console.error(error);
+  }
+  process.exit(1);
+});
