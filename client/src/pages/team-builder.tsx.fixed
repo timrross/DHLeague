@@ -37,7 +37,7 @@ export default function TeamBuilder() {
 
   // Fetch all races
   const { data: races, isLoading: racesLoading } = useQuery<Race[]>({
-    queryKey: ['/api/races'],
+    queryKey: ['/api/rider-data/races'],
   });
 
   // Determine next race
@@ -48,7 +48,7 @@ export default function TeamBuilder() {
   
   // Fetch riders
   const { data: riders, isLoading: ridersLoading } = useQuery<Rider[]>({
-    queryKey: ['/api/riders'],
+    queryKey: ['/api/rider-data/riders'],
   });
 
   // Fetch user's team if authenticated

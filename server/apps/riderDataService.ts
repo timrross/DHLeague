@@ -1,5 +1,6 @@
-import express from "express";
+import express, { Router } from "express";
 import ridersRoutes from "../routes/riders.routes";
+import { getAllRaces, getRaceById, getRaceResults } from "../controllers/races.controller";
 
 /**
  * Factory for the rider data service. This service owns rider CRUD and
@@ -8,11 +9,17 @@ import ridersRoutes from "../routes/riders.routes";
  */
 export function createRiderDataService() {
   const app = express();
+  const publicRaceRoutes = Router();
 
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
+  publicRaceRoutes.get("/", getAllRaces);
+  publicRaceRoutes.get("/:id", getRaceById);
+  publicRaceRoutes.get("/:id/results", getRaceResults);
+
   app.use("/riders", ridersRoutes);
+  app.use("/races", publicRaceRoutes);
 
   return app;
 }

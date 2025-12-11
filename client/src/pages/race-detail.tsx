@@ -44,11 +44,11 @@ export default function RaceDetail({ id }: RaceDetailProps) {
     isLoading: raceLoading,
     isError,
   } = useQuery<Race>({
-    queryKey: ["/api/races/" + id],
+    queryKey: ["/api/rider-data/races/" + id],
   });
 
   const { data: results, isLoading: resultsLoading } = useQuery<RaceResult[]>({
-    queryKey: ["/api/races/" + id + "/results"],
+    queryKey: ["/api/rider-data/races/" + id + "/results"],
     enabled: !!race,
   });
 
