@@ -5,12 +5,13 @@ import LeaderboardTable from "@/components/leaderboard-table";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { FooterAd } from "@/components/ui/google-ad";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function Leaderboard() {
   const [viewMode, setViewMode] = useState<'global' | 'leagues' | 'friends'>('global');
   const { user, isAuthenticated } = useAuth();
 
-  const { data: leaderboard, isLoading } = useQuery({
+  const { data: leaderboard, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['/api/leaderboard'],
   });
 
@@ -54,15 +55,38 @@ export default function Leaderboard() {
             </Button>
           </div>
           
-          {isLoading ? (
+          {isLoading && (
             <div className="flex justify-center items-center h-64">
               <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
             </div>
-          ) : (
-            <LeaderboardTable 
-              leaderboard={filteredLeaderboard} 
+          )}
+
+          {isError && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertTitle>Unable to load leaderboard</AlertTitle>
+              <AlertDescription>
+                {error instanceof Error ? error.message : "An unexpected error occurred while fetching leaderboard data."}
+              </AlertDescription>
+              <div className="mt-4">
+                <Button variant="outline" onClick={() => refetch()}>Try again</Button>
+              </div>
+            </Alert>
+          )}
+
+          {!isLoading && !isError && filteredLeaderboard && filteredLeaderboard.length > 0 && (
+            <LeaderboardTable
+              leaderboard={filteredLeaderboard}
               userId={isAuthenticated ? user?.id : undefined}
             />
+          )}
+
+          {!isLoading && !isError && (!filteredLeaderboard || filteredLeaderboard.length === 0) && (
+            <Alert className="bg-gray-50">
+              <AlertTitle>No leaderboard data yet</AlertTitle>
+              <AlertDescription>
+                Start building teams and completing races to see rankings here.
+              </AlertDescription>
+            </Alert>
           )}
 
           {!isAuthenticated && (viewMode === 'leagues' || viewMode === 'friends') && (
