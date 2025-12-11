@@ -46,10 +46,10 @@ At runtime the app expects the following environment variables:
 
 You can adjust deployment targets by editing the env values at the top of the workflow:
 
-- `WEB_ROOT` (default `/var/www/html`): Destination for the built client assets served by Apache.
+- `WEB_ROOT` (default `/var/www/dhleague_www`): Destination for the built client assets served by Apache.
 - `APP_ROOT` (default `/var/www/dhleague`): Directory for the bundled server files and lockfiles.
 - `SERVICE_NAME` (default `dhleague`): Systemd service restarted after deployment.
-- `NODE_VERSION` (default `20`): Node.js version used during the build.
+- `NODE_VERSION` (default `24`): Node.js version used during the build.
 
 ## Run locally in Docker
 
