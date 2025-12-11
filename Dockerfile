@@ -1,5 +1,5 @@
 # Build stage: install dependencies and compile client/server bundles
-FROM node:20-slim AS build
+FROM node:24-slim AS build
 WORKDIR /app
 
 # Install dependencies using the lockfile for reproducibility
@@ -11,7 +11,7 @@ COPY . .
 RUN npm run build
 
 # Production stage: install only runtime dependencies and copy build output
-FROM node:20-slim AS runner
+FROM node:24-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
