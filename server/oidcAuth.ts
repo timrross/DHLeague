@@ -8,8 +8,6 @@ import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 
-<<<<<<< HEAD:server/replitAuth.ts
-=======
 function requireEnv(name: string, value?: string) {
   if (!value) {
     throw new Error(`Environment variable ${name} not provided`);
@@ -32,7 +30,6 @@ if (parsedAuthDomains.length === 0) {
   throw new Error("Environment variable AUTH_DOMAINS must list at least one domain");
 }
 
->>>>>>> be6bffa120e7dd4019f31dd43b89e1a860bb1767:server/oidcAuth.ts
 const getOidcConfig = memoize(
   async () => {
     return await client.discovery(new URL(issuerUrl), clientId);
@@ -102,18 +99,6 @@ export async function setupAuth(app: Express) {
     verified(null, user);
   };
 
-<<<<<<< HEAD:server/replitAuth.ts
-  const strategy = new Strategy(
-    {
-      name: "replitauth",
-      config,
-      scope: "openid email profile offline_access",
-      callbackURL: process.env.OIDC_CALLBACK_URL ?? "/api/callback",
-    },
-    verify,
-  );
-  passport.use(strategy);
-=======
   for (const domain of parsedAuthDomains) {
     const strategy = new Strategy(
       {
@@ -126,28 +111,19 @@ export async function setupAuth(app: Express) {
     );
     passport.use(strategy);
   }
->>>>>>> be6bffa120e7dd4019f31dd43b89e1a860bb1767:server/oidcAuth.ts
 
   passport.serializeUser((user: Express.User, cb) => cb(null, user));
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
   app.get("/api/login", (req, res, next) => {
-<<<<<<< HEAD:server/replitAuth.ts
-    passport.authenticate("replitauth", {
-=======
     passport.authenticate(`oidc:${req.hostname}`, {
->>>>>>> be6bffa120e7dd4019f31dd43b89e1a860bb1767:server/oidcAuth.ts
       prompt: "login consent",
       scope: ["openid", "email", "profile", "offline_access"],
     })(req, res, next);
   });
 
   app.get("/api/callback", (req, res, next) => {
-<<<<<<< HEAD:server/replitAuth.ts
-    passport.authenticate("replitauth", {
-=======
     passport.authenticate(`oidc:${req.hostname}`, {
->>>>>>> be6bffa120e7dd4019f31dd43b89e1a860bb1767:server/oidcAuth.ts
       successReturnToOrRedirect: "/",
       failureRedirect: "/api/login",
     })(req, res, next);
