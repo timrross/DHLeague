@@ -17,26 +17,28 @@ import AdProvider from "@/components/layout/ad-provider";
 function App() {
   return (
     <TooltipProvider>
-      <div className="flex flex-col min-h-screen">
-        <Header />
-        <main className="flex-grow">
-          <Switch>
-            <Route path="/" component={Home} />
-            <Route path="/team-builder" component={TeamBuilder} />
-            <Route path="/races" component={Races} />
-            <Route path="/races/:id">
-              {(params) => <RaceDetail id={Number(params.id)} />}
-            </Route>
-            <Route path="/leaderboard" component={Leaderboard} />
-            <Route path="/rules" component={Rules} />
-            <Route path="/admin" component={Admin} />
-            <Route path="/login" component={Login} />
-            <Route component={NotFound} />
-          </Switch>
-        </main>
-        <Footer />
-      </div>
-      <Toaster />
+      <AdProvider>
+        <div className="flex flex-col min-h-screen">
+          <Header />
+          <main className="flex-grow">
+            <Switch>
+              <Route path="/" component={Home} />
+              <Route path="/team-builder" component={TeamBuilder} />
+              <Route path="/races" component={Races} />
+              <Route path="/races/:id">
+                {(params) => <RaceDetail id={Number(params.id)} />}
+              </Route>
+              <Route path="/leaderboard" component={Leaderboard} />
+              <Route path="/rules" component={Rules} />
+              <Route path="/admin" component={Admin} />
+              <Route path="/login" component={Login} />
+              <Route component={NotFound} />
+            </Switch>
+          </main>
+          <Footer />
+        </div>
+        <Toaster />
+      </AdProvider>
     </TooltipProvider>
   );
 }
