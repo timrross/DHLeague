@@ -1,4 +1,4 @@
-import { Card, CardContent } from "@/components/ui/card";
+import { Link } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { Race } from "@shared/schema";
 
@@ -51,7 +51,9 @@ export default function RaceCard({ race, index }: RaceCardProps) {
     <tr className="border-b border-gray-200 hover:bg-gray-50 transition">
       <td className="py-3 px-4 font-accent font-bold text-gray-700">{index + 1}</td>
       <td className="py-3 px-4 font-heading font-semibold text-secondary">
-        <a href={`#race-${race.id}`} className="hover:text-primary transition">{race.name}</a>
+        <Link href={`/races/${race.id}`}>
+          <div className="hover:text-primary transition cursor-pointer">{race.name}</div>
+        </Link>
       </td>
       <td className="py-3 px-4 text-gray-700">{race.country}</td>
       <td className="py-3 px-4 font-accent text-gray-700">
