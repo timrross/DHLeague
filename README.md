@@ -2,6 +2,15 @@
 
 This project combines a Vite React client with an Express-based server.
 
+The server bundles two logical services that are mounted under distinct base
+paths:
+
+- **Game mechanics service** – exposed at `/api/game/*` (legacy clients can
+  continue using `/api/*`). This service owns team building, scoring, and
+  leaderboard APIs.
+- **Rider data service** – exposed at `/api/rider-data/*` for rider CRUD and
+  race metadata.
+
 ## Deployment workflow
 
 The GitHub Actions workflow in [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) builds the client and server on pushes to `main` or when triggered manually. It performs these steps:
@@ -20,6 +29,15 @@ Configure these repository or environment secrets so the deploy job can connect 
 - `SSH_HOST`: Hostname or IP address of the Ubuntu server.
 - `SSH_USER`: SSH user with permission to write to the deployment paths and restart services.
 - `SSH_KEY`: Private SSH key for the deploy user (use a multi-line key value).
+
+At runtime the app expects the following environment variables:
+
+- `DATABASE_URL`: Postgres connection string used by both services.
+- `SESSION_SECRET`: Session signing secret for auth flows.
+- `RIDER_DATA_BASE_URL`: Base URL where the rider data service is reachable; defaults to `http://localhost:5000/api/rider-data`
+  when the services run together.
+- `ISSUER_URL`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_CALLBACK_URL`: OIDC values required for login; ask the admin
+  for the tenant-specific credentials before deploying.
 
 ## Configurable paths and service name
 

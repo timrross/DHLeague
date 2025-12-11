@@ -8,6 +8,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const fantasyLeagueService = await createFantasyLeagueService();
 
   app.use("/api/rider-data", riderDataService);
+  // Prefer the explicit game prefix for clarity across services while
+  // keeping the legacy mount for existing clients.
+  app.use("/api/game", fantasyLeagueService);
   app.use("/api", fantasyLeagueService);
 
   // Create and return the HTTP server

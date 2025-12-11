@@ -4,7 +4,7 @@ This roadmap captures the minimum deliverable for the project in a Codex-friendl
 
 ## Task List
 
-1. [ ] **Baseline deployment & hosting**
+1. [x] **Baseline deployment & hosting**
    - Stand up two services: (a) the game mechanics service (team builder, roster storage, scoring) and (b) the rider data service (aggregation + public rider/race API).
    - Ensure both services build and deploy in the existing workflow/Docker paths and are reachable by the web app (e.g., `/api/game/*` and `/api/rider-data/*`).
    - Confirm cross-service secrets (data source tokens, admin creds) and inter-service URLs are set before feature work starts.
