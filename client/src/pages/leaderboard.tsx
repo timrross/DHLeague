@@ -92,7 +92,7 @@ export default function Leaderboard() {
           {!isAuthenticated && (viewMode === 'leagues' || viewMode === 'friends') && (
             <div className="mt-4 p-4 bg-gray-50 rounded-md text-center">
               <p className="text-gray-700 mb-2">You need to be logged in to view your leagues and friends.</p>
-              <a href="/api/login" className="text-primary hover:underline">Log In</a>
+              <a href="/login" className="text-primary hover:underline">Log In</a>
             </div>
           )}
         </div>
