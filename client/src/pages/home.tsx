@@ -9,11 +9,11 @@ import { Race, Rider } from "@shared/schema";
 
 export default function Home() {
   const { data: races, isLoading: racesLoading, isError: racesError, error: racesErrorDetail } = useQuery<Race[]>({
-    queryKey: ['/api/races'],
+    queryKey: ['/api/rider-data/races'],
   });
 
   const { data: riders, isLoading: ridersLoading, isError: ridersError, error: ridersErrorDetail } = useQuery<Rider[]>({
-    queryKey: ['/api/riders'],
+    queryKey: ['/api/rider-data/riders'],
   });
 
   // Find the next race

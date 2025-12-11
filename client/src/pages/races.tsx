@@ -6,8 +6,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 
 export default function Races() {
-  const { data: races, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ['/api/races'],
+  const { data: races, isLoading, isError, error, refetch } = useQuery<Race[]>({
+    queryKey: ['/api/rider-data/races'],
   });
 
   return (
