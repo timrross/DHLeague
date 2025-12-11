@@ -7,8 +7,8 @@ on:
 
 env:
   NODE_VERSION: "24"
-  WEB_ROOT: /var/www/dhleague_www
-  APP_ROOT: /var/www/dhleague
+  WEB_ROOT: /var/www/dhleague_web
+  APP_ROOT: /var/www/dhleague_app
   SERVICE_NAME: dhleague
 
 jobs:
