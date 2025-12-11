@@ -115,17 +115,20 @@ export async function setupAuth(app: Express) {
   passport.serializeUser((user: Express.User, cb) => cb(null, user));
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
-  app.get("/api/login", (req, res, next) => {
+  const loginHandler: RequestHandler = (req, res, next) => {
     passport.authenticate(`oidc:${req.hostname}`, {
       prompt: "login consent",
       scope: ["openid", "email", "profile", "offline_access"],
     })(req, res, next);
-  });
+  };
+
+  app.get("/api/login", loginHandler);
+  app.get("/login", loginHandler);
 
   app.get("/api/callback", (req, res, next) => {
     passport.authenticate(`oidc:${req.hostname}`, {
       successReturnToOrRedirect: "/",
-      failureRedirect: "/api/login",
+      failureRedirect: "/login",
     })(req, res, next);
   });
 
@@ -155,7 +158,7 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
 
   const refreshToken = user.refresh_token;
   if (!refreshToken) {
-    return res.redirect("/api/login");
+    return res.redirect("/login");
   }
 
   try {
@@ -164,6 +167,6 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     updateUserSession(user, tokenResponse);
     return next();
   } catch (error) {
-    return res.redirect("/api/login");
+    return res.redirect("/login");
   }
 };
