@@ -2,9 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { Race } from "@shared/schema";
 import RaceSchedule from "@/components/race-schedule";
 import { SidebarAd } from "@/components/ui/google-ad";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 
 export default function Races() {
-  const { data: races, isLoading } = useQuery({
+  const { data: races, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['/api/races'],
   });
 
@@ -16,12 +18,35 @@ export default function Races() {
           <div className="flex-1">
             <h2 className="text-2xl md:text-3xl font-heading font-bold text-secondary mb-6">2025 RACE SCHEDULE</h2>
             
-            {isLoading ? (
+            {isLoading && (
               <div className="flex justify-center items-center h-64">
                 <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
               </div>
-            ) : (
+            )}
+
+            {isError && (
+              <Alert variant="destructive" className="mb-6">
+                <AlertTitle>Unable to load races</AlertTitle>
+                <AlertDescription>
+                  {error instanceof Error ? error.message : "An unexpected error occurred while loading the race schedule."}
+                </AlertDescription>
+                <div className="mt-4">
+                  <Button variant="outline" onClick={() => refetch()}>Try again</Button>
+                </div>
+              </Alert>
+            )}
+
+            {!isLoading && !isError && races && (races as Race[]).length > 0 && (
               <RaceSchedule races={races as Race[]} />
+            )}
+
+            {!isLoading && !isError && races && (races as Race[]).length === 0 && (
+              <Alert className="bg-gray-50">
+                <AlertTitle>No races available</AlertTitle>
+                <AlertDescription>
+                  Check back soon for the latest race schedule updates.
+                </AlertDescription>
+              </Alert>
             )}
           </div>
           
