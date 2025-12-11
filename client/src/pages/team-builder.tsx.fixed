@@ -513,8 +513,8 @@ export default function TeamBuilder() {
           <>
             {/* Login CTA button for guests */}
             <div className="w-full">
-              <Link href="/api/login">
-                <Button 
+              <Link href="/login">
+                <Button
                   className="w-full"
                 >
                   Log In to Save Team

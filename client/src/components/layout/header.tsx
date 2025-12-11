@@ -77,7 +77,7 @@ export default function Header() {
               </a>
             </div>
           ) : (
-            <a href="/api/login" className="hidden md:block bg-primary hover:bg-red-700 text-white font-heading font-bold px-4 py-2 rounded-md transition duration-200">
+            <a href="/login" className="hidden md:block bg-primary hover:bg-red-700 text-white font-heading font-bold px-4 py-2 rounded-md transition duration-200">
               SIGN IN
             </a>
           )}
@@ -132,8 +132,8 @@ export default function Header() {
                       </a>
                     </div>
                   ) : (
-                    <a 
-                      href="/api/login" 
+                    <a
+                      href="/login"
                       className="w-full bg-primary hover:bg-red-700 text-white font-heading font-bold px-4 py-2 rounded-md transition duration-200 text-center block"
                     >
                       SIGN IN
