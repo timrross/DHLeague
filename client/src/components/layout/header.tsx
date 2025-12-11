@@ -25,6 +25,7 @@ export default function Header() {
   const [location] = useLocation();
   const { user, isAuthenticated } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const isAdminUser = !!user?.isAdmin;
 
   const getInitials = (name: string) => {
     if (!name) return "U";
@@ -64,7 +65,7 @@ export default function Header() {
                   {getInitials(user?.firstName || "User")}
                 </AvatarFallback>
               </Avatar>
-              {user?.id === "42624609" && (
+              {isAdminUser && (
                 <Link href="/admin">
                   <div className="flex items-center text-white hover:text-primary font-body font-semibold transition duration-200 cursor-pointer">
                     <Shield className="h-4 w-4 mr-1" />
@@ -100,7 +101,7 @@ export default function Header() {
                   <nav className="flex flex-col space-y-4">
                     {navigation.map((item) => (
                       <Link key={item.name} href={item.href}>
-                        <div 
+                        <div
                           className={`text-white hover:text-primary font-body font-semibold transition px-2 py-2 cursor-pointer ${
                             location === item.href ? "bg-gray-800 text-primary" : ""
                           }`}
@@ -110,6 +111,18 @@ export default function Header() {
                         </div>
                       </Link>
                     ))}
+                    {isAdminUser && (
+                      <Link href="/admin">
+                        <div
+                          className={`text-white hover:text-primary font-body font-semibold transition px-2 py-2 cursor-pointer ${
+                            location === "/admin" ? "bg-gray-800 text-primary" : ""
+                          }`}
+                          onClick={() => setMenuOpen(false)}
+                        >
+                          Admin
+                        </div>
+                      </Link>
+                    )}
                   </nav>
                 </div>
                 <div className="absolute bottom-4 w-full pr-8">
