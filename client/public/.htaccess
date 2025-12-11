@@ -7,7 +7,7 @@ RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^ - [L]
 
 # 2) Don’t rewrite API or other backend paths that should hit Node directly
-RewriteRule ^(api|graphql|auth)/ - [L]
+RewriteRule ^(api|graphql|auth)(/|$) - [L]
 
 # 3) Everything else goes to the SPA entry point
 RewriteRule . /index.html [L]
