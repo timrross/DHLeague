@@ -20,7 +20,7 @@ function formatDate(dateString: string) {
 }
 
 function StatusBadge({ status }: { status?: Race["status"] }) {
-  const statusClasses: Record<Race["status"], string> = {
+  const statusClasses: Record<NonNullable<Race["status"]>, string> = {
     completed: "bg-green-100 text-green-800",
     next: "bg-blue-100 text-blue-800",
     ongoing: "bg-purple-100 text-purple-800",
@@ -168,7 +168,7 @@ export default function RaceDetail({ id }: RaceDetailProps) {
                           <tr>
                             <th className="py-3 px-4 text-xs text-gray-500 uppercase">Pos</th>
                             <th className="py-3 px-4 text-xs text-gray-500 uppercase">Rider</th>
-                            <th className="py-3 px-4 text-xs text-gray-500 uppercase">Nationality</th>
+                            <th className="py-3 px-4 text-xs text-gray-500 uppercase">Country</th>
                             <th className="py-3 px-4 text-xs text-gray-500 uppercase">Points</th>
                           </tr>
                         </thead>
@@ -184,7 +184,7 @@ export default function RaceDetail({ id }: RaceDetailProps) {
                                     {result.rider.firstName} {result.rider.lastName}
                                   </p>
                                 </td>
-                                <td className="py-3 px-4 text-gray-600">{result.rider.nationality}</td>
+                                <td className="py-3 px-4 text-gray-600">{result.rider.country}</td>
                                 <td className="py-3 px-4 font-semibold text-secondary">{result.points}</td>
                               </tr>
                             ))}
