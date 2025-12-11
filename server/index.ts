@@ -7,6 +7,7 @@ import fs from "fs";
 //import { runMigrations } from "./migrations";
 
 const app = express();
+const isDevEnv = process.env.NODE_ENV?.toLowerCase() === "development";
 // Special route for ads.txt - add before other middleware
 app.get('/ads.txt', (req, res) => {
   const adsPath = path.join(process.cwd(), 'public', 'ads.txt');
@@ -39,7 +40,7 @@ app.use(express.urlencoded({ extended: true }));
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
-  if (app.get("env") === "development") {
+  if (isDevEnv) {
     await setupVite(app, server);
   } else {
     serveStatic(app);
