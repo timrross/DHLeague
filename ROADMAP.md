@@ -17,7 +17,7 @@ This roadmap captures the minimum deliverable for the project in a Codex-friendl
    - Implement minimal Team Builder: fetch riders from the rider data service, enforce budget/slot rules, allow roster assembly, and store the selection via the game mechanics service.
    - Add rule hints/validation consistent with the Rules page and show a confirmation toast on save (align with existing Toaster provider).
 
-4. [ ] **Race schedule visibility**
+4. [x] **Race schedule visibility**
    - Serve a simple races list with status (next/upcoming/completed) and basic race detail pages from the rider data service.
    - Keep the homepage countdown synchronized with rider data service API data for the “next” race.
 
