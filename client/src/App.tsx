@@ -5,6 +5,7 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import TeamBuilder from "@/pages/team-builder";
 import Races from "@/pages/races";
+import RaceDetail from "@/pages/race-detail";
 import Leaderboard from "@/pages/leaderboard";
 import Rules from "@/pages/rules";
 import Admin from "@/pages/admin";
@@ -22,6 +23,9 @@ function App() {
             <Route path="/" component={Home} />
             <Route path="/team-builder" component={TeamBuilder} />
             <Route path="/races" component={Races} />
+            <Route path="/races/:id">
+              {(params) => <RaceDetail id={Number(params.id)} />}
+            </Route>
             <Route path="/leaderboard" component={Leaderboard} />
             <Route path="/rules" component={Rules} />
             <Route path="/admin" component={Admin} />
