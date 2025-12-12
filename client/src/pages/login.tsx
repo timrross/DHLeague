@@ -3,7 +3,8 @@ import { Loader2 } from "lucide-react";
 
 export default function Login() {
   useEffect(() => {
-    window.location.href = "/login";
+    // Redirect to the server-side auth endpoint to start the login flow
+    window.location.href = "/api/login";
   }, []);
 
   return (
