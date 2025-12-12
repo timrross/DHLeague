@@ -1,4 +1,19 @@
 # Build stage: install dependencies and compile client/server bundles
+FROM node:24-slim AS dev
+WORKDIR /app
+ENV NODE_ENV=development
+
+# Install dependencies using the lockfile for reproducibility
+COPY package.json package-lock.json ./
+RUN npm ci
+
+# Copy the rest of the repository for local development
+COPY . .
+
+EXPOSE 5000
+
+CMD ["npm", "run", "dev"]
+
 FROM node:24-slim AS build
 WORKDIR /app
 
