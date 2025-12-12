@@ -25,8 +25,24 @@ import {
   type InsertUser
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, asc, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 import { generateRiderId } from "@shared/utils";
+
+export function calculateRaceStatus(
+  startDate: Date,
+  endDate: Date,
+  now: Date = new Date()
+): "upcoming" | "ongoing" | "completed" {
+  if (now < startDate) {
+    return "upcoming";
+  }
+
+  if (now >= startDate && now <= endDate) {
+    return "ongoing";
+  }
+
+  return "completed";
+}
 
 export interface IStorage {
   // User operations
@@ -51,10 +67,28 @@ export interface IStorage {
   
   // Race operations
   getRaces(): Promise<Race[]>;
+  getRacesWithStatuses(now?: Date): Promise<Race[]>;
+  getRaceStatusBuckets(now?: Date): Promise<{
+    races: Race[];
+    nextRace?: Race;
+    upcomingRaces: Race[];
+    ongoingRaces: Race[];
+    completedRaces: Race[];
+  }>;
   getRace(id: number): Promise<Race | undefined>;
+  getRaceWithStatus(id: number, now?: Date): Promise<Race | undefined>;
   getRaceWithResults(id: number): Promise<RaceWithResults | undefined>;
   createRace(race: InsertRace): Promise<Race>;
   updateRace(id: number, race: Partial<Race>): Promise<Race | undefined>;
+  getRaceResultsStub(
+    raceId: number,
+    now?: Date
+  ): Promise<
+    | (Race & {
+      results: (Result & { rider: Rider })[];
+    })
+    | undefined
+  >;
   
   // Result operations
   getResults(raceId: number): Promise<(Result & { rider: Rider })[]>;
@@ -74,6 +108,32 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   constructor() {
     // Database is initialized in db.ts
+  }
+
+  private applyRaceStatuses(races: Race[], now: Date = new Date()): Race[] {
+    const racesWithStatus = races.map((race) => {
+      const startDate = new Date(race.startDate);
+      const endDate = new Date(race.endDate);
+
+      return {
+        ...race,
+        status: calculateRaceStatus(startDate, endDate, now)
+      } as Race;
+    });
+
+    // Identify the next upcoming race (closest future start)
+    const upcomingRaces = racesWithStatus
+      .filter((race) => race.status === "upcoming")
+      .sort(
+        (a, b) =>
+          new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
+      );
+
+    if (upcomingRaces[0]) {
+      upcomingRaces[0].status = "next";
+    }
+
+    return racesWithStatus;
   }
 
   // User operations
@@ -448,9 +508,45 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(races);
   }
 
+  async getRacesWithStatuses(now: Date = new Date()): Promise<Race[]> {
+    const allRaces = await this.getRaces();
+    return this.applyRaceStatuses(allRaces, now);
+  }
+
+  async getRaceStatusBuckets(now: Date = new Date()): Promise<{
+    races: Race[];
+    nextRace?: Race;
+    upcomingRaces: Race[];
+    ongoingRaces: Race[];
+    completedRaces: Race[];
+  }> {
+    const racesWithStatus = await this.getRacesWithStatuses(now);
+    const nextRace = racesWithStatus.find((race) => race.status === "next");
+
+    return {
+      races: racesWithStatus,
+      nextRace,
+      upcomingRaces: racesWithStatus.filter(
+        (race) => race.status === "upcoming" || race.status === "next"
+      ),
+      ongoingRaces: racesWithStatus.filter((race) => race.status === "ongoing"),
+      completedRaces: racesWithStatus.filter(
+        (race) => race.status === "completed"
+      )
+    };
+  }
+
   async getRace(id: number): Promise<Race | undefined> {
     const result = await db.select().from(races).where(eq(races.id, id));
     return result[0];
+  }
+
+  async getRaceWithStatus(
+    id: number,
+    now: Date = new Date()
+  ): Promise<Race | undefined> {
+    const races = await this.getRacesWithStatuses(now);
+    return races.find((race) => race.id === id);
   }
 
   async getRaceWithResults(id: number): Promise<RaceWithResults | undefined> {
@@ -499,6 +595,26 @@ export class DatabaseStorage implements IStorage {
       .where(eq(races.id, id))
       .returning();
     return result[0];
+  }
+
+  async getRaceResultsStub(
+    raceId: number,
+    now: Date = new Date()
+  ): Promise<
+    | (Race & {
+      results: (Result & { rider: Rider })[];
+    })
+    | undefined
+  > {
+    const raceWithStatus = await this.getRaceWithStatus(raceId, now);
+    if (!raceWithStatus) return undefined;
+
+    const raceResults = await this.getResults(raceId);
+
+    return {
+      ...raceWithStatus,
+      results: raceResults
+    };
   }
   
   // Result operations
