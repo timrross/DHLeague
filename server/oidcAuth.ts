@@ -37,6 +37,13 @@ const getOidcConfig = memoize(
   { maxAge: 3600 * 1000 }
 );
 
+const nodeEnv = process.env.NODE_ENV?.toLowerCase();
+const isDevEnv = nodeEnv === "development";
+const callbackUrlOverride = process.env.OIDC_CALLBACK_URL;
+const devCallbackPort = process.env.DEV_AUTH_CALLBACK_PORT ??
+  process.env.PORT ??
+  "5001";
+
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
   const pgStore = connectPg(session);
@@ -100,12 +107,18 @@ export async function setupAuth(app: Express) {
   };
 
   for (const domain of parsedAuthDomains) {
+    const domainWithPort = isDevEnv && !domain.includes(":")
+      ? `${domain}:${devCallbackPort}`
+      : domain;
+    const callbackURL = callbackUrlOverride ??
+      `${isDevEnv ? "http" : "https"}://${domainWithPort}/api/callback`;
+
     const strategy = new Strategy(
       {
         name: `oidc:${domain}`,
         config,
         scope: "openid email profile offline_access",
-        callbackURL: `https://${domain}/api/callback`,
+        callbackURL,
       },
       verify,
     );
