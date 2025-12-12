@@ -1,0 +1,28 @@
+[
+  {
+    "name": "Loic Bruni",
+    "gender": "male",
+    "team": "Specialized Gravity",
+    "cost": 1100000,
+    "country": "France",
+    "lastYearStanding": 1,
+    "image": "https://example.com/images/bruni.jpg"
+  },
+  {
+    "name": "Valentina Holl",
+    "gender": "female",
+    "team": "Rockshox Trek",
+    "cost": 1050000,
+    "country": "Austria",
+    "lastYearStanding": 1,
+    "image": "https://example.com/images/holl.jpg"
+  },
+  {
+    "name": "Dakotah Norton",
+    "gender": "male",
+    "team": "Intense Factory Racing",
+    "cost": 750000,
+    "country": "United States",
+    "lastYearStanding": 6
+  }
+]

@@ -4,6 +4,7 @@ import { uciApiService } from "../services/uciApi";
 import { rankingUciApiService } from "../services/rankingUciApi";
 import { generateRiderId } from "@shared/utils";
 import { type Rider } from "@shared/schema";
+import { upsertRaces, upsertRiders } from "../scripts/seed-utils";
 
 /**
  * Get all users (admin only)
@@ -177,6 +178,50 @@ export async function importRacesFromUci(req: Request, res: Response) {
     console.error("Error importing races:", error);
     res.status(500).json({
       message: "Failed to import races",
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+}
+
+/**
+ * Bulk upload or update riders from an array payload (admin only)
+ */
+export async function bulkUpsertRiders(req: Request, res: Response) {
+  try {
+    const riders = Array.isArray(req.body) ? req.body : req.body?.riders;
+
+    if (!Array.isArray(riders)) {
+      return res.status(400).json({ message: "Request body must be an array or { riders: [] }" });
+    }
+
+    await upsertRiders(riders);
+    res.status(200).json({ message: "Riders synced", count: riders.length });
+  } catch (error) {
+    console.error("Error bulk upserting riders:", error);
+    res.status(500).json({
+      message: "Failed to sync riders",
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+}
+
+/**
+ * Bulk upload or update races from an array payload (admin only)
+ */
+export async function bulkUpsertRaces(req: Request, res: Response) {
+  try {
+    const races = Array.isArray(req.body) ? req.body : req.body?.races;
+
+    if (!Array.isArray(races)) {
+      return res.status(400).json({ message: "Request body must be an array or { races: [] }" });
+    }
+
+    await upsertRaces(races);
+    res.status(200).json({ message: "Races synced", count: races.length });
+  } catch (error) {
+    console.error("Error bulk upserting races:", error);
+    res.status(500).json({
+      message: "Failed to sync races",
       error: error instanceof Error ? error.message : String(error)
     });
   }
