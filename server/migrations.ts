@@ -167,7 +167,33 @@ export async function runMigrations() {
       console.error('Error adding unique constraints:', error);
       // Continue with other migrations even if this one fails
     }
-    
+
+    // Create indexes to support rider filtering and sorting
+    const riderIndexes = [
+      { name: 'idx_riders_gender', query: sql`CREATE INDEX idx_riders_gender ON riders (gender)` },
+      { name: 'idx_riders_cost', query: sql`CREATE INDEX idx_riders_cost ON riders (cost)` },
+      { name: 'idx_riders_team_lower', query: sql`CREATE INDEX idx_riders_team_lower ON riders (LOWER(team))` },
+      { name: 'idx_riders_name_lower', query: sql`CREATE INDEX idx_riders_name_lower ON riders (LOWER(name))` },
+      { name: 'idx_riders_last_year_standing', query: sql`CREATE INDEX idx_riders_last_year_standing ON riders (last_year_standing)` },
+      { name: 'idx_riders_points', query: sql`CREATE INDEX idx_riders_points ON riders (points)` }
+    ];
+
+    for (const riderIndex of riderIndexes) {
+      const indexExists = await db.execute(sql`
+        SELECT 1
+        FROM pg_indexes
+        WHERE tablename = 'riders'
+        AND indexname = ${riderIndex.name}
+      `);
+
+      if (indexExists.rows.length === 0) {
+        console.log(`Creating index ${riderIndex.name}...`);
+        await db.execute(riderIndex.query);
+      } else {
+        console.log(`Index ${riderIndex.name} already exists, skipping.`);
+      }
+    }
+
     return true;
   } catch (error) {
     console.error('Error running migrations:', error);
