@@ -85,3 +85,28 @@ This uses `docker-compose.yml` to build the `dev` stage, expose port `5001` (map
 ## Running the workflow manually
 
 Navigate to **Actions → Deploy** in GitHub, choose **Run workflow**, and select the desired branch (defaults to `main`). Ensure the secrets are configured and the server prerequisites are in place before triggering a deploy.
+
+## Race API examples
+
+The rider data service exposes race metadata at `/api/rider-data/races`.
+
+- `GET /api/rider-data/races` returns a list of races with status, start and end times, and location. Example:
+
+  ```json
+  [
+    {
+      "id": 1,
+      "name": "Fantasy League Opener",
+      "location": "Snowmass, Colorado",
+      "country": "USA",
+      "startDate": "2025-03-28T18:03:31.177Z",
+      "endDate": "2025-03-29T18:03:31.177Z",
+      "imageUrl": "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1200&q=80",
+      "status": "next"
+    }
+  ]
+  ```
+
+- `GET /api/rider-data/races/next` returns only the next upcoming race (404 if none exist) with the same fields as above.
+
+Race results remain available at `/api/rider-data/races/:id/results` and include an empty list until results are recorded.
