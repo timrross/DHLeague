@@ -232,7 +232,32 @@ export async function runMigrations() {
       console.error('Error adding unique constraints:', error);
       // Continue with other migrations even if this one fails
     }
-    
+
+    // Ensure there is at least one upcoming race so clients and scoring
+    // consumers have something to reference.
+    const upcomingRaceCheck = await db.execute(sql`
+      SELECT id
+      FROM races
+      WHERE start_date > NOW()
+      ORDER BY start_date ASC
+      LIMIT 1
+    `);
+
+    if (upcomingRaceCheck.rows.length === 0) {
+      console.log('Seeding placeholder upcoming race...');
+      await db.execute(sql`
+        INSERT INTO races (name, location, country, start_date, end_date, image_url)
+        VALUES (
+          'Fantasy League Opener',
+          'Snowmass, Colorado',
+          'USA',
+          NOW() + interval '14 days',
+          NOW() + interval '15 days',
+          'https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1200&q=80'
+        )
+      `);
+    }
+
     return true;
   } catch (error) {
     console.error('Error running migrations:', error);
