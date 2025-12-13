@@ -1,11 +1,9 @@
 import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Race, Result, Rider } from "@shared/schema";
-
-type RaceResult = Result & { rider: Rider };
+import { Race } from "@shared/schema";
+import { useRaceQuery, useRaceResultsQuery } from "@/services/riderDataApi";
 
 interface RaceDetailProps {
   id: number;
@@ -43,12 +41,9 @@ export default function RaceDetail({ id }: RaceDetailProps) {
     data: race,
     isLoading: raceLoading,
     isError,
-  } = useQuery<Race>({
-    queryKey: ["/api/rider-data/races/" + id],
-  });
+  } = useRaceQuery(id);
 
-  const { data: results, isLoading: resultsLoading } = useQuery<RaceResult[]>({
-    queryKey: ["/api/rider-data/races/" + id + "/results"],
+  const { data: results, isLoading: resultsLoading } = useRaceResultsQuery(id, {
     enabled: !!race,
   });
 

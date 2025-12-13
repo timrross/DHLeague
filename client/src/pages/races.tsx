@@ -1,14 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
-import { Race } from "@shared/schema";
 import RaceSchedule from "@/components/race-schedule";
 import { SidebarAd } from "@/components/ui/google-ad";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { useRacesQuery } from "@/services/riderDataApi";
 
 export default function Races() {
-  const { data: races, isLoading, isError, error, refetch } = useQuery<Race[]>({
-    queryKey: ['/api/rider-data/races'],
-  });
+  const { data: races, isLoading, isError, error, refetch } = useRacesQuery();
 
   return (
     <div className="min-h-screen bg-neutral">
@@ -36,11 +33,11 @@ export default function Races() {
               </Alert>
             )}
 
-            {!isLoading && !isError && races && (races as Race[]).length > 0 && (
-              <RaceSchedule races={races as Race[]} />
+            {!isLoading && !isError && races && races.length > 0 && (
+              <RaceSchedule races={races} />
             )}
 
-            {!isLoading && !isError && races && (races as Race[]).length === 0 && (
+            {!isLoading && !isError && races && races.length === 0 && (
               <Alert className="bg-gray-50">
                 <AlertTitle>No races available</AlertTitle>
                 <AlertDescription>
