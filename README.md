@@ -74,6 +74,18 @@ docker compose up --build
 
 This uses `docker-compose.yml` to build the `dev` stage, expose port `5001` (mapped to the app's `5000`), and start a `postgres:16-alpine` container with credentials `postgres/postgres`. The app service binds the repository into the container, installs dependencies into an isolated `app_node_modules` volume, and runs `npm run dev`, enabling Vite/Express hot reload whenever you edit files locally. The app receives a `DATABASE_URL` pointing at the companion database; override any values by setting them in your `.env` file or by passing `--env` flags to `docker compose`.
 
+## Seed realistic data locally
+
+Use the built-in seed scripts to populate riders and races from the sample files in `server/scripts/data` (JSON or CSV). The operations are idempotent, so you can rerun them to update existing rows without creating duplicates.
+
+```bash
+npm run seed
+# or target specific files
+npm run seed -- server/scripts/data/riders.sample.csv server/scripts/data/races.sample.csv
+```
+
+Admin users can also post arrays of riders or races to `/api/admin/seed/riders` and `/api/admin/seed/races` to perform the same bulk upsert from the UI or external tools.
+
 ## Server prerequisites
 
 - Ubuntu host with SSH access from GitHub Actions runners (port 22 unless configured otherwise).
