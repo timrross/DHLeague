@@ -1,6 +1,4 @@
 import { pgTable, text, serial, varchar, timestamp, integer, jsonb, boolean } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
-import { z } from "zod";
 
 // User model
 export const users = pgTable("users", {
@@ -29,19 +27,19 @@ export const sessions = pgTable("sessions", {
 // Rider model
 export const riders = pgTable("riders", {
   id: serial("id").primaryKey(),
-  riderId: text("rider_id").notNull(), // Consistent ID across APIs based on name
+  riderId: text("rider_id").notNull().unique(), // Consistent ID across APIs based on name
   name: text("name").notNull(),
-  firstName: text("first_name"),      // First name
-  lastName: text("last_name"),        // Last/family name
-  gender: text("gender").notNull(),   // "male" or "female"
+  firstName: text("first_name"), // First name
+  lastName: text("last_name"), // Last/family name
+  gender: text("gender").notNull(), // "male" or "female"
   team: text("team").notNull(),
-  cost: integer("cost").notNull(),
-  lastYearStanding: integer("last_year_standing"),
-  image: text("image"),
+  cost: integer("cost").notNull().default(0),
+  lastYearStanding: integer("last_year_standing").notNull().default(0),
+  image: text("image").notNull().default(""),
   country: text("country"),
-  points: integer("points").default(0),
-  form: text("form").default("[]"),   // JSON array of last 5 results
-  injured: boolean("injured").default(false)
+  points: integer("points").notNull().default(0),
+  form: text("form").notNull().default("[]"), // JSON array of last 5 results
+  injured: boolean("injured").notNull().default(false)
 });
 
 export type Rider = typeof riders.$inferSelect;
