@@ -1,6 +1,6 @@
 import express, { Router } from "express";
 import ridersRoutes from "../routes/riders.routes";
-import { getAllRaces, getRaceById, getRaceResults } from "../controllers/races.controller";
+import { getAllRaces, getNextRace, getRaceById, getRaceResults } from "../controllers/races.controller";
 
 /**
  * Factory for the rider data service. This service owns rider CRUD and
@@ -15,6 +15,7 @@ export function createRiderDataService() {
   app.use(express.urlencoded({ extended: true }));
 
   publicRaceRoutes.get("/", getAllRaces);
+  publicRaceRoutes.get("/next", getNextRace);
   publicRaceRoutes.get("/:id", getRaceById);
   publicRaceRoutes.get("/:id/results", getRaceResults);
 

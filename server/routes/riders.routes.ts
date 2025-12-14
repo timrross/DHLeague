@@ -3,11 +3,11 @@ import { isAuthenticated } from "../oidcAuth";
 import { isAdmin } from "../middleware/auth.middleware";
 import { 
     getRiders, 
-    getRiderById, 
-    createRider, 
-    updateRider, 
-    deleteRider, 
-    getRidersByGender 
+    getRiderById,
+    createRider,
+    updateRider,
+    deleteRider,
+    getRidersByGender
 } from "../controllers/riders.controller";
 
 const router = Router();
@@ -25,8 +25,8 @@ router.post(
 
 router.put(
     "/:id",
-    //isAuthenticated,
-    //isAdmin,
+    isAuthenticated,
+    isAdmin,
     updateRider
 );
 

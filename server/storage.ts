@@ -25,8 +25,35 @@ import {
   type InsertUser
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, asc, desc, sql } from "drizzle-orm";
+import { eq, and, asc, desc, sql, gte, lte, ilike, or } from "drizzle-orm";
 import { generateRiderId } from "@shared/utils";
+
+export type RiderFilters = {
+  gender?: string;
+  minCost?: number;
+  maxCost?: number;
+  team?: string;
+  search?: string;
+};
+
+export type RiderSortField = "name" | "cost" | "points" | "lastYearStanding" | "team";
+
+export type RiderSortDirection = "asc" | "desc";
+export function calculateRaceStatus(
+  startDate: Date,
+  endDate: Date,
+  now: Date = new Date()
+): "upcoming" | "ongoing" | "completed" {
+  if (now < startDate) {
+    return "upcoming";
+  }
+
+  if (now >= startDate && now <= endDate) {
+    return "ongoing";
+  }
+
+  return "completed";
+}
 
 export interface IStorage {
   // User operations
@@ -35,12 +62,22 @@ export interface IStorage {
   
   // Rider operations
   getRiders(): Promise<Rider[]>;
+  getRidersFiltered(
+    filters: RiderFilters,
+    options?: {
+      limit?: number;
+      offset?: number;
+      sortBy?: RiderSortField;
+      sortDir?: RiderSortDirection;
+    }
+  ): Promise<{ riders: Rider[]; total: number }>;
   getRider(id: number): Promise<Rider | undefined>;
   getRiderByRiderId(riderId: string): Promise<Rider | undefined>;
   createRider(rider: InsertRider): Promise<Rider>;
   updateRider(id: number, rider: Partial<Rider>): Promise<Rider | undefined>;
   getRidersByGender(gender: string): Promise<Rider[]>;
   deleteAllRiders(): Promise<void>;
+  deleteRider(id: number): Promise<boolean>;
   
   // Team operations
   getTeam(id: number): Promise<Team | undefined>;
@@ -52,11 +89,29 @@ export interface IStorage {
   
   // Race operations
   getRaces(): Promise<Race[]>;
+  getRacesWithStatuses(now?: Date): Promise<Race[]>;
+  getRaceStatusBuckets(now?: Date): Promise<{
+    races: Race[];
+    nextRace?: Race;
+    upcomingRaces: Race[];
+    ongoingRaces: Race[];
+    completedRaces: Race[];
+  }>;
   getRace(id: number): Promise<Race | undefined>;
+  getRaceWithStatus(id: number, now?: Date): Promise<Race | undefined>;
   getRaceWithResults(id: number): Promise<RaceWithResults | undefined>;
   getRaceByNameAndStartDate(name: string, startDate: Date): Promise<Race | undefined>;
   createRace(race: InsertRace): Promise<Race>;
   updateRace(id: number, race: Partial<Race>): Promise<Race | undefined>;
+  getRaceResultsStub(
+    raceId: number,
+    now?: Date
+  ): Promise<
+    | (Race & {
+      results: (Result & { rider: Rider })[];
+    })
+    | undefined
+  >;
   
   // Result operations
   getResults(raceId: number): Promise<(Result & { rider: Rider })[]>;
@@ -76,6 +131,32 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   constructor() {
     // Database is initialized in db.ts
+  }
+
+  private applyRaceStatuses(races: Race[], now: Date = new Date()): Race[] {
+    const racesWithStatus = races.map((race) => {
+      const startDate = new Date(race.startDate);
+      const endDate = new Date(race.endDate);
+
+      return {
+        ...race,
+        status: calculateRaceStatus(startDate, endDate, now)
+      } as Race;
+    });
+
+    // Identify the next upcoming race (closest future start)
+    const upcomingRaces = racesWithStatus
+      .filter((race) => race.status === "upcoming")
+      .sort(
+        (a, b) =>
+          new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
+      );
+
+    if (upcomingRaces[0]) {
+      upcomingRaces[0].status = "next";
+    }
+
+    return racesWithStatus;
   }
 
   // User operations
@@ -173,6 +254,83 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(riders);
   }
 
+  async getRidersFiltered(
+    filters: RiderFilters,
+    options: {
+      limit?: number;
+      offset?: number;
+      sortBy?: RiderSortField;
+      sortDir?: RiderSortDirection;
+    } = {}
+  ): Promise<{ riders: Rider[]; total: number }> {
+    const whereClauses = [];
+
+    if (filters.gender) {
+      whereClauses.push(eq(riders.gender, filters.gender));
+    }
+
+    if (filters.team) {
+      // Case-insensitive team match
+      whereClauses.push(sql`LOWER(${riders.team}) = LOWER(${filters.team})`);
+    }
+
+    if (typeof filters.minCost === "number") {
+      whereClauses.push(gte(riders.cost, filters.minCost));
+    }
+
+    if (typeof filters.maxCost === "number") {
+      whereClauses.push(lte(riders.cost, filters.maxCost));
+    }
+
+    if (filters.search) {
+      const pattern = `%${filters.search}%`;
+      whereClauses.push(
+        or(
+          ilike(riders.name, pattern),
+          ilike(riders.firstName, pattern),
+          ilike(riders.lastName, pattern),
+          ilike(riders.team, pattern)
+        )
+      );
+    }
+
+    const whereStatement =
+      whereClauses.length > 0 ? and(...whereClauses) : undefined;
+
+    const { limit = 50, offset = 0, sortBy = "name", sortDir = "asc" } = options;
+
+    const sortColumnMap: Record<RiderSortField, any> = {
+      name: riders.name,
+      cost: riders.cost,
+      points: riders.points,
+      lastYearStanding: riders.lastYearStanding,
+      team: riders.team
+    };
+
+    const orderBy = sortDir === "desc"
+      ? desc(sortColumnMap[sortBy])
+      : asc(sortColumnMap[sortBy]);
+
+    const query = db.select().from(riders);
+    const countQuery = db.select({ count: sql<number>`count(*)` }).from(riders);
+
+    if (whereStatement) {
+      query.where(whereStatement);
+      countQuery.where(whereStatement);
+    }
+
+    query.orderBy(orderBy).limit(limit).offset(offset);
+
+    const [ridersResult, totalResult] = await Promise.all([
+      query,
+      countQuery
+    ]);
+
+    const total = Number(totalResult[0]?.count ?? 0);
+
+    return { riders: ridersResult, total };
+  }
+
   async getRider(id: number): Promise<Rider | undefined> {
     const result = await db.select().from(riders).where(eq(riders.id, id));
     return result[0];
@@ -229,12 +387,31 @@ export class DatabaseStorage implements IStorage {
   async deleteAllRiders(): Promise<void> {
     // First, delete related results
     await db.delete(results);
-    
+
     // Then delete team-rider associations
     await db.delete(teamRiders);
-    
+
     // Finally delete all riders
     await db.delete(riders);
+  }
+
+  async deleteRider(id: number): Promise<boolean> {
+    return await db.transaction(async (tx) => {
+      const existing = await tx.select().from(riders).where(eq(riders.id, id));
+
+      if (existing.length === 0) {
+        return false;
+      }
+
+      await tx.delete(results).where(eq(results.riderId, id));
+      await tx.delete(teamRiders).where(eq(teamRiders.riderId, id));
+      await tx
+        .delete(teamSwaps)
+        .where(or(eq(teamSwaps.removedRiderId, id), eq(teamSwaps.addedRiderId, id)));
+
+      await tx.delete(riders).where(eq(riders.id, id));
+      return true;
+    });
   }
 
   // Team operations
@@ -450,6 +627,34 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(races);
   }
 
+  async getRacesWithStatuses(now: Date = new Date()): Promise<Race[]> {
+    const allRaces = await this.getRaces();
+    return this.applyRaceStatuses(allRaces, now);
+  }
+
+  async getRaceStatusBuckets(now: Date = new Date()): Promise<{
+    races: Race[];
+    nextRace?: Race;
+    upcomingRaces: Race[];
+    ongoingRaces: Race[];
+    completedRaces: Race[];
+  }> {
+    const racesWithStatus = await this.getRacesWithStatuses(now);
+    const nextRace = racesWithStatus.find((race) => race.status === "next");
+
+    return {
+      races: racesWithStatus,
+      nextRace,
+      upcomingRaces: racesWithStatus.filter(
+        (race) => race.status === "upcoming" || race.status === "next"
+      ),
+      ongoingRaces: racesWithStatus.filter((race) => race.status === "ongoing"),
+      completedRaces: racesWithStatus.filter(
+        (race) => race.status === "completed"
+      )
+    };
+  }
+
   async getRace(id: number): Promise<Race | undefined> {
     const result = await db.select().from(races).where(eq(races.id, id));
     return result[0];
@@ -467,6 +672,14 @@ export class DatabaseStorage implements IStorage {
       );
 
     return result[0];
+  }
+
+  async getRaceWithStatus(
+    id: number,
+    now: Date = new Date()
+  ): Promise<Race | undefined> {
+    const races = await this.getRacesWithStatuses(now);
+    return races.find((race) => race.id === id);
   }
 
   async getRaceWithResults(id: number): Promise<RaceWithResults | undefined> {
@@ -515,6 +728,26 @@ export class DatabaseStorage implements IStorage {
       .where(eq(races.id, id))
       .returning();
     return result[0];
+  }
+
+  async getRaceResultsStub(
+    raceId: number,
+    now: Date = new Date()
+  ): Promise<
+    | (Race & {
+      results: (Result & { rider: Rider })[];
+    })
+    | undefined
+  > {
+    const raceWithStatus = await this.getRaceWithStatus(raceId, now);
+    if (!raceWithStatus) return undefined;
+
+    const raceResults = await this.getResults(raceId);
+
+    return {
+      ...raceWithStatus,
+      results: raceResults
+    };
   }
   
   // Result operations

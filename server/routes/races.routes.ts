@@ -1,8 +1,9 @@
 import { Router } from "express";
 import { isAuthenticated } from "../oidcAuth";
 import { isAdmin } from "../middleware/auth.middleware";
-import { 
+import {
   getAllRaces,
+  getNextRace,
   getRaceById,
   getRaceResults,
   createRace,
@@ -14,6 +15,7 @@ const router = Router();
 
 // Public race routes
 router.get("/", getAllRaces);
+router.get("/next", getNextRace);
 router.get("/:id", getRaceById);
 router.get("/:id/results", getRaceResults);
 
