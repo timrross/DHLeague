@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { isAuthenticated } from "../oidcAuth";
+import { requireAuth } from "../auth";
 import { isAdmin } from "../middleware/auth.middleware";
 import { 
     getRiders, 
@@ -18,21 +18,21 @@ router.get("/:id", getRiderById);
 
 router.post(
     "/",
-    isAuthenticated,
+    requireAuth,
     isAdmin,
     createRider
 );
 
 router.put(
     "/:id",
-    isAuthenticated,
+    requireAuth,
     isAdmin,
     updateRider
 );
 
 router.delete(
     "/:id",
-    isAuthenticated,
+    requireAuth,
     isAdmin,
     deleteRider
 );

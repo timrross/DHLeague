@@ -5,7 +5,7 @@ import teamsRoutes from "../routes/teams.routes";
 import racesRoutes from "../routes/races.routes";
 import authRoutes from "../routes/auth.routes";
 import leaderboardRoutes from "../routes/leaderboard.routes";
-import { setupAuth, isAuthenticated } from "../oidcAuth";
+import { setupAuth, requireAuth } from "../auth";
 import { isAdmin } from "../middleware/auth.middleware";
 import { downloadImage, processImage, upload } from "../imageUpload";
 
@@ -20,7 +20,7 @@ export async function createFantasyLeagueService() {
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
-  await setupAuth(app);
+  setupAuth(app);
 
   app.use("/admin", adminRoutes);
   app.use("/teams", teamsRoutes);
@@ -44,7 +44,7 @@ export async function createFantasyLeagueService() {
 
   app.post(
     "/upload-image",
-    isAuthenticated,
+    requireAuth,
     isAdmin,
     upload.single("file"),
     processImage,
@@ -70,4 +70,3 @@ export async function createFantasyLeagueService() {
 
   return app;
 }
-
