@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { storage, RiderFilters, RiderSortDirection, RiderSortField } from "../storage";
+import { createRiderSchema, updateRiderSchema } from "./riders.validation";
 
 /**
  * Get all riders
@@ -109,7 +110,16 @@ export async function getRiderById(req: Request, res: Response) {
  */
 export async function createRider(req: Request, res: Response) {
   try {
-    const rider = await storage.createRider(req.body);
+    const parsed = createRiderSchema.safeParse(req.body);
+
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: "Invalid rider payload",
+        errors: parsed.error.format(),
+      });
+    }
+
+    const rider = await storage.createRider(parsed.data);
     res.status(201).json(rider);
   } catch (error) {
     console.error("Error creating rider:", error);
@@ -130,40 +140,19 @@ export async function updateRider(req: Request, res: Response) {
       return res.status(400).json({ message: "Invalid rider ID" });
     }
 
-    const riderData = req.body;
-    // Map any mismatched field names
-    if (
-      riderData.profileImageUrl !== undefined &&
-      riderData.image === undefined
-    ) {
-      riderData.image = riderData.profileImageUrl;
-    }
+    const parsed = updateRiderSchema.safeParse(req.body);
 
-    // Map any numeric fields that might come as strings
-    if (riderData.cost) riderData.cost = Number(riderData.cost);
-    if (riderData.points) riderData.points = Number(riderData.points);
-    if (riderData.lastYearStanding)
-      riderData.lastYearStanding = Number(riderData.lastYearStanding);
-
-    // Debug the data being sent
-    console.log("Updating rider with data:", riderData);
-
-    // Check if there's at least one valid property to update
-    const hasValidFields = Object.values(riderData).some(
-      (val) => val !== undefined && val !== null && val !== "",
-    );
-
-    if (!hasValidFields) {
+    if (!parsed.success) {
       return res.status(400).json({
-        message: "No valid fields provided for update",
-        error: "At least one field must have a value",
+        message: "Invalid rider payload",
+        errors: parsed.error.format(),
       });
     }
 
     try {
       const updatedRider = await storage.updateRider(
         riderId,
-        riderData,
+        parsed.data,
       );
 
       if (!updatedRider) {

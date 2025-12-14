@@ -2,67 +2,11 @@ import { Request, Response } from "express";
 import { storage } from "../storage";
 
 /**
- * Helper function to determine race status based on dates
- */
-export function calculateRaceStatus(
-  startDate: Date,
-  endDate: Date
-): "upcoming" | "ongoing" | "completed" {
-  const now = new Date();
-  
-  if (now < startDate) {
-    return "upcoming";
-  } else if (now >= startDate && now <= endDate) {
-    return "ongoing";
-  } else {
-    return "completed";
-  }
-}
-
-/**
- * Helper function to get races with calculated statuses - exported so other routes can use it
- */
-export async function getRacesWithStatuses() {
-  try {
-    // Get all races
-    const allRaces = await storage.getRaces();
-
-    // Calculate status for each race based on dates
-    allRaces.forEach((race) => {
-      const startDate = new Date(race.startDate);
-      const endDate = new Date(race.endDate);
-
-      // Calculate base status based on dates
-      race.status = calculateRaceStatus(startDate, endDate);
-    });
-
-    // Find the next upcoming race (the closest in the future)
-    const upcomingRaces = allRaces.filter((race) => race.status === "upcoming");
-
-    if (upcomingRaces.length > 0) {
-      // Sort by start date (ascending)
-      upcomingRaces.sort(
-        (a, b) =>
-          new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
-      );
-
-      // Mark the first upcoming race as 'next'
-      upcomingRaces[0].status = "next";
-    }
-
-    return allRaces;
-  } catch (error) {
-    console.error("Error calculating race statuses:", error);
-    return [];
-  }
-}
-
-/**
  * Get all races
  */
 export async function getAllRaces(req: Request, res: Response) {
   try {
-    const races = await getRacesWithStatuses();
+    const { races } = await storage.getRaceStatusBuckets();
     res.json(races);
   } catch (error) {
     console.error("Error fetching races:", error);
@@ -80,27 +24,30 @@ export async function getRaceById(req: Request, res: Response) {
       return res.status(400).json({ message: "Invalid race ID" });
     }
 
-    const race = await storage.getRace(raceId);
+    const race = await storage.getRaceWithStatus(raceId);
     if (!race) {
       return res.status(404).json({ message: "Race not found" });
-    }
-
-    // Calculate status based on date
-    const startDate = new Date(race.startDate);
-    const endDate = new Date(race.endDate);
-    race.status = calculateRaceStatus(startDate, endDate);
-
-    // If it's the next upcoming race, mark it as 'next'
-    const races = await getRacesWithStatuses();
-    const nextRace = races.find(r => r.status === "next");
-    if (nextRace && nextRace.id === race.id) {
-      race.status = "next";
     }
 
     res.json(race);
   } catch (error) {
     console.error("Error fetching race:", error);
     res.status(500).json({ message: "Failed to fetch race" });
+  }
+}
+
+export async function getNextRace(_req: Request, res: Response) {
+  try {
+    const { nextRace } = await storage.getRaceStatusBuckets();
+
+    if (!nextRace) {
+      return res.status(404).json({ message: "No upcoming races" });
+    }
+
+    res.json(nextRace);
+  } catch (error) {
+    console.error("Error fetching next race:", error);
+    res.status(500).json({ message: "Failed to fetch next race" });
   }
 }
 
