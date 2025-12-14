@@ -135,17 +135,19 @@ export async function setupAuth(app: Express) {
     })(req, res, next);
   };
 
-  app.get("/api/login", loginHandler);
+  // Routes are defined without the "/api" prefix because the fantasy league
+  // service is mounted under "/api" (and "/api/game"), so mounting already
+  // adds the prefix to incoming requests.
   app.get("/login", loginHandler);
 
-  app.get("/api/callback", (req, res, next) => {
+  app.get("/callback", (req, res, next) => {
     passport.authenticate(`oidc:${req.hostname}`, {
       successReturnToOrRedirect: "/",
       failureRedirect: "/login",
     })(req, res, next);
   });
 
-  app.get("/api/logout", (req, res) => {
+  app.get("/logout", (req, res) => {
     req.logout(() => {
       res.redirect(
         client.buildEndSessionUrl(config, {
