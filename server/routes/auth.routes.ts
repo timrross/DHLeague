@@ -1,11 +1,11 @@
 import { Router } from "express";
-import { isAuthenticated } from "../oidcAuth";
+import { requireAuth } from "../auth";
 import { getCurrentUser, checkIsAdmin } from "../controllers/auth.controller";
 
 const router = Router();
 
 // Auth routes
-router.get("/user", isAuthenticated, getCurrentUser);
-router.get("/admin", isAuthenticated, checkIsAdmin);
+router.get("/user", requireAuth, getCurrentUser);
+router.get("/admin", requireAuth, checkIsAdmin);
 
 export default router;

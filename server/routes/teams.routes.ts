@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { isAuthenticated } from "../oidcAuth";
+import { requireAuth } from "../auth";
 import { 
   getUserTeam,
   createTeam,
@@ -11,12 +11,12 @@ import {
 const router = Router();
 
 // User team routes
-router.get("/user", isAuthenticated, getUserTeam);
-router.post("/", isAuthenticated, createTeam);
-router.put("/:id", isAuthenticated, updateTeam);
-router.delete("/:id", isAuthenticated, deleteTeam);
+router.get("/user", requireAuth, getUserTeam);
+router.post("/", requireAuth, createTeam);
+router.put("/:id", requireAuth, updateTeam);
+router.delete("/:id", requireAuth, deleteTeam);
 
 // Team swap route
-router.post("/:id/swap", isAuthenticated, swapTeamRider);
+router.post("/:id/swap", requireAuth, swapTeamRider);
 
 export default router;

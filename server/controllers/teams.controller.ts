@@ -8,7 +8,7 @@ import { riderDataClient } from "../services/riderDataClient";
 export async function getUserTeam(req: any, res: Response) {
   try {
     // User ID is attached to the request by the auth middleware
-    const userId = req.user?.claims?.sub;
+    const userId = req.oidc?.user?.sub;
     if (!userId) {
       return res.status(401).json({ message: "Not authenticated" });
     }
@@ -27,7 +27,7 @@ export async function getUserTeam(req: any, res: Response) {
 export async function createTeam(req: any, res: Response) {
   try {
     // User ID is attached to the request by the auth middleware
-    const userId = req.user?.claims?.sub;
+    const userId = req.oidc?.user?.sub;
     if (!userId) {
       return res.status(401).json({ message: "Not authenticated" });
     }
@@ -79,7 +79,7 @@ export async function createTeam(req: any, res: Response) {
 export async function updateTeam(req: any, res: Response) {
   try {
     // User ID is attached to the request by the auth middleware
-    const userId = req.user?.claims?.sub;
+    const userId = req.oidc?.user?.sub;
     if (!userId) {
       return res.status(401).json({ message: "Not authenticated" });
     }
@@ -129,7 +129,7 @@ export async function updateTeam(req: any, res: Response) {
 export async function deleteTeam(req: any, res: Response) {
   try {
     // User ID is attached to the request by the auth middleware
-    const userId = req.user?.claims?.sub;
+    const userId = req.oidc?.user?.sub;
     if (!userId) {
       return res.status(401).json({ message: "Not authenticated" });
     }
@@ -171,7 +171,7 @@ export async function deleteTeam(req: any, res: Response) {
 export async function swapTeamRider(req: any, res: Response) {
   try {
     // User ID is attached to the request by the auth middleware
-    const userId = req.user?.claims?.sub;
+    const userId = req.oidc?.user?.sub;
     if (!userId) {
       return res.status(401).json({ message: "Not authenticated" });
     }
