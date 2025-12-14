@@ -1,5 +1,6 @@
-import { auth, requiresAuth } from "express-openid-connect";
+import expressOpenIdConnect from "express-openid-connect";
 import type { ConfigParams } from "express-openid-connect";
+const { auth, requiresAuth } = expressOpenIdConnect;
 import type { Express, Request, Response } from "express";
 import { storage } from "./storage";
 
