@@ -1,20 +1,16 @@
-import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import CountdownTimer from "@/components/countdown-timer";
 import FeaturedSections from "@/components/featured-sections";
 import TopRiders from "@/components/top-riders";
 import { LeaderboardAd } from "@/components/ui/google-ad";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Race, Rider } from "@shared/schema";
+import { useRacesQuery, useRidersQuery } from "@/services/riderDataApi";
+import { Rider } from "@shared/schema";
 
 export default function Home() {
-  const { data: races, isLoading: racesLoading, isError: racesError, error: racesErrorDetail } = useQuery<Race[]>({
-    queryKey: ['/api/rider-data/races'],
-  });
+  const { data: races, isLoading: racesLoading, isError: racesError, error: racesErrorDetail } = useRacesQuery();
 
-  const { data: riders, isLoading: ridersLoading, isError: ridersError, error: ridersErrorDetail } = useQuery<Rider[]>({
-    queryKey: ['/api/rider-data/riders'],
-  });
+  const { data: riders, isLoading: ridersLoading, isError: ridersError, error: ridersErrorDetail } = useRidersQuery();
 
   // Find the next race
   const nextRace = races?.find((race) => race.status === 'next');

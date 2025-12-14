@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { Link } from "wouter";
-import { Rider, TeamWithRiders, Race } from "@shared/schema";
+import { Rider, TeamWithRiders } from "@shared/schema";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,10 +16,11 @@ import TeamSummary from "@/components/team-summary";
 import CountdownTimer from "@/components/countdown-timer";
 import JokerCardDialog from "@/components/joker-card-dialog";
 import JokerCardButton from "@/components/joker-card-button";
-import { 
+import {
   Search, AlertTriangle, Info, RefreshCw,
   AlertCircle
 } from "lucide-react";
+import { useRacesQuery, useRidersQuery } from "@/services/riderDataApi";
 
 export default function TeamBuilder() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -36,9 +37,7 @@ export default function TeamBuilder() {
   const [jokerCardUsed, setJokerCardUsed] = useState(false);
 
   // Fetch all races
-  const { data: races, isLoading: racesLoading } = useQuery<Race[]>({
-    queryKey: ['/api/rider-data/races'],
-  });
+  const { data: races, isLoading: racesLoading } = useRacesQuery();
 
   // Determine next race
   const nextRace = races?.find((race) => race.status === 'next');
@@ -47,9 +46,7 @@ export default function TeamBuilder() {
   const lockDate = nextRace ? new Date(new Date(nextRace.startDate).getTime() - 24 * 60 * 60 * 1000) : new Date();
   
   // Fetch riders
-  const { data: riders, isLoading: ridersLoading } = useQuery<Rider[]>({
-    queryKey: ['/api/rider-data/riders'],
-  });
+  const { data: riders, isLoading: ridersLoading } = useRidersQuery();
 
   // Fetch user's team if authenticated
   const { data: userTeam, isLoading: teamLoading } = useQuery<TeamWithRiders>({
