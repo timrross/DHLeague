@@ -100,6 +100,7 @@ export interface IStorage {
   getRace(id: number): Promise<Race | undefined>;
   getRaceWithStatus(id: number, now?: Date): Promise<Race | undefined>;
   getRaceWithResults(id: number): Promise<RaceWithResults | undefined>;
+  getRaceByNameAndStartDate(name: string, startDate: Date): Promise<Race | undefined>;
   createRace(race: InsertRace): Promise<Race>;
   updateRace(id: number, race: Partial<Race>): Promise<Race | undefined>;
   getRaceResultsStub(
@@ -656,6 +657,20 @@ export class DatabaseStorage implements IStorage {
 
   async getRace(id: number): Promise<Race | undefined> {
     const result = await db.select().from(races).where(eq(races.id, id));
+    return result[0];
+  }
+
+  async getRaceByNameAndStartDate(name: string, startDate: Date): Promise<Race | undefined> {
+    const result = await db
+      .select()
+      .from(races)
+      .where(
+        and(
+          eq(races.name, name),
+          eq(races.startDate, startDate)
+        )
+      );
+
     return result[0];
   }
 
