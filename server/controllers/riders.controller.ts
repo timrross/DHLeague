@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { storage } from "../storage";
+import { storage, RiderFilters, RiderSortDirection, RiderSortField } from "../storage";
 import { createRiderSchema, updateRiderSchema } from "./riders.validation";
 
 /**
@@ -7,8 +7,71 @@ import { createRiderSchema, updateRiderSchema } from "./riders.validation";
  */
 export async function getRiders(req: Request, res: Response) {
   try {
-    const riders = await storage.getRiders();
-    res.json(riders);
+    const filters: RiderFilters = {};
+    const { gender, team, search } = req.query;
+
+    if (gender && typeof gender === "string") {
+      filters.gender = gender;
+    }
+
+    if (team && typeof team === "string") {
+      filters.team = team;
+    }
+
+    if (search && typeof search === "string") {
+      filters.search = search;
+    }
+
+    const parseNumberParam = (value: unknown, field: string) => {
+      if (value === undefined) return undefined;
+      const numberValue = Number(value);
+      if (Number.isNaN(numberValue)) {
+        throw new Error(`Invalid ${field} parameter`);
+      }
+      return numberValue;
+    };
+
+    try {
+      filters.minCost = parseNumberParam(req.query.minCost, "minCost");
+      filters.maxCost = parseNumberParam(req.query.maxCost, "maxCost");
+    } catch (err) {
+      return res.status(400).json({ message: (err as Error).message });
+    }
+
+    if (
+      typeof filters.minCost === "number" &&
+      typeof filters.maxCost === "number" &&
+      filters.minCost > filters.maxCost
+    ) {
+      return res.status(400).json({ message: "minCost cannot be greater than maxCost" });
+    }
+
+    const page = parseNumberParam(req.query.page, "page") || 1;
+    const pageSize = parseNumberParam(req.query.pageSize, "pageSize") || 50;
+    const limit = Math.max(1, Math.min(pageSize, 200));
+    const offset = Math.max(0, (Math.max(1, page) - 1) * limit);
+
+    const sortBy =
+      typeof req.query.sortBy === "string" &&
+      ["name", "cost", "points", "lastYearStanding", "team"].includes(req.query.sortBy)
+        ? (req.query.sortBy as RiderSortField)
+        : "name";
+
+    const sortDir: RiderSortDirection = req.query.sortDir === "desc" ? "desc" : "asc";
+
+    const { riders, total } = await storage.getRidersFiltered(filters, {
+      limit,
+      offset,
+      sortBy,
+      sortDir
+    });
+
+    res.json({
+      data: riders,
+      total,
+      page,
+      pageSize: limit
+    });
   } catch (error) {
     console.error("Error fetching riders:", error);
     res.status(500).json({ message: "Failed to fetch riders" });
@@ -119,15 +182,23 @@ export async function updateRider(req: Request, res: Response) {
 }
 
 /**
- * Delete a rider (Not implemented)
+ * Delete a rider
  */
 export async function deleteRider(req: Request, res: Response) {
   try {
-    // Add a deleteRider method to the storage interface and implementation
-    // For now, we'll return 501 Not Implemented
-    res.status(501).json({
-      message: "Delete rider functionality not implemented yet",
-    });
+    const riderId = Number(req.params.id);
+
+    if (Number.isNaN(riderId)) {
+      return res.status(400).json({ message: "Invalid rider ID" });
+    }
+
+    const deleted = await storage.deleteRider(riderId);
+
+    if (!deleted) {
+      return res.status(404).json({ message: "Rider not found" });
+    }
+
+    res.status(204).send();
   } catch (error) {
     console.error("Error deleting rider:", error);
     res.status(500).json({
