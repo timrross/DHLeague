@@ -1,13 +1,15 @@
 import { Router } from "express";
 import { isAuthenticated } from "../oidcAuth";
 import { isAdmin } from "../middleware/auth.middleware";
-import { 
+import {
   getAllUsers,
   updateUser,
   deleteUser,
   getUsersWithTeams,
   importRidersFromUci,
-  importRacesFromUci
+  importRacesFromUci,
+  bulkUpsertRiders,
+  bulkUpsertRaces
 } from "../controllers/admin.controller";
 
 const router = Router();
@@ -21,5 +23,7 @@ router.get("/users-with-teams", isAuthenticated, isAdmin, getUsersWithTeams);
 // Admin-only routes for UCI data import
 router.post("/import-riders", isAuthenticated, isAdmin, importRidersFromUci);
 router.post("/import-races", isAuthenticated, isAdmin, importRacesFromUci);
+router.post("/seed/riders", isAuthenticated, isAdmin, bulkUpsertRiders);
+router.post("/seed/races", isAuthenticated, isAdmin, bulkUpsertRaces);
 
 export default router;

@@ -1,0 +1,4 @@
+name,location,country,startDate,endDate,imageUrl
+Fort William World Cup,Fort William,United Kingdom,2025-05-23T09:00:00Z,2025-05-25T18:00:00Z,https://example.com/images/fort-william.jpg
+Mont-Sainte-Anne World Cup,Quebec,Canada,2025-07-18T09:00:00Z,2025-07-20T18:00:00Z,https://example.com/images/msa.jpg
+Val di Sole World Cup,Trentino,Italy,2025-08-15T09:00:00Z,2025-08-17T18:00:00Z,

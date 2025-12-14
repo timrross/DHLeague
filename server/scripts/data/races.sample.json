@@ -1,0 +1,25 @@
+[
+  {
+    "name": "Fort William World Cup",
+    "location": "Fort William",
+    "country": "United Kingdom",
+    "startDate": "2025-05-23T09:00:00Z",
+    "endDate": "2025-05-25T18:00:00Z",
+    "imageUrl": "https://example.com/images/fort-william.jpg"
+  },
+  {
+    "name": "Mont-Sainte-Anne World Cup",
+    "location": "Quebec",
+    "country": "Canada",
+    "startDate": "2025-07-18T09:00:00Z",
+    "endDate": "2025-07-20T18:00:00Z",
+    "imageUrl": "https://example.com/images/msa.jpg"
+  },
+  {
+    "name": "Val di Sole World Cup",
+    "location": "Trentino",
+    "country": "Italy",
+    "startDate": "2025-08-15T09:00:00Z",
+    "endDate": "2025-08-17T18:00:00Z"
+  }
+]
