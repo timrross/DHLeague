@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { isAuthenticated } from "../oidcAuth";
+import { requireAuth } from "../auth";
 import { isAdmin } from "../middleware/auth.middleware";
 import {
   getAllUsers,
@@ -15,15 +15,15 @@ import {
 const router = Router();
 
 // Admin-only routes for user management
-router.get("/users", isAuthenticated, isAdmin, getAllUsers);
-router.put("/users/:id", isAuthenticated, isAdmin, updateUser);
-router.delete("/users/:id", isAuthenticated, isAdmin, deleteUser);
-router.get("/users-with-teams", isAuthenticated, isAdmin, getUsersWithTeams);
+router.get("/users", requireAuth, isAdmin, getAllUsers);
+router.put("/users/:id", requireAuth, isAdmin, updateUser);
+router.delete("/users/:id", requireAuth, isAdmin, deleteUser);
+router.get("/users-with-teams", requireAuth, isAdmin, getUsersWithTeams);
 
 // Admin-only routes for UCI data import
-router.post("/import-riders", isAuthenticated, isAdmin, importRidersFromUci);
-router.post("/import-races", isAuthenticated, isAdmin, importRacesFromUci);
-router.post("/seed/riders", isAuthenticated, isAdmin, bulkUpsertRiders);
-router.post("/seed/races", isAuthenticated, isAdmin, bulkUpsertRaces);
+router.post("/import-riders", requireAuth, isAdmin, importRidersFromUci);
+router.post("/import-races", requireAuth, isAdmin, importRacesFromUci);
+router.post("/seed/riders", requireAuth, isAdmin, bulkUpsertRiders);
+router.post("/seed/races", requireAuth, isAdmin, bulkUpsertRaces);
 
 export default router;

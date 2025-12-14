@@ -4,7 +4,7 @@ import { storage } from "../storage";
 // Admin middleware to check if user is an admin
 export async function isAdmin(req: any, res: Response, next: Function) {
   try {
-    const userId = req.user.claims.sub;
+    const userId = req.oidc?.user?.sub;
     const user = await storage.getUser(userId);
 
     if (!user || !user.isAdmin) {

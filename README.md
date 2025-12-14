@@ -39,7 +39,7 @@ At runtime the app expects the following environment variables:
 - `RIDER_DATA_BASE_URL`: Base URL where the rider data service is reachable; defaults to `http://localhost:5000/api/rider-data`
   when the services run together.
 - `AUTH_DOMAINS`: Comma-separated list of allowed hostnames for login callbacks. Include `mtbfantasy.com` in production.
-- `ISSUER_URL`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_CALLBACK_URL`: OIDC values required for login; ask the admin
+- `ISSUER_URL`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_TOKEN_ENDPOINT_AUTH_METHOD`, `OIDC_CALLBACK_URL`: OIDC values required for login; ask the admin
   for the tenant-specific credentials before deploying. In production the callback should be `https://mtbfantasy.com/api/callback`.
 
 ## Configurable paths and service name

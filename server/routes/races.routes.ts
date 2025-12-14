@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { isAuthenticated } from "../oidcAuth";
+import { requireAuth } from "../auth";
 import { isAdmin } from "../middleware/auth.middleware";
 import {
   getAllRaces,
@@ -20,8 +20,8 @@ router.get("/:id", getRaceById);
 router.get("/:id/results", getRaceResults);
 
 // Admin-only race routes
-router.post("/", isAuthenticated, isAdmin, createRace);
-router.put("/:id", isAuthenticated, isAdmin, updateRace);
-router.post("/:id/results", isAuthenticated, isAdmin, addRaceResult);
+router.post("/", requireAuth, isAdmin, createRace);
+router.put("/:id", requireAuth, isAdmin, updateRace);
+router.post("/:id/results", requireAuth, isAdmin, addRaceResult);
 
 export default router;

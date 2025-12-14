@@ -6,7 +6,7 @@ import { storage } from "../storage";
  */
 export async function getCurrentUser(req: any, res: Response) {
   try {
-    const userId = req.user?.claims?.sub;
+    const userId = req.oidc?.user?.sub;
     if (!userId) {
       return res.status(401).json({ message: "Not authenticated" });
     }
@@ -24,7 +24,7 @@ export async function getCurrentUser(req: any, res: Response) {
  */
 export async function checkIsAdmin(req: any, res: Response) {
   try {
-    const userId = req.user?.claims?.sub;
+    const userId = req.oidc?.user?.sub;
     if (!userId) {
       return res.status(401).json({ message: "Not authenticated" });
     }
