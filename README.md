@@ -74,6 +74,27 @@ docker compose up --build
 
 This uses `docker-compose.yml` to build the `dev` stage, expose port `5001` (mapped to the app's `5000`), and start a `postgres:16-alpine` container with credentials `postgres/postgres`. The app service binds the repository into the container, installs dependencies into an isolated `app_node_modules` volume, and runs `npm run dev`, enabling Vite/Express hot reload whenever you edit files locally. The app receives a `DATABASE_URL` pointing at the companion database; override any values by setting them in your `.env` file or by passing `--env` flags to `docker compose`.
 
+### Initialize the database schema
+
+Before hitting any API that relies on Postgres (including the OIDC session store), push the schema defined in `shared/schema.ts` to your database:
+
+```bash
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres npm run db:push
+```
+
+Adjust the connection string for your environment. This creates all required tables (e.g., `sessions`, `users`, `teams`, etc.). You only need to rerun it when the schema changes.
+
+## API route map
+
+Every HTTP API is served beneath the `/api` prefix. The fantasy league service is mounted at `/api` (while `/api/game` is kept as a compatibility alias) and the rider data service is mounted at `/api/rider-data`. Key endpoints include:
+
+- `/api/auth/login`, `/api/auth/callback`, `/api/auth/logout`: OIDC entry points for starting, completing, and ending sessions.
+- `/api/auth/user`, `/api/auth/admin`: Session + authorization metadata used by the client.
+- `/api/teams`, `/api/races`, `/api/leaderboard`, `/api/upload-image`: Core fantasy league resources.
+- `/api/rider-data/riders/*`, `/api/rider-data/races/*`: Rider data service routes.
+
+If you run the fantasy league service standalone (without the `/api` mount), set `AUTH_PUBLIC_PATH` to the externally visible base (defaults to `/api/auth`) and, if you also remount the internal router, adjust `AUTH_ROUTER_PREFIX` (defaults to `/auth`). The callback URL injected into the Auth0 configuration uses the `LOCALHOST_CALLBACK_PORT` (defaults to `5001`) for `localhost`/`127.0.0.1`, so bump that env var whenever you change the published port during development.
+
 ## Seed realistic data locally
 
 Use the built-in seed scripts to populate riders and races from the sample files in `server/scripts/data` (JSON or CSV). The operations are idempotent, so you can rerun them to update existing rows without creating duplicates.

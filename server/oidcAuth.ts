@@ -20,6 +20,7 @@ const issuerUrl = requireEnv(
   process.env.OIDC_ISSUER_URL ?? process.env.ISSUER_URL,
 );
 const clientId = requireEnv("OIDC_CLIENT_ID", process.env.OIDC_CLIENT_ID);
+const clientSecret = process.env.OIDC_CLIENT_SECRET;
 const authDomains = requireEnv("AUTH_DOMAINS", process.env.AUTH_DOMAINS);
 const parsedAuthDomains = authDomains
   .split(",")
@@ -32,24 +33,33 @@ if (parsedAuthDomains.length === 0) {
 
 const getOidcConfig = memoize(
   async () => {
-    return await client.discovery(new URL(issuerUrl), clientId);
+    const metadata = clientSecret
+      ? { client_secret: clientSecret }
+      : undefined;
+    return await client.discovery(new URL(issuerUrl), clientId, metadata);
   },
   { maxAge: 3600 * 1000 }
 );
 
-const nodeEnv = process.env.NODE_ENV?.toLowerCase();
-const isDevEnv = nodeEnv === "development";
 const callbackUrlOverride = process.env.OIDC_CALLBACK_URL;
-const devCallbackPort = process.env.DEV_AUTH_CALLBACK_PORT ??
+const authRouterPrefix = process.env.AUTH_ROUTER_PREFIX ?? "/auth";
+const authRouterLoginPath = `${authRouterPrefix}/login`;
+const authRouterCallbackPath = `${authRouterPrefix}/callback`;
+const authRouterLogoutPath = `${authRouterPrefix}/logout`;
+const authPublicBasePath = process.env.AUTH_PUBLIC_PATH ?? "/api/auth";
+const devCallbackPort = process.env.LOCALHOST_CALLBACK_PORT ??
+  process.env.DEV_AUTH_CALLBACK_PORT ??
   process.env.PORT ??
   "5001";
+const localCallbackHosts = new Set(["localhost", "127.0.0.1"]);
+const authCallbackPath = `${authPublicBasePath}/callback`;
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
   const pgStore = connectPg(session);
   const sessionStore = new pgStore({
     conString: process.env.DATABASE_URL,
-    createTableIfMissing: false,
+    createTableIfMissing: true,
     ttl: sessionTtl,
     tableName: "sessions",
   });
@@ -106,19 +116,23 @@ export async function setupAuth(app: Express) {
     verified(null, user);
   };
 
-  for (const domain of parsedAuthDomains) {
-    const domainWithPort = isDevEnv && !domain.includes(":")
-      ? `${domain}:${devCallbackPort}`
-      : domain;
-    const callbackURL = callbackUrlOverride ??
-      `${isDevEnv ? "http" : "https"}://${domainWithPort}/api/callback`;
+  const getCallbackUrl = (domain: string) => {
+    if (callbackUrlOverride) {
+      return callbackUrlOverride;
+    }
+    if (localCallbackHosts.has(domain)) {
+      return `http://${domain}:${devCallbackPort}${authCallbackPath}`;
+    }
+    return `https://${domain}${authCallbackPath}`;
+  };
 
+  for (const domain of parsedAuthDomains) {
     const strategy = new Strategy(
       {
         name: `oidc:${domain}`,
         config,
         scope: "openid email profile offline_access",
-        callbackURL,
+        callbackURL: getCallbackUrl(domain),
       },
       verify,
     );
@@ -135,19 +149,16 @@ export async function setupAuth(app: Express) {
     })(req, res, next);
   };
 
-  // Routes are defined without the "/api" prefix because the fantasy league
-  // service is mounted under "/api" (and "/api/game"), so mounting already
-  // adds the prefix to incoming requests.
-  app.get("/login", loginHandler);
+  app.get(authRouterLoginPath, loginHandler);
 
-  app.get("/callback", (req, res, next) => {
+  app.get(authRouterCallbackPath, (req, res, next) => {
     passport.authenticate(`oidc:${req.hostname}`, {
       successReturnToOrRedirect: "/",
-      failureRedirect: "/login",
+      failureRedirect: authRouterLoginPath,
     })(req, res, next);
   });
 
-  app.get("/logout", (req, res) => {
+  app.get(authRouterLogoutPath, (req, res) => {
     req.logout(() => {
       res.redirect(
         client.buildEndSessionUrl(config, {
@@ -173,7 +184,7 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
 
   const refreshToken = user.refresh_token;
   if (!refreshToken) {
-    return res.redirect("/login");
+    return res.redirect(authRouterLoginPath);
   }
 
   try {
@@ -182,6 +193,6 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     updateUserSession(user, tokenResponse);
     return next();
   } catch (error) {
-    return res.redirect("/login");
+    return res.redirect(authRouterLoginPath);
   }
 };
