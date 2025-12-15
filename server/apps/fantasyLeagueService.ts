@@ -5,7 +5,7 @@ import teamsRoutes from "../routes/teams.routes";
 import racesRoutes from "../routes/races.routes";
 import authRoutes from "../routes/auth.routes";
 import leaderboardRoutes from "../routes/leaderboard.routes";
-import { setupAuth, requireAuth } from "../auth";
+import { requireAuth } from "../auth";
 import { isAdmin } from "../middleware/auth.middleware";
 import { downloadImage, processImage, upload } from "../imageUpload";
 
@@ -19,8 +19,6 @@ export async function createFantasyLeagueService() {
 
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
-
-  setupAuth(app);
 
   app.use("/admin", adminRoutes);
   app.use("/teams", teamsRoutes);
