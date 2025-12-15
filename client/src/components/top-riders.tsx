@@ -2,14 +2,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Rider } from "@shared/schema";
 
 interface TopRidersProps {
-  riders: Rider[];
+  riders?: Rider[];
 }
 
 export default function TopRiders({ riders }: TopRidersProps) {
+  const safeRiders = Array.isArray(riders) ? riders : [];
   const getPoints = (rider: Rider) => rider.points ?? 0;
 
   // Sort riders by points (descending) and take top 3
-  const topRiders = [...riders]
+  const topRiders = [...safeRiders]
     .sort((a, b) => getPoints(b) - getPoints(a))
     .slice(0, 3);
 
@@ -21,11 +22,11 @@ export default function TopRiders({ riders }: TopRidersProps) {
   let displayRiders = [...topRiders];
   if (!hasGenderBalance) {
     // Get top male and female riders
-    const topMale = riders
+    const topMale = safeRiders
       .filter(r => r.gender === "male")
       .sort((a, b) => getPoints(b) - getPoints(a))[0];
 
-    const topFemale = riders
+    const topFemale = safeRiders
       .filter(r => r.gender === "female")
       .sort((a, b) => getPoints(b) - getPoints(a))[0];
 

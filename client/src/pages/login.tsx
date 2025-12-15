@@ -4,7 +4,9 @@ import { Loader2 } from "lucide-react";
 export default function Login() {
   useEffect(() => {
     // Redirect to the server-side auth endpoint to start the login flow
-    window.location.href = "/api/auth/login";
+    const params = new URLSearchParams(window.location.search);
+    const returnTo = params.get("returnTo") ?? "/";
+    window.location.href = `/api/auth/login?returnTo=${encodeURIComponent(returnTo)}`;
   }, []);
 
   return (

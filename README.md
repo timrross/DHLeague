@@ -39,6 +39,8 @@ At runtime the app expects the following environment variables:
 - `RIDER_DATA_BASE_URL`: Base URL where the rider data service is reachable; defaults to `http://localhost:5000/api/rider-data`
   when the services run together.
 - `AUTH_DOMAINS`: Comma-separated list of allowed hostnames for login callbacks. Include `mtbfantasy.com` in production.
+- `AUTH_BASE_URL`: Public base URL (scheme + host + optional port) for the app (defaults to `http://localhost:5001`).
+- `AUTH_PUBLIC_PATH`: Path segment where the auth routes are exposed (defaults to `/api/auth`).
 - `ISSUER_URL`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_TOKEN_ENDPOINT_AUTH_METHOD`, `OIDC_CALLBACK_URL`: OIDC values required for login; ask the admin
   for the tenant-specific credentials before deploying. In production the callback should be `https://mtbfantasy.com/api/callback`.
 
@@ -76,13 +78,13 @@ This uses `docker-compose.yml` to build the `dev` stage, expose port `5001` (map
 
 ### Initialize the database schema
 
-Before hitting any API that relies on Postgres (including the OIDC session store), push the schema defined in `shared/schema.ts` to your database:
+The server automatically creates any missing tables (users, riders, races, sessions, etc.) during startup so containers and new environments can begin serving requests immediately. For local development you can still prime the database manually (useful when you want to verify schema diffs or reset state):
 
 ```bash
 DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres npm run db:push
 ```
 
-Adjust the connection string for your environment. This creates all required tables (e.g., `sessions`, `users`, `teams`, etc.). You only need to rerun it when the schema changes.
+Running the command is optional—the runtime bootstrap will create the same tables if they do not already exist.
 
 ## API route map
 
@@ -93,7 +95,7 @@ Every HTTP API is served beneath the `/api` prefix. The fantasy league service i
 - `/api/teams`, `/api/races`, `/api/leaderboard`, `/api/upload-image`: Core fantasy league resources.
 - `/api/rider-data/riders/*`, `/api/rider-data/races/*`: Rider data service routes.
 
-If you run the fantasy league service standalone (without the `/api` mount), set `AUTH_PUBLIC_PATH` to the externally visible base (defaults to `/api/auth`) and, if you also remount the internal router, adjust `AUTH_ROUTER_PREFIX` (defaults to `/auth`). The callback URL injected into the Auth0 configuration uses the `LOCALHOST_CALLBACK_PORT` (defaults to `5001`) for `localhost`/`127.0.0.1`, so bump that env var whenever you change the published port during development.
+If you run the fantasy league service standalone (without the `/api` mount), set `AUTH_BASE_URL` to the externally visible base (defaults to `http://localhost:5001`) and adjust `AUTH_PUBLIC_PATH` to match where you expose the routes. The callback URL injected into the Auth0 configuration uses the `LOCALHOST_CALLBACK_PORT` (defaults to `5001`) for `localhost`/`127.0.0.1`, so bump that env var whenever you change the published port during development.
 
 ## Seed realistic data locally
 
