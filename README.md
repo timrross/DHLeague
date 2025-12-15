@@ -122,6 +122,7 @@ Admin users can also post arrays of riders or races to `/api/admin/seed/riders` 
 Navigate to **Actions → Deploy** in GitHub, choose **Run workflow**, and select the desired branch (defaults to `main`). Ensure the secrets are configured and the server prerequisites are in place before triggering a deploy.
 
 ## Race API examples
+The  UCI rataride reference document is here: UCI_Dataride_Integration_Reference.md it contains info about building the rider data apis. 
 
 The rider data service exposes race metadata at `/api/rider-data/races`.
 
