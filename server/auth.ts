@@ -60,19 +60,7 @@ const authConfig: ConfigParams = {
     callback: `${publicAuthPath}/callback`,
     postLogoutRedirect: "/",
   },
-  afterCallback: async (_req: Request, _res: Response, session) => {
-    const user = session.user;
-    if (user?.sub) {
-      await storage.upsertUser({
-        id: user.sub,
-        email: user.email,
-        firstName: user.given_name ?? user.name?.split?.(" ")?.[0],
-        lastName: user.family_name ?? user.name?.split?.(" ")?.slice(1).join(" "),
-        profileImageUrl: (user as Record<string, any>)["picture"],
-      });
-    }
-    return session;
-  },
+  afterCallback: async (_req: Request, _res: Response, session) => session,
 };
 
 const requireAuthMiddleware = requiresAuth();
