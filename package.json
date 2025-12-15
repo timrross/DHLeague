@@ -10,7 +10,8 @@
     "check": "tsc",
     "test": "tsx --test \"server/**/*.test.ts\"",
     "db:push": "drizzle-kit push",
-    "seed": "tsx server/scripts/seed.ts"
+    "seed": "tsx server/scripts/seed.ts",
+    "sync:uci-riders": "tsx server/scripts/sync-uci-riders.ts"
   },
   "dependencies": {
     "@azure/msal-node": "^3.5.3",
