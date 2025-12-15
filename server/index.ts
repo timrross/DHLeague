@@ -1,6 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes/index";
 import { setupVite, serveStatic, log } from "./vite";
+import { setupAuth } from "./auth";
+import { ensureDatabaseSchema } from "./setupDatabase";
 import path from "path";
 import fs from "fs";
 //import { runMigrations } from "./migrations";
@@ -26,6 +28,8 @@ app.use(express.urlencoded({ extended: true }));
 (async () => {
   // Run database migrations first
   //await runMigrations();
+  await ensureDatabaseSchema();
+  setupAuth(app);
 
   const server = await registerRoutes(app);
 

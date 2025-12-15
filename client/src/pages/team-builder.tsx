@@ -47,6 +47,7 @@ export default function TeamBuilder() {
   
   // Fetch riders
   const { data: riders, isLoading: ridersLoading } = useRidersQuery();
+  const safeRiders = Array.isArray(riders) ? (riders as Rider[]) : [];
 
   // Fetch user's team if authenticated
   const { data: userTeam, isLoading: teamLoading } = useQuery<TeamWithRiders>({
@@ -174,12 +175,12 @@ export default function TeamBuilder() {
   }, [userTeam, isCreatingTeam, user, isAuthenticated, authLoading]);
 
   // Filter riders based on search and tab
-  const filteredRiders = riders ? (riders as Rider[]).filter((rider: Rider) => {
+  const filteredRiders = safeRiders.filter((rider: Rider) => {
     const matchesSearch = rider.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          rider.team.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesTab = selectedTab === "all" || rider.gender === selectedTab;
     return matchesSearch && matchesTab;
-  }) : [];
+  });
 
   // Handle rider selection/deselection
   const toggleRiderSelection = (rider: Rider) => {
