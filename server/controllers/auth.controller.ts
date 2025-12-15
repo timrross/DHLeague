@@ -1,6 +1,19 @@
 import { Request, Response } from "express";
 import { storage } from "../storage";
 
+async function syncUserRecord(req: any) {
+  const oidcUser = req.oidc?.user;
+  if (oidcUser?.sub) {
+    await storage.upsertUser({
+      id: oidcUser.sub,
+      email: oidcUser.email,
+      firstName: oidcUser.given_name ?? oidcUser.name?.split?.(" ")?.[0],
+      lastName: oidcUser.family_name ?? oidcUser.name?.split?.(" ")?.slice(1).join(" "),
+      profileImageUrl: oidcUser.picture,
+    });
+  }
+}
+
 /**
  * Get the currently authenticated user
  */
@@ -11,6 +24,7 @@ export async function getCurrentUser(req: any, res: Response) {
       return res.status(401).json({ message: "Not authenticated" });
     }
 
+    await syncUserRecord(req);
     const user = await storage.getUser(userId);
     res.json(user);
   } catch (error) {
@@ -29,6 +43,7 @@ export async function checkIsAdmin(req: any, res: Response) {
       return res.status(401).json({ message: "Not authenticated" });
     }
 
+    await syncUserRecord(req);
     const user = await storage.getUser(userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
