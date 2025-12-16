@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, RefreshCw } from 'lucide-react';
+import DatarideScraper from './DatarideScraper';
 
 export default function ImportData() {
   const { toast } = useToast();
@@ -48,64 +49,68 @@ export default function ImportData() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Import Data</CardTitle>
-        <CardDescription>
-          Import rider and race data from the UCI API.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-col gap-4">
-          <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
-            <h3 className="text-sm font-medium mb-2">UCI MTB Downhill Riders</h3>
-            <p className="text-sm text-gray-500 mb-4">
-              Import the latest rider data from the UCI Mountain Bike Downhill rankings.
-            </p>
-            <Button 
-              onClick={() => handleImportData('riders')}
-              disabled={importDataMutation.isPending}
-              className="w-full"
-            >
-              {importDataMutation.isPending && importDataMutation.variables === 'riders' ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Importing Riders...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Import UCI Riders
-                </>
-              )}
-            </Button>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Import Data</CardTitle>
+          <CardDescription>
+            Import rider and race data from the UCI API.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col gap-4">
+            <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
+              <h3 className="text-sm font-medium mb-2">UCI MTB Downhill Riders</h3>
+              <p className="text-sm text-gray-500 mb-4">
+                Import the latest rider data from the UCI Mountain Bike Downhill rankings.
+              </p>
+              <Button
+                onClick={() => handleImportData('riders')}
+                disabled={importDataMutation.isPending}
+                className="w-full"
+              >
+                {importDataMutation.isPending && importDataMutation.variables === 'riders' ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Importing Riders...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Import UCI Riders
+                  </>
+                )}
+              </Button>
+            </div>
+
+            <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
+              <h3 className="text-sm font-medium mb-2">UCI MTB Downhill Events</h3>
+              <p className="text-sm text-gray-500 mb-4">
+                Import the latest race calendar from the UCI Mountain Bike Downhill World Cup.
+              </p>
+              <Button
+                onClick={() => handleImportData('races')}
+                disabled={importDataMutation.isPending}
+                className="w-full"
+              >
+                {importDataMutation.isPending && importDataMutation.variables === 'races' ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Importing Races...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Import UCI Races
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
-          
-          <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
-            <h3 className="text-sm font-medium mb-2">UCI MTB Downhill Events</h3>
-            <p className="text-sm text-gray-500 mb-4">
-              Import the latest race calendar from the UCI Mountain Bike Downhill World Cup.
-            </p>
-            <Button 
-              onClick={() => handleImportData('races')}
-              disabled={importDataMutation.isPending}
-              className="w-full"
-            >
-              {importDataMutation.isPending && importDataMutation.variables === 'races' ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Importing Races...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Import UCI Races
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      <DatarideScraper />
+    </div>
   );
 }
