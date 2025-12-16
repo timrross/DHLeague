@@ -316,13 +316,17 @@ export class UCIApiService {
         const givenName = (rider.givenName || "").trim();
         const familyName = (rider.familyName || "").trim();
         const name = `${givenName} ${familyName}`.trim();
-        
+
         // Generate consistent rider ID from name
         const riderId = generateRiderId(name);
+        const uciId = riderId;
 
         return {
+          uciId,
           riderId,
           name,
+          firstName: givenName || undefined,
+          lastName: familyName || undefined,
           gender,
           team,
           country,
@@ -331,6 +335,8 @@ export class UCIApiService {
           points,
           image: imageUrl,
           form: JSON.stringify([0, 0, 0, 0, 0]), // Default form data
+          datarideObjectId: null,
+          datarideTeamCode: rider.teamName ?? null,
         };
       }),
     );

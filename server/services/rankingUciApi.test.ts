@@ -12,10 +12,12 @@ describe("RankingUciApiService", () => {
 
   const createRider = (id: number, name: string, gender: "male" | "female"): Rider => {
     const [firstName, lastName] = name.split(" ");
+    const riderId = generateRiderId(name);
 
     return {
       id,
-      riderId: generateRiderId(name),
+      riderId,
+      uciId: riderId,
       name,
       firstName,
       lastName,
@@ -23,11 +25,13 @@ describe("RankingUciApiService", () => {
       team: "Initial Team",
       cost: 0,
       lastYearStanding: 0,
-      image: null,
+      image: "",
       country: "",
       points: 0,
       form: "[]",
       injured: false,
+      datarideObjectId: null,
+      datarideTeamCode: null,
     };
   };
 
