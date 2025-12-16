@@ -9,7 +9,8 @@ import {
   importRidersFromUci,
   importRacesFromUci,
   bulkUpsertRiders,
-  bulkUpsertRaces
+  bulkUpsertRaces,
+  streamDatarideRiderSync
 } from "../controllers/admin.controller";
 
 const router = Router();
@@ -25,5 +26,6 @@ router.post("/import-riders", requireAuth, isAdmin, importRidersFromUci);
 router.post("/import-races", requireAuth, isAdmin, importRacesFromUci);
 router.post("/seed/riders", requireAuth, isAdmin, bulkUpsertRiders);
 router.post("/seed/races", requireAuth, isAdmin, bulkUpsertRaces);
+router.get("/dataride/riders/stream", requireAuth, isAdmin, streamDatarideRiderSync);
 
 export default router;
