@@ -13,7 +13,6 @@ import ImportData from '@/components/admin/ImportData';
 import RaceManagement from '@/components/admin/RaceManagement';
 import RiderManagement from '@/components/admin/RiderManagement';
 import ResultManagement from '@/components/admin/ResultManagement';
-import DatarideScraper from '@/components/admin/DatarideScraper';
 
 export default function Admin() {
   const { user, isAuthenticated } = useAuth();
@@ -39,13 +38,12 @@ export default function Admin() {
       <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
       
       <Tabs defaultValue="users" className="space-y-6">
-        <TabsList className="grid grid-cols-6 w-full">
+        <TabsList className="grid grid-cols-5 w-full">
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="import">Import</TabsTrigger>
           <TabsTrigger value="races">Races</TabsTrigger>
           <TabsTrigger value="riders">Riders</TabsTrigger>
           <TabsTrigger value="results">Results</TabsTrigger>
-          <TabsTrigger value="scraper">Scraper</TabsTrigger>
         </TabsList>
         
         <TabsContent value="users" className="space-y-6">
@@ -66,10 +64,6 @@ export default function Admin() {
         
         <TabsContent value="results" className="space-y-6">
           <ResultManagement />
-        </TabsContent>
-
-        <TabsContent value="scraper" className="space-y-6">
-          <DatarideScraper />
         </TabsContent>
       </Tabs>
     </div>
