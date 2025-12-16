@@ -28,6 +28,9 @@ export const sessions = pgTable("sessions", {
 export const riders = pgTable("riders", {
   id: serial("id").primaryKey(),
   riderId: text("rider_id").notNull().unique(), // Consistent ID across APIs based on name
+  uciId: text("uci_id").notNull().unique(), // Canonical rider identity from UCI Dataride
+  datarideObjectId: text("dataride_object_id"), // Optional unstable Dataride object identifier
+  datarideTeamCode: text("dataride_team_code"),
   name: text("name").notNull(),
   firstName: text("first_name"), // First name
   lastName: text("last_name"), // Last/family name
