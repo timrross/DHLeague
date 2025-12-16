@@ -5,6 +5,7 @@ import { rankingUciApiService } from "../services/rankingUciApi";
 import { generateRiderId } from "@shared/utils";
 import { type Rider } from "@shared/schema";
 import { upsertRaces, upsertRiders } from "../scripts/seed-utils";
+import { syncRidersFromRankings } from "../../src/integrations/uciDataride/syncRidersFromRankings";
 
 /**
  * Get all users (admin only)
@@ -180,6 +181,47 @@ export async function importRacesFromUci(req: Request, res: Response) {
       message: "Failed to import races",
       error: error instanceof Error ? error.message : String(error)
     });
+  }
+}
+
+/**
+ * Stream UCI Dataride rider sync output (admin only)
+ */
+export async function streamDatarideRiderSync(req: Request, res: Response) {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+
+  (res as any).flushHeaders?.();
+
+  let closed = false;
+  req.on("close", () => {
+    closed = true;
+  });
+
+  const sendEvent = (data: unknown) => {
+    if (closed) return;
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+  };
+
+  sendEvent({ type: "log", message: "Starting Dataride rider sync..." });
+
+  try {
+    const summary = await syncRidersFromRankings({
+      log: message => sendEvent({ type: "log", message }),
+    });
+
+    sendEvent({ type: "summary", summary });
+    sendEvent({ type: "done" });
+  } catch (error) {
+    sendEvent({
+      type: "error",
+      message: error instanceof Error ? error.message : String(error),
+    });
+  } finally {
+    if (!closed) {
+      res.end();
+    }
   }
 }
 

@@ -18,6 +18,7 @@ type SyncOptions = {
   seasonId?: number | "latest";
   rankingTypeId?: number;
   dryRun?: boolean;
+  log?: (message: string) => void;
 };
 
 type Season = {
@@ -236,6 +237,8 @@ async function upsertRiders(
 }
 
 export async function syncRidersFromRankings(options: SyncOptions = {}): Promise<Summary> {
+  const log = options.log ?? (() => {});
+
   const summary: Summary = {
     seasonId: 0,
     combosProcessed: 0,
@@ -253,14 +256,20 @@ export async function syncRidersFromRankings(options: SyncOptions = {}): Promise
     options.seasonId && options.seasonId !== "latest"
       ? options.seasonId
       : await fetchLatestSeasonId();
+
+  log(`Using season ${seasonId}${options.seasonId === "latest" || !options.seasonId ? " (latest)" : ""}`);
   summary.seasonId = seasonId;
 
   const raceTypes = await fetchRaceTypes(seasonId);
+  log(`Fetched ${raceTypes.length} race types`);
   const categories = await fetchCategories(seasonId);
+  log(`Fetched ${categories.size} categories`);
 
   const relevantCategories = Array.from(categories.entries()).filter(([key]) =>
     ["ELITE_MEN", "ELITE_WOMEN", "JUNIOR_MEN", "JUNIOR_WOMEN"].includes(key),
   );
+
+  log(`Processing ${relevantCategories.length} category/race type combinations`);
 
   const existingRiders = new Map<string, Rider>();
   const existingRows = await db.select().from(riders);
@@ -279,6 +288,12 @@ export async function syncRidersFromRankings(options: SyncOptions = {}): Promise
         category.DisciplineSeasonCategoryId,
       );
       summary.rankingsProcessed += rankingIds.length;
+
+      const categoryLabel =
+        category.CategoryName ?? category.CategoryCode ?? category.DisciplineSeasonCategoryId;
+      log(
+        `Fetched ${rankingIds.length} ranking IDs for ${raceType.Name ?? raceType.RankingRaceTypeId} / ${categoryLabel}`,
+      );
 
       for (const rankingId of rankingIds) {
         try {
@@ -302,10 +317,15 @@ export async function syncRidersFromRankings(options: SyncOptions = {}): Promise
           summary.errors += 1;
           // eslint-disable-next-line no-console
           console.error(`Failed to process ranking ${rankingId}`, error);
+          log(`Failed to process ranking ${rankingId}: ${error instanceof Error ? error.message : String(error)}`);
         }
       }
     }
   }
+
+  log(
+    `Finished. Upserted ${summary.ridersUpserted}, updated ${summary.ridersUpdated}, skipped ${summary.skippedRows}, errors ${summary.errors}.`,
+  );
 
   return summary;
 }
