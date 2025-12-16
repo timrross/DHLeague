@@ -1,83 +1,186 @@
-# UCI Dataride Integration Reference
+# UCI Dataride Integration Reference (v3 — Confirmed ObjectRankings Fields)
 
-This document outlines the constants and endpoints used when integrating the UCI Dataride API into a fantasy cycling league platform. It is structured for unambiguous, machine-readable use and can be imported or referenced within projects using tools like Codex.
+This document is a **machine-readable** reference for integrating with the UCI Dataride web backend at `https://dataride.uci.ch/`.
+It includes **confirmed response fields** from an `ObjectRankings` JSON payload and the recommended mapping into your `riders` table.
 
-## Disciplines
+---
 
-These constants represent the internal UCI discipline IDs used in the API.
+## Scope
+
+- Sport page: MTB (`disciplineId`/sportId = `7`)
+- Target race types:
+  - Downhill: `raceTypeId = 19`, code `DHI`
+  - Cross-country Olympic: `raceTypeId = 92`, code `XCO`
+- Target categories (discovered dynamically via `GetRankingsCategories`):
+  - Elite Men, Elite Women, Junior Men, Junior Women
+- Primary ingestion products:
+  - `riders` (canonical identity by **UCI ID**)
+  - ranking entries (position/points snapshots) — optional table recommended
+
+---
+
+## Constants
 
 ```ts
-const DISCIPLINES = {
-  ROAD: 1,
-  TRACK: 3,
-  CYCLOCROSS: 4,
-  MTB_XCO: 5,
-  MTB_DH: 6,
-  BMX_RACING: 7,
-  BMX_FREESTYLE: 8
+export const DATARIDE_BASE_URL = "https://dataride.uci.ch";
+
+export const SPORT = { MTB: 7 } as const;
+
+export const RACE_TYPE = {
+  DHI: { id: 19, code: "DHI" },
+  XCO: { id: 92, code: "XCO" },
+} as const;
+
+export const DEFAULT_RIDER_IMAGE =
+  "https://www.uci.org/assets/media/img/defaultMetaImage.jpg?f=&fit=thumb&q=80&fl=progressive&w=1200&h=800";
+```
+
+---
+
+## Endpoints (HAR-derived)
+
+### Seasons
+`GET {BASE}/iframe/GetDisciplineSeasons/?disciplineId=7`
+
+### Categories (per season)
+`GET {BASE}/iframe/GetRankingsCategories/?disciplineId=7&disciplineSeasonId={seasonId}`
+
+### Race types (per season)
+`GET {BASE}/iframe/GetRankingsRaceTypes/?disciplineId=7&disciplineSeasonId={seasonId}`
+
+### Rankings list (ranking definitions) for a filter set
+`POST {BASE}/iframe/RankingsDiscipline/`
+- `Content-Type: application/x-www-form-urlencoded; charset=UTF-8`
+- Required Kendo-style filters:
+  - `SeasonId = {seasonId}`
+  - `RaceTypeId = {raceTypeId}`
+  - `CategoryId = {categoryId}`
+- Paging: `take`, `skip`, `page`, `pageSize`
+
+### Ranking rows (the table data)
+`POST {BASE}/iframe/ObjectRankings/`
+- `Content-Type: application/x-www-form-urlencoded; charset=UTF-8`
+- Required fields (minimum):
+  - `rankingId={rankingId}`
+  - `disciplineId=7`
+  - `rankingTypeId=1` (treat as configurable; observed in request)
+  - paging: `take`, `skip`, `page`, `pageSize`
+- Optional filters:
+  - `RaceTypeId`, `CategoryId`, `SeasonId`, `MomentId`, etc. (Kendo filter list)
+
+---
+
+## Confirmed ObjectRankings Response Shape
+
+The response is an object:
+
+```ts
+type ObjectRankingsResponse = {
+  data: ObjectRankingRow[];
+  total: number;
 };
 ```
 
-## Genders
-
-Used to filter rankings or results by gender.
+### Confirmed row fields (partial; stable fields in sample)
 
 ```ts
-const GENDER = {
-  MALE: 1,
-  FEMALE: 2
+type ObjectRankingRow = {
+  ObjectId: number;                 // internal entity id (unstable)
+  ObjectTypeId: number;             // typically 1 for individual
+  Rank: number;                     // numeric rank
+  UciId: number;                    // rider UCI ID (numeric; canonical)
+  DisplayName: string;              // e.g. "BRUNI Loic"
+  IndividualFullName: string;       // e.g. "BRUNI Loic"
+  TeamName: string | null;          // may be null
+  TeamCode: string | null;          // may be null
+  DisplayTeam: string | null;       // e.g. "SPECIALIZED GRAVITY (SGR)" (may be null)
+  Points: number;                   // floating number, e.g. 1474.00
+  NationName: string;               // may include padding spaces, e.g. "FRA       "
+  NationFullName: string;           // e.g. "FRANCE"
+  CountryIsoCode2: string;          // e.g. "FR"
+  CountryId: number;                // internal id for country
+  BirthDate: string;                // "/Date(768780000000)/"
+  Ages: number;                     // integer
+  DisciplineSeasonId: number;       // season id
+  MomentId: number;                 // ranking snapshot id
+  FlagCode: string;                 // e.g. "fr"
+  Position: string;                 // e.g. "2nd"
+  ComputationDate: string;          // "/Date(1765846809555)/"
 };
 ```
 
-## Sample Event IDs
+NOTES:
+- `UciId` is numeric (e.g. `10007544358`) and should be stored as **string** in your DB (safe for JS/TS and consistent).
+- `TeamName` can be null — ingestion must coerce to empty string if your schema requires non-null.
 
-These IDs correspond to real events in the UCI Dataride system and are used for fetching results.
+---
 
-```ts
-const EVENT_IDS = {
-  FORT_WILLIAM_2024: 199132,
-  LES_GETS_2024: 199135,
-  VAL_DI_SOLE_2024: 199138
-};
-```
+## Database Mapping (Your `riders` Table)
 
-## API Endpoints (Unofficial but Public)
+Your current Drizzle table includes:
 
-Endpoints have been discovered via browser dev tools and are used by the frontend of https://dataride.uci.org/
+- `riderId` (unique) — currently described as a “consistent ID based on name”.  
+For Dataride ingestion, this should become the canonical **UCI ID** (recommended).
 
-### Get Rider Rankings (by discipline and gender)
+### Recommended identity rules
 
-```
-GET https://dataride.uci.org/api/Ranking/GetRankingByDiscipline?disciplineId={DISCIPLINE_ID}&genderId={GENDER_ID}
-```
+- Canonical rider key: `uciIdString = String(row.UciId)`
+- Store Dataride internal ids separately (optional):
+  - `datarideObjectId = String(row.ObjectId)` (unstable)
+  - You may also store `TeamCode`, `CountryId` if useful.
 
-### Get Event Results
+### Minimal schema change options
 
-```
-GET https://dataride.uci.org/api/EventResults?eventId={EVENT_ID}&disciplineId={DISCIPLINE_ID}
-```
+Option A (recommended):
+- Use existing `riderId` to store UCI ID string.
+- Add nullable columns for unstable ids:
+  - `datarideObjectId` (text)
+  - (optional) `datarideTeamCode` (text)
 
-## Example Response (Simplified)
+Option B:
+- Add `uciId` column unique, keep `riderId` for app-owned id.
+
+---
+
+## Field mapping (confirmed)
+
+Machine-readable mapping:
 
 ```json
-[
-  {
-    "position": 1,
-    "uciCode": "SUI19850112",
-    "riderName": "Nino SCHURTER",
-    "team": "SCOTT-SRAM MTB RACING TEAM",
-    "time": "1:22:45"
-  }
-]
+{
+  "riders.riderId": "String(row.UciId)",
+  "riders.name": "row.IndividualFullName ?? row.DisplayName",
+  "riders.gender": "derived from category (Elite Men/Women, Junior Men/Women)",
+  "riders.team": "row.TeamName ?? row.DisplayTeam ?? ''",
+  "riders.country": "row.CountryIsoCode2",
+  "riders.points": "Math.round(row.Points) (or keep float -> int strategy)",
+  "riders.cost": "points * 1000 (configurable)",
+  "riders.image": "DEFAULT_RIDER_IMAGE"
+}
 ```
 
-## Notes
+### Notes on numeric handling
 
-- These APIs do not require authentication.
-- Data returned is in JSON format.
-- All requests should be rate-limited and cached responsibly.
-- UCI does not officially support this as a public API — use with care.
+- `Points` arrives as a floating number; your schema stores `points` as integer.
+  - Default approach: `pointsInt = Math.round(row.Points)`
+  - Alternative: `Math.floor` (deterministic) — choose one and document it.
 
-## Usage
+---
 
-These constants and endpoints can be imported into your scraping or syncing modules and used to fetch up-to-date rider, team, and event data for use in a fantasy league or similar application.
+## Pagination
+
+- `ObjectRankingsResponse.total` indicates the total rows available.
+- Continue requesting pages until `skip >= total` or `data.length === 0`.
+
+---
+
+## No-cookie ingestion guideline
+
+Your example curl included cookies, but ingester should:
+- **not rely on cookies**
+- use only the request headers required for JSON responses:
+  - `Accept: application/json, text/javascript, */*; q=0.01`
+  - `X-Requested-With: XMLHttpRequest`
+  - `Content-Type: application/x-www-form-urlencoded; charset=UTF-8`
+
+If the server ever returns 403 without cookies, add a fallback mode that can include a session cookie provided via env var.
