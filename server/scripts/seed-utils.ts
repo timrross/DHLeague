@@ -57,11 +57,13 @@ export async function loadSeedFile<T extends object>(filePath: string): Promise<
 export async function upsertRiders(riders: RiderSeed[]) {
   for (const rider of riders) {
     const riderId = rider.riderId ?? generateRiderId(rider.name);
+    const uciId = rider.uciId ?? riderId;
     const existing = await storage.getRiderByRiderId(riderId);
 
     const [derivedFirstName = rider.name, derivedLastName = rider.name] = rider.name.split(" ");
 
     const payload: InsertRider = {
+      uciId,
       riderId,
       name: rider.name,
       firstName: rider.firstName ?? derivedFirstName,

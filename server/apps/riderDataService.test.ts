@@ -9,7 +9,9 @@ const day = 24 * 60 * 60 * 1000;
 const riders: Rider[] = [
   {
     id: 1,
+    uciId: "uci-123",
     riderId: "uci-123",
+    name: "Ava Lopez",
     firstName: "Ava",
     lastName: "Lopez",
     team: "Gravity Co.",
@@ -18,6 +20,11 @@ const riders: Rider[] = [
     points: 180,
     gender: "female",
     image: "https://example.com/ava.jpg",
+    lastYearStanding: 0,
+    form: "[]",
+    injured: false,
+    datarideObjectId: null,
+    datarideTeamCode: null,
   },
 ];
 
@@ -76,12 +83,21 @@ afterEach(() => {
 describe("rider data contract", () => {
   it("returns the rider list", async () => {
     mock.method(storage, "getRiders", async () => riders);
+    mock.method(storage, "getRidersFiltered", async () => ({
+      riders,
+      total: riders.length,
+    }));
 
     const app = createService();
     const response = await request(app).get<Rider[]>("/riders");
 
     assert.equal(response.status, 200);
-    assert.deepEqual(response.body, riders);
+    assert.deepEqual(response.body, {
+      data: riders,
+      total: riders.length,
+      page: 1,
+      pageSize: 50,
+    });
   });
 
   it("returns a rider by id", async () => {
