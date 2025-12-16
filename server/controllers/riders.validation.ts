@@ -3,6 +3,7 @@ import { InsertRider } from "@shared/schema";
 
 const baseRiderSchema = z.object({
   riderId: z.string().trim().min(1, "riderId is required"),
+  uciId: z.string().trim().optional(),
   name: z.string().trim().min(1, "name is required"),
   firstName: z.string().trim().optional(),
   lastName: z.string().trim().optional(),
@@ -44,6 +45,7 @@ const riderSchemaWithImageRequirement = baseRiderSchema.superRefine((value, ctx)
 export const createRiderSchema = riderSchemaWithImageRequirement.transform(
   ({ profileImageUrl, ...rest }): InsertRider => ({
     ...rest,
+    uciId: rest.uciId ?? rest.riderId,
     image: rest.image ?? profileImageUrl!,
   })
 );
@@ -76,5 +78,6 @@ export const updateRiderSchema = baseRiderSchema
     ({ profileImageUrl, ...rest }): Partial<InsertRider> => ({
       ...rest,
       ...(profileImageUrl && !rest.image ? { image: profileImageUrl } : {}),
+      ...(rest.uciId ? {} : { uciId: rest.riderId }),
     })
   );

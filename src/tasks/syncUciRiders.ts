@@ -111,6 +111,7 @@ function mapRider(raw: UciRider, gender: "male" | "female"): InsertRider {
   const points = Math.round(parsed.points);
 
   return {
+    uciId: riderId,
     riderId,
     name: parsed.name,
     firstName,
@@ -133,7 +134,7 @@ async function upsertRiders(riderList: InsertRider[]) {
       .insert(riders)
       .values(rider)
       .onConflictDoUpdate({
-        target: riders.riderId,
+        target: riders.uciId,
         set: {
           name: rider.name,
           firstName: rider.firstName,
@@ -145,8 +146,6 @@ async function upsertRiders(riderList: InsertRider[]) {
           image: rider.image,
           country: rider.country,
           points: rider.points,
-          form: rider.form,
-          injured: rider.injured,
         },
       });
   }
