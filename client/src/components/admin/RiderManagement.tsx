@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -40,37 +40,40 @@ export default function RiderManagement() {
 
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
-  const [filteredRiders, setFilteredRiders] = useState<Rider[]>([]);
 
   // Fetch riders
   const {
-    data: riders = [] as Rider[],
+    data: ridersData,
     isLoading: isLoadingRiders,
     error: ridersError,
   } = useQuery({
     queryKey: ["/api/riders"],
   });
 
-  // Filter riders based on search query
-  useEffect(() => {
-    const riderArray = Array.isArray(riders) ? riders : [];
+  const riderList = useMemo(() => {
+    if (Array.isArray(ridersData)) return ridersData;
+    if (ridersData && Array.isArray((ridersData as { data?: Rider[] }).data)) {
+      return (ridersData as { data?: Rider[] }).data ?? [];
+    }
+    return [];
+  }, [ridersData]);
 
-    if (searchQuery.trim() === "") {
-      setFilteredRiders(riderArray);
-      return;
+  const filteredRiders = useMemo(() => {
+    const riderArray = riderList;
+    const query = searchQuery.toLowerCase().trim();
+
+    if (!query) {
+      return riderArray;
     }
 
-    const query = searchQuery.toLowerCase().trim();
-    const filtered = riderArray.filter(
-      (rider) =>
+    return riderArray.filter(
+      rider =>
         (rider.name ? rider.name.toLowerCase().includes(query) : false) ||
         (rider.team ? rider.team.toLowerCase().includes(query) : false) ||
         (rider.country ? rider.country.toLowerCase().includes(query) : false) ||
         (rider.riderId ? rider.riderId.toLowerCase().includes(query) : false),
     );
-
-    setFilteredRiders(filtered);
-  }, [searchQuery, riders]);
+  }, [riderList, searchQuery]);
 
   // Add rider mutation
   const addRiderMutation = useMutation({
@@ -259,7 +262,7 @@ export default function RiderManagement() {
             <div className="text-center py-8 text-red-500">
               Error loading riders
             </div>
-          ) : !Array.isArray(riders) || riders.length === 0 ? (
+          ) : riderList.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               No riders found. Add a rider or import from UCI API.
             </div>

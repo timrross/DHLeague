@@ -3,6 +3,7 @@ import path from "path";
 import adminRoutes from "../routes/admin.routes";
 import teamsRoutes from "../routes/teams.routes";
 import racesRoutes from "../routes/races.routes";
+import ridersRoutes from "../routes/riders.routes";
 import authRoutes from "../routes/auth.routes";
 import leaderboardRoutes from "../routes/leaderboard.routes";
 import { requireAuth } from "../auth";
@@ -23,6 +24,7 @@ export async function createFantasyLeagueService() {
   app.use("/admin", adminRoutes);
   app.use("/teams", teamsRoutes);
   app.use("/races", racesRoutes);
+  app.use("/riders", ridersRoutes);
   app.use("/auth", authRoutes);
   app.use("/leaderboard", leaderboardRoutes);
 

@@ -12,8 +12,14 @@ export const riderDataEndpoints = {
   raceResults: (id: number | string) => `/api/rider-data/races/${id}/results`,
 };
 
-export function fetchRiders() {
-  return apiRequest<Rider[]>(riderDataEndpoints.riders);
+type RidersResponse = Rider[] | { data?: Rider[] };
+
+export async function fetchRiders() {
+  const response = await apiRequest<RidersResponse>(riderDataEndpoints.riders);
+  if (Array.isArray(response)) {
+    return response;
+  }
+  return response?.data ?? [];
 }
 
 export function fetchRider(id: number | string) {

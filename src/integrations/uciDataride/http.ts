@@ -6,6 +6,9 @@ const MIN_DELAY_MS = 300;
 const MAX_DELAY_MS = 500;
 const MAX_RETRIES = 4;
 const BACKOFF_BASE_MS = 500;
+const DEFAULT_REFERER = `${BASE_URL}/iframe/`;
+const DEFAULT_USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36";
 
 let lastRequestTime = 0;
 
@@ -50,6 +53,11 @@ async function requestJson(
     "X-Requested-With": "XMLHttpRequest",
   };
 
+  headers.Origin = BASE_URL;
+  headers.Referer = DEFAULT_REFERER;
+  headers["Accept-Language"] = "en-US,en;q=0.9";
+  headers["User-Agent"] = DEFAULT_USER_AGENT;
+
   if (method === "POST") {
     headers["Content-Type"] = "application/x-www-form-urlencoded; charset=UTF-8";
   }
@@ -77,14 +85,34 @@ async function requestJson(
     return requestJson(method, url, body, attempt + 1);
   }
 
+  const rawBody = await response.text();
   if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Dataride request failed: ${response.status} ${text}`);
+    throw new Error(
+      `Dataride request failed: ${response.status} ${
+        response.statusText
+      } - ${rawBody.slice(0, 200)}`,
+    );
   }
 
-  const json = await response.json();
-  debugLog(`Response from ${url}`, json);
-  return json;
+  const trimmed = rawBody.trim();
+  const contentType = response.headers.get("content-type")?.toLowerCase() ?? "";
+  if (!contentType.includes("json") && trimmed.startsWith("<")) {
+    throw new Error(
+      `Dataride returned HTML instead of JSON. Response snippet: ${trimmed.slice(0, 200)}`,
+    );
+  }
+
+  try {
+    const json = trimmed ? JSON.parse(trimmed) : null;
+    debugLog(`Response from ${url}`, json);
+    return json;
+  } catch (error) {
+    throw new Error(
+      `Failed to parse Dataride JSON for ${url}: ${
+        error instanceof Error ? error.message : String(error)
+      } - ${trimmed.slice(0, 200)}`,
+    );
+  }
 }
 
 export async function getJson(path: string): Promise<any> {

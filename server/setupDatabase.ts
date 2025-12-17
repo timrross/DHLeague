@@ -36,6 +36,12 @@ const schemaStatements = [
     form TEXT NOT NULL DEFAULT '[]',
     injured BOOLEAN NOT NULL DEFAULT FALSE
   )`,
+  `ALTER TABLE riders ADD COLUMN IF NOT EXISTS uci_id TEXT`,
+  `ALTER TABLE riders ADD COLUMN IF NOT EXISTS dataride_object_id TEXT`,
+  `ALTER TABLE riders ADD COLUMN IF NOT EXISTS dataride_team_code TEXT`,
+  `UPDATE riders SET uci_id = rider_id WHERE uci_id IS NULL`,
+  `ALTER TABLE riders ALTER COLUMN uci_id SET NOT NULL`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_riders_uci_id ON riders(uci_id)`,
   `CREATE TABLE IF NOT EXISTS races (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
