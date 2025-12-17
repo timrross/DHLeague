@@ -1,4 +1,4 @@
-import { db } from "../../server/db";
+import { db } from "../../../server/db";
 import { riders, type InsertRider, type Rider } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
