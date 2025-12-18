@@ -26,6 +26,25 @@ describe("normalizeCategoryToKey", () => {
       "JUNIOR_WOMEN",
     );
   });
+
+  it("does not misclassify women as men when names contain 'women'", () => {
+    assert.equal(
+      normalizeCategoryToKey({ id: 23, name: "Women Elite", code: "WE" }),
+      "ELITE_WOMEN",
+    );
+    assert.equal(
+      normalizeCategoryToKey({ id: 25, name: "Women Junior", code: "WJ" }),
+      "JUNIOR_WOMEN",
+    );
+    assert.equal(
+      normalizeCategoryToKey({ id: 23, name: "Women Elite" }),
+      "ELITE_WOMEN",
+    );
+    assert.equal(
+      normalizeCategoryToKey({ id: 25, name: "Women Junior" }),
+      "JUNIOR_WOMEN",
+    );
+  });
 });
 
 describe("normalizeRiderRow", () => {

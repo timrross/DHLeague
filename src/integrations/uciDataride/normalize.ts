@@ -47,34 +47,41 @@ export function normalizeCategoryToKey(category: {
   name?: string;
   code?: string;
 }): CategoryKey | null {
-  const normalizedName = category.name?.toLowerCase() ?? "";
   const normalizedCode = category.code?.toUpperCase() ?? "";
+  const normalizedName = category.name?.toLowerCase() ?? "";
+  const nameTokens = normalizedName.split(/[^a-z]+/).filter(Boolean);
 
-  if (
-    /elite\s*men|men elite|elite m/.test(normalizedName) ||
-    ["ME", "EM", "ME-XCO", "ME-DHI"].includes(normalizedCode)
-  ) {
+  const hasElite = nameTokens.includes("elite");
+  const hasJunior = nameTokens.includes("junior");
+  const hasWomen = nameTokens.includes("women") || nameTokens.includes("woman");
+  const hasMen = nameTokens.includes("men") || nameTokens.includes("man");
+
+  const isEliteWomen =
+    ["WE", "EW", "WE-XCO", "WE-DHI"].includes(normalizedCode) ||
+    (hasElite && hasWomen);
+  const isEliteMen =
+    ["ME", "EM", "ME-XCO", "ME-DHI"].includes(normalizedCode) ||
+    (hasElite && hasMen);
+  const isJuniorMen =
+    ["MJ", "MJ-XCO", "MJ-DHI", "MJCR"].includes(normalizedCode) ||
+    (hasJunior && hasMen);
+  const isJuniorWomen =
+    ["WJ", "WJ-XCO", "WJ-DHI", "WJCR"].includes(normalizedCode) ||
+    (hasJunior && hasWomen);
+
+  if (isEliteMen) {
     return "ELITE_MEN";
   }
 
-  if (
-    /elite\s*women|women elite|elite w/.test(normalizedName) ||
-    ["WE", "EW", "WE-XCO", "WE-DHI"].includes(normalizedCode)
-  ) {
+  if (isEliteWomen) {
     return "ELITE_WOMEN";
   }
 
-  if (
-    /junior\s*men|men junior|junior m/.test(normalizedName) ||
-    ["MJ", "MJ-XCO", "MJ-DHI", "MJCR"].includes(normalizedCode)
-  ) {
+  if (isJuniorMen) {
     return "JUNIOR_MEN";
   }
 
-  if (
-    /junior\s*women|women junior|junior w/.test(normalizedName) ||
-    ["WJ", "WJ-XCO", "WJ-DHI", "WJCR"].includes(normalizedCode)
-  ) {
+  if (isJuniorWomen) {
     return "JUNIOR_WOMEN";
   }
 

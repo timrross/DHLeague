@@ -491,7 +491,9 @@ export async function syncRidersFromRankings(options: SyncOptions = {}): Promise
     ["ELITE_MEN", "ELITE_WOMEN", "JUNIOR_MEN", "JUNIOR_WOMEN"].includes(key),
   );
 
-  log(`Processing ${relevantCategories.length} category/race type combinations`);
+  log(
+    `Processing ${raceTypes.length * relevantCategories.length} category/race type combinations`,
+  );
 
   const existingRiders = new Map<string, Rider>();
   const existingRows = await database.select().from(riders);
