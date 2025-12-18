@@ -9,11 +9,11 @@ This roadmap captures the minimum deliverable for the project in a Codex-friendl
    - Ensure both services build and deploy in the existing workflow/Docker paths and are reachable by the web app (e.g., `/api/game/*` and `/api/rider-data/*`).
    - Confirm cross-service secrets (data source tokens, admin creds) and inter-service URLs are set before feature work starts.
 
-2. [ ] **Core user journey (MVP navigation)**
+2. [x] **Core user journey (MVP navigation)**
    - Publish primary navigation with Home, Team Builder, Races, Leaderboard, Rules, and Admin routes so users can reach each page without errors.
    - Keep Home hero, next-race countdown, and featured/top-rider sections functional against live rider data service endpoints (e.g., `/api/rider-data/races`, `/api/rider-data/riders`) to show end-to-end value.
 
-3. [ ] **Fantasy team creation flow**
+3. [x] **Fantasy team creation flow**
    - Implement minimal Team Builder: fetch riders from the rider data service, enforce budget/slot rules, allow roster assembly, and store the selection via the game mechanics service.
    - Add rule hints/validation consistent with the Rules page and show a confirmation toast on save (align with existing Toaster provider).
 
@@ -25,8 +25,8 @@ This roadmap captures the minimum deliverable for the project in a Codex-friendl
    - Publish a minimal leaderboard (overall standings and per-race points) so users can see team rankings after each event.
    - Ensure leaderboard queries pull roster/points from the game mechanics service while race metadata comes from the rider data service.
 
-6. [ ] **Admin data seeding**
-   - Gate Admin tools for authorized users to create/update races and riders in the rider data service and manage scoring inputs/rosters in the game mechanics service; target CRUD plus CSV upload for faster seeding.
+6. [x] **Admin data seeding**
+   - Gate Admin tools for authorized users to create/update races and riders in the rider data service and manage scoring inputs/rosters in the game mechanics service; includes Dataride scraping/import for riders, UCI race import, and admin race-result entry to seed standings.
    - Add safe defaults for sessions/auth (password auth or OIDC) before exposing admin write actions across both services.
 
 7. [ ] **Scoring & results pipeline**

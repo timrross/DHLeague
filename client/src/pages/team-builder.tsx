@@ -461,12 +461,19 @@ export default function TeamBuilder() {
       {/* Team summary */}
       <TeamSummary
         selectedRiders={selectedRiders}
+        toggleRiderSelection={!isTeamLocked ? toggleRiderSelection : undefined}
         totalBudget={totalBudget}
         usedBudget={usedBudget}
         remainingBudget={remainingBudget}
         budgetPercentage={budgetPercentage}
         maleRidersCount={maleRidersCount}
         femaleRidersCount={femaleRidersCount}
+        isTeamLocked={isTeamLocked}
+        swapsRemaining={swapsRemaining}
+        swapMode={swapMode}
+        initiateSwap={initiateSwap}
+        cancelSwap={cancelSwap}
+        swapRider={swapRiderData}
       />
       
       {/* Action buttons */}
