@@ -76,7 +76,10 @@ export default function Home() {
               <div>
                 <h3 className="font-heading font-bold text-lg md:text-xl">NEXT RACE:</h3>
                 <p className="font-accent font-semibold">
-                  {nextRace.name.toUpperCase()}, {nextRace.country.toUpperCase()} - {new Date(nextRace.startDate).toLocaleDateString()} to {new Date(nextRace.endDate).toLocaleDateString()}
+                  {nextRace.name.toUpperCase()} - {new Date(nextRace.startDate).toLocaleDateString()} to {new Date(nextRace.endDate).toLocaleDateString()}
+                </p>
+                <p className="text-xs text-white/80">
+                  {nextRace.location}, {nextRace.country.toUpperCase()}
                 </p>
               </div>
               <CountdownTimer targetDate={new Date(nextRace.startDate)} />

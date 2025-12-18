@@ -1,16 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Lock, Unlock } from "lucide-react";
 
 interface CountdownTimerProps {
   targetDate: Date;
   title?: string;
+  subtitle?: ReactNode;
   showLockStatus?: boolean;
 }
 
 export default function CountdownTimer({ 
   targetDate, 
   title = "Next Race Starts In", 
+  subtitle,
   showLockStatus = false 
 }: CountdownTimerProps) {
   const [timeLeft, setTimeLeft] = useState({
@@ -70,22 +72,34 @@ export default function CountdownTimer({
   return (
     <div className="mt-2 md:mt-0">
       {showLockStatus && (
-        <div className="flex items-center gap-2 mb-2">
-          <h3 className="text-sm font-medium">{title}</h3>
-          {isLocked ? (
-            <Badge variant="destructive" className="inline-flex items-center">
-              <Lock className="h-3 w-3 mr-1" /> Team Locked
-            </Badge>
-          ) : (
-            <Badge variant="outline" className="inline-flex items-center">
-              <Unlock className="h-3 w-3 mr-1" /> Team Unlocked
-            </Badge>
+        <>
+          <div className={`flex items-center gap-2 ${subtitle ? "mb-1" : "mb-2"}`}>
+            <h3 className="text-sm font-medium">{title}</h3>
+            {isLocked ? (
+              <Badge variant="destructive" className="inline-flex items-center">
+                <Lock className="h-3 w-3 mr-1" /> Team Locked
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="inline-flex items-center">
+                <Unlock className="h-3 w-3 mr-1" /> Team Unlocked
+              </Badge>
+            )}
+          </div>
+          {subtitle && (
+            <p className="text-xs text-muted-foreground mb-2">{subtitle}</p>
           )}
-        </div>
+        </>
       )}
       
       {!showLockStatus && (
-        <h3 className="text-sm font-medium mb-2">{title}</h3>
+        <>
+          <h3 className={`text-sm font-medium${subtitle ? "" : " mb-2"}`}>
+            {title}
+          </h3>
+          {subtitle && (
+            <p className="text-xs text-muted-foreground mb-2">{subtitle}</p>
+          )}
+        </>
       )}
       
       <div className="flex space-x-3 text-center">

@@ -443,6 +443,9 @@ export default function TeamBuilder() {
           <CountdownTimer 
             targetDate={lockDate} 
             title={`${nextRace.name} (${new Date(nextRace.startDate).toLocaleDateString()})`}
+            subtitle={[nextRace.location, nextRace.country?.toUpperCase?.() ?? nextRace.country]
+              .filter(Boolean)
+              .join(", ")}
             showLockStatus
           />
         </div>
