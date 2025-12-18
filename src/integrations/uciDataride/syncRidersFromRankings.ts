@@ -392,6 +392,7 @@ async function upsertRiders(
       firstName: rider.firstName,
       lastName: rider.lastName,
       gender: rider.gender,
+      category: rider.category,
       team: rider.team,
       country: rider.country,
       points: rider.points,
@@ -418,6 +419,7 @@ async function upsertRiders(
           firstName: rider.firstName,
           lastName: rider.lastName,
           gender: rider.gender,
+          category: rider.category,
           team: rider.team,
           country: rider.country,
           points: rider.points,
@@ -540,6 +542,10 @@ export async function syncRidersFromRankings(options: SyncOptions = {}): Promise
           continue;
         }
         try {
+          const normalizedCategory =
+            categoryKey === "JUNIOR_MEN" || categoryKey === "JUNIOR_WOMEN"
+              ? "junior"
+              : "elite";
           const rows = await fetchRankingRows(
             httpClient,
             rankingId,
@@ -554,7 +560,7 @@ export async function syncRidersFromRankings(options: SyncOptions = {}): Promise
           );
 
           const normalizedRows = rows.map(row =>
-            normalizeRiderRow(row, normalizedGender),
+            normalizeRiderRow(row, normalizedGender, normalizedCategory),
           );
 
           await upsertRiders(

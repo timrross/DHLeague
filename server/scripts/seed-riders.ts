@@ -1,10 +1,10 @@
-import { loadSeedFile, resolveFromScripts, upsertRiders } from "./seed-utils";
+import { loadSeedFile, resolveFromScripts, type RiderSeed, upsertRiders } from "./seed-utils";
 
 async function main() {
   const seedFile = process.argv[2] ?? resolveFromScripts("./data/riders.sample.json");
   console.log(`Seeding riders from ${seedFile}`);
 
-  const riders = await loadSeedFile(seedFile);
+  const riders = await loadSeedFile<RiderSeed>(seedFile);
   await upsertRiders(riders);
   console.log("Finished rider seeding");
 }

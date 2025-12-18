@@ -27,6 +27,7 @@ const schemaStatements = [
     first_name TEXT,
     last_name TEXT,
     gender TEXT NOT NULL,
+    category TEXT NOT NULL DEFAULT 'elite',
     team TEXT NOT NULL,
     cost INTEGER NOT NULL DEFAULT 0,
     last_year_standing INTEGER NOT NULL DEFAULT 0,
@@ -39,9 +40,13 @@ const schemaStatements = [
   `ALTER TABLE riders ADD COLUMN IF NOT EXISTS uci_id TEXT`,
   `ALTER TABLE riders ADD COLUMN IF NOT EXISTS dataride_object_id TEXT`,
   `ALTER TABLE riders ADD COLUMN IF NOT EXISTS dataride_team_code TEXT`,
+  `ALTER TABLE riders ADD COLUMN IF NOT EXISTS category TEXT`,
   `UPDATE riders SET uci_id = rider_id WHERE uci_id IS NULL`,
   `ALTER TABLE riders ALTER COLUMN uci_id SET NOT NULL`,
+  `UPDATE riders SET category = 'elite' WHERE category IS NULL`,
+  `ALTER TABLE riders ALTER COLUMN category SET NOT NULL`,
   `CREATE UNIQUE INDEX IF NOT EXISTS idx_riders_uci_id ON riders(uci_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_riders_category ON riders(category)`,
   `CREATE TABLE IF NOT EXISTS races (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
@@ -53,7 +58,8 @@ const schemaStatements = [
   )`,
   `CREATE TABLE IF NOT EXISTS teams (
     id SERIAL PRIMARY KEY,
-    user_id VARCHAR NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+    user_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    team_type TEXT NOT NULL DEFAULT 'elite',
     name TEXT NOT NULL UNIQUE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
@@ -64,6 +70,11 @@ const schemaStatements = [
     is_locked BOOLEAN DEFAULT FALSE,
     locked_at TIMESTAMPTZ
   )`,
+  `ALTER TABLE teams DROP CONSTRAINT IF EXISTS teams_user_id_key`,
+  `ALTER TABLE teams ADD COLUMN IF NOT EXISTS team_type TEXT`,
+  `UPDATE teams SET team_type = 'elite' WHERE team_type IS NULL`,
+  `ALTER TABLE teams ALTER COLUMN team_type SET NOT NULL`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_teams_user_type ON teams(user_id, team_type)`,
   `CREATE TABLE IF NOT EXISTS team_riders (
     id SERIAL PRIMARY KEY,
     team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,

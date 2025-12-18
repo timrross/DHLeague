@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS riders (
   first_name TEXT,
   last_name TEXT,
   gender TEXT NOT NULL,
+  category TEXT NOT NULL DEFAULT 'elite',
   team TEXT NOT NULL,
   cost INTEGER NOT NULL DEFAULT 0,
   last_year_standing INTEGER NOT NULL DEFAULT 0,

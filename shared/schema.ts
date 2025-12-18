@@ -35,6 +35,7 @@ export const riders = pgTable("riders", {
   firstName: text("first_name"), // First name
   lastName: text("last_name"), // Last/family name
   gender: text("gender").notNull(), // "male" or "female"
+  category: text("category").notNull().default("elite"), // "elite" or "junior"
   team: text("team").notNull(),
   cost: integer("cost").notNull().default(0),
   lastYearStanding: integer("last_year_standing").notNull().default(0),
@@ -51,7 +52,8 @@ export type InsertRider = typeof riders.$inferInsert;
 // Team model
 export const teams = pgTable("teams", {
   id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull().references(() => users.id).unique(), // One team per user
+  userId: varchar("user_id").notNull().references(() => users.id), // Teams are scoped by (user_id, team_type)
+  teamType: text("team_type").notNull().default("elite"), // "elite" or "junior"
   name: text("name").notNull().unique(), // Unique team names
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

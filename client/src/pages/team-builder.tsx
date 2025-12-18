@@ -20,17 +20,26 @@ import {
   Search, AlertTriangle, Info, RefreshCw,
   AlertCircle
 } from "lucide-react";
-import { useRacesQuery, useRidersQuery } from "@/services/riderDataApi";
+import { useRacesQuery, useRidersQueryWithParams } from "@/services/riderDataApi";
 
 export default function TeamBuilder() {
+  type TeamType = "elite" | "junior";
+
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   
   const [selectedTab, setSelectedTab] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedRiders, setSelectedRiders] = useState<Rider[]>([]);
-  const [teamName, setTeamName] = useState("My DH Team");
-  const [isCreatingTeam, setIsCreatingTeam] = useState(false);
+  const [activeTeamType, setActiveTeamType] = useState<TeamType>("elite");
+  const [teamDrafts, setTeamDrafts] = useState<
+    Record<TeamType, { name: string; riders: Rider[] }>
+  >({
+    elite: { name: "My Elite Team", riders: [] },
+    junior: { name: "My Junior Team", riders: [] },
+  });
+  const [draftInitialized, setDraftInitialized] = useState<
+    Record<TeamType, boolean>
+  >({ elite: false, junior: false });
   const [swapMode, setSwapMode] = useState(false);
   const [swapRiderData, setSwapRiderData] = useState<Rider | null>(null);
   const [showJokerDialog, setShowJokerDialog] = useState(false);
@@ -46,18 +55,63 @@ export default function TeamBuilder() {
   const lockDate = nextRace ? new Date(new Date(nextRace.startDate).getTime() - 24 * 60 * 60 * 1000) : new Date();
   
   // Fetch riders
-  const { data: riders, isLoading: ridersLoading } = useRidersQuery();
+  const { data: riders, isLoading: ridersLoading } = useRidersQueryWithParams({
+    category: activeTeamType,
+    pageSize: 200,
+  });
   const safeRiders = Array.isArray(riders) ? (riders as Rider[]) : [];
 
-  // Fetch user's team if authenticated
-  const { data: userTeam, isLoading: teamLoading } = useQuery<TeamWithRiders>({
-    queryKey: ['/api/teams/user'],
+  const eliteTeamQueryKey = "/api/teams/user?teamType=elite";
+  const juniorTeamQueryKey = "/api/teams/user?teamType=junior";
+
+  // Fetch user's teams if authenticated
+  const { data: eliteTeam, isLoading: eliteTeamLoading } = useQuery<TeamWithRiders | null>({
+    queryKey: [eliteTeamQueryKey],
+    enabled: isAuthenticated,
+  });
+  const { data: juniorTeam, isLoading: juniorTeamLoading } = useQuery<TeamWithRiders | null>({
+    queryKey: [juniorTeamQueryKey],
     enabled: isAuthenticated,
   });
 
+  const activeTeam = activeTeamType === "elite" ? eliteTeam : juniorTeam;
+  const teamLoading = activeTeamType === "elite" ? eliteTeamLoading : juniorTeamLoading;
+  const isCreatingTeam = !isAuthenticated || !activeTeam;
+
+  const teamName = teamDrafts[activeTeamType].name;
+  const selectedRiders = teamDrafts[activeTeamType].riders;
+
+  const setTeamName = (name: string) => {
+    setTeamDrafts((prev) => ({
+      ...prev,
+      [activeTeamType]: { ...prev[activeTeamType], name },
+    }));
+  };
+
+  const setSelectedRiders = (
+    value: Rider[] | ((prev: Rider[]) => Rider[]),
+  ) => {
+    setTeamDrafts((prev) => {
+      const prevRiders = prev[activeTeamType].riders;
+      const nextRiders =
+        typeof value === "function"
+          ? (value as (prev: Rider[]) => Rider[])(prevRiders)
+          : value;
+      return {
+        ...prev,
+        [activeTeamType]: { ...prev[activeTeamType], riders: nextRiders },
+      };
+    });
+  };
+
+  const invalidateUserTeams = () => {
+    queryClient.invalidateQueries({ queryKey: [eliteTeamQueryKey] });
+    queryClient.invalidateQueries({ queryKey: [juniorTeamQueryKey] });
+  };
+
   // Create team mutation
   const createTeam = useMutation({
-    mutationFn: async (data: { name: string, riderIds: number[], useJokerCard?: boolean }) => {
+    mutationFn: async (data: { name: string, riderIds: number[], teamType: TeamType, useJokerCard?: boolean }) => {
       return apiRequest('/api/teams', {
         method: 'POST',
         body: JSON.stringify(data),
@@ -70,8 +124,7 @@ export default function TeamBuilder() {
         description: "Your fantasy team has been created.",
         variant: "default",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/teams/user'] });
-      setIsCreatingTeam(false);
+      invalidateUserTeams();
     },
     onError: (error: any) => {
       toast({
@@ -97,7 +150,7 @@ export default function TeamBuilder() {
         description: "Your fantasy team has been updated.",
         variant: "default",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/teams/user'] });
+      invalidateUserTeams();
     },
     onError: (error: any) => {
       toast({
@@ -124,7 +177,7 @@ export default function TeamBuilder() {
         description: `You have ${swapsRemaining - 1} swap${swapsRemaining - 1 !== 1 ? 's' : ''} remaining for this race.`,
         variant: "default",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/teams/user'] });
+      invalidateUserTeams();
       setSwapMode(false);
       setSwapRiderData(null);
     },
@@ -147,8 +200,8 @@ export default function TeamBuilder() {
   const femaleRidersCount = selectedRiders.filter(r => r.gender === "female").length;
   
   // Team lock status and swap tracking
-  const isTeamLocked = userTeam?.isLocked || false;
-  const swapsUsed = userTeam?.swapsUsed || 0;
+  const isTeamLocked = activeTeam?.isLocked || false;
+  const swapsUsed = activeTeam?.swapsUsed || 0;
   const swapsRemaining = 2 - swapsUsed;
   
   const isTeamValid = selectedRiders.length === 6 && 
@@ -156,30 +209,54 @@ export default function TeamBuilder() {
                      femaleRidersCount >= 2 && 
                      usedBudget <= totalBudget;
 
-  // Initialize selected riders from user's team and check joker card status
+  // Initialize drafts from saved teams (once per team type)
   useEffect(() => {
-    if (userTeam && !isCreatingTeam) {
-      setSelectedRiders(userTeam.riders || []);
-      setTeamName(userTeam.name || "My DH Team");
+    if (eliteTeam && !draftInitialized.elite) {
+      setTeamDrafts((prev) => ({
+        ...prev,
+        elite: {
+          name: eliteTeam.name || prev.elite.name,
+          riders: eliteTeam.riders || [],
+        },
+      }));
+      setDraftInitialized((prev) => ({ ...prev, elite: true }));
     }
-    
-    // Check if user has used joker card
+  }, [eliteTeam, draftInitialized.elite]);
+
+  useEffect(() => {
+    if (juniorTeam && !draftInitialized.junior) {
+      setTeamDrafts((prev) => ({
+        ...prev,
+        junior: {
+          name: juniorTeam.name || prev.junior.name,
+          riders: juniorTeam.riders || [],
+        },
+      }));
+      setDraftInitialized((prev) => ({ ...prev, junior: true }));
+    }
+  }, [juniorTeam, draftInitialized.junior]);
+
+  useEffect(() => {
+    setSwapMode(false);
+    setSwapRiderData(null);
+  }, [activeTeamType]);
+
+  useEffect(() => {
     if (user) {
       setJokerCardUsed(user.jokerCardUsed || false);
     }
-    
-    // For guest users, allow them to create a team without logging in
-    if (!isAuthenticated && !authLoading) {
-      setIsCreatingTeam(true);
-    }
-  }, [userTeam, isCreatingTeam, user, isAuthenticated, authLoading]);
+  }, [user]);
 
   // Filter riders based on search and tab
   const filteredRiders = safeRiders.filter((rider: Rider) => {
     const matchesSearch = rider.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          rider.team.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesTab = selectedTab === "all" || rider.gender === selectedTab;
-    return matchesSearch && matchesTab;
+    const matchesCategory =
+      activeTeamType === "junior"
+        ? rider.category === "junior"
+        : rider.category === "elite";
+    return matchesSearch && matchesTab && matchesCategory;
   });
 
   // Handle rider selection/deselection
@@ -252,9 +329,9 @@ export default function TeamBuilder() {
       }
       
       // Perform the swap
-      if (userTeam && swapRiderData) {
+      if (activeTeam && swapRiderData) {
         performSwapRider.mutate({
-          teamId: userTeam.id,
+          teamId: activeTeam.id,
           removedRiderId: swapRiderData.id,
           addedRiderId: rider.id
         });
@@ -339,10 +416,10 @@ export default function TeamBuilder() {
     if (isAuthenticated) {
       const riderIds = selectedRiders.map(r => r.id);
       
-      if (userTeam && !isCreatingTeam) {
+      if (activeTeam && !isCreatingTeam) {
         // Update existing team
         updateTeam.mutate({
-          id: userTeam.id,
+          id: activeTeam.id,
           name: teamName,
           riderIds
         });
@@ -350,7 +427,8 @@ export default function TeamBuilder() {
         // Create new team
         createTeam.mutate({
           name: teamName,
-          riderIds
+          riderIds,
+          teamType: activeTeamType,
         });
         
         // Show immediate feedback toast
@@ -412,7 +490,8 @@ export default function TeamBuilder() {
     createTeam.mutate({
       name: teamName,
       riderIds,
-      useJokerCard: true
+      teamType: activeTeamType,
+      useJokerCard: true,
     });
     
     setShowJokerDialog(false);
@@ -424,36 +503,39 @@ export default function TeamBuilder() {
     });
   };
 
-  // Handle "Create New" button click
-  const handleCreateNewTeam = () => {
-    if (userTeam && !jokerCardUsed) {
-      setIsCreatingTeam(true);
-      setSelectedRiders([]);
-      setTeamName("My DH Team");
-    } else if (userTeam && jokerCardUsed) {
-      // If the user has already used their joker card, inform them
-      toast({
-        title: "Joker card already used",
-        description: "You have already used your joker card for this season and cannot create a new team.",
-        variant: "destructive",
-      });
-    } else {
-      // First time creating a team - no joker card needed
-      setSelectedRiders([]);
-      setTeamName("My DH Team");
-      setIsCreatingTeam(true);
-    }
-  };
-
   // Render UI components based on role
   const renderTeamSection = () => (
     <div className="bg-gray-50 p-5 rounded-lg">
       <div className="mb-4">
-        <h3 className="font-heading font-bold text-xl text-secondary">YOUR TEAM</h3>
+        <Tabs value={activeTeamType} onValueChange={(value) => setActiveTeamType(value as TeamType)}>
+          <TabsList className="w-full">
+            <TabsTrigger value="elite" className="flex-1">Elite Team</TabsTrigger>
+            <TabsTrigger value="junior" className="flex-1">Junior Team</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
+
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className="font-heading font-bold text-xl text-secondary">YOUR TEAM</h3>
+        <Badge variant="secondary">
+          {activeTeamType === "elite" ? "Elite" : "Junior"}
+        </Badge>
+      </div>
+
+      {isAuthenticated && activeTeamType === "junior" && !juniorTeam && (
+        <div className="mb-5">
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Junior team is optional</AlertTitle>
+            <AlertDescription>
+              Create a junior team if you want. You can still play with just an elite team.
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
       
       {/* Team lock countdown */}
-      {nextRace && isAuthenticated && userTeam && (
+      {nextRace && isAuthenticated && activeTeam && (
         <div className="mb-5">
           <CountdownTimer 
             targetDate={lockDate} 
@@ -495,11 +577,11 @@ export default function TeamBuilder() {
               onClick={handleSaveTeam}
               disabled={!isTeamValid || createTeam.isPending || updateTeam.isPending}
             >
-              {userTeam && !isCreatingTeam ? 'Update Team' : 'Save Team'}
+              {activeTeam && !isCreatingTeam ? 'Update Team' : 'Save Team'}
             </Button>
             
             {/* Joker card button */}
-            {userTeam && (
+            {activeTeam && (
               <JokerCardButton
                 jokerCardUsed={jokerCardUsed}
                 onClick={handleUseJokerCard}
