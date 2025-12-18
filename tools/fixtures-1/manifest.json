@@ -1,0 +1,28 @@
+{
+  "sourceHar": "/Users/tim/Documents/Workspace/dhleague/tools/dataride.uci.ch.har",
+  "createdAt": "2025-12-17T21:45:23.912Z",
+  "totalEntries": 37,
+  "xhrEntries": 5,
+  "fixtures": [
+    {
+      "fileStem": "001-get-iframe-getdisciplineseasons-17b8bdc7",
+      "url": "https://dataride.uci.ch/iframe/GetDisciplineSeasons/?disciplineId=7"
+    },
+    {
+      "fileStem": "002-get-iframe-getrankingscategories-021375c3",
+      "url": "https://dataride.uci.ch/iframe/GetRankingsCategories/?disciplineId=7&disciplineSeasonId=445"
+    },
+    {
+      "fileStem": "003-get-iframe-getrankingsracetypes-15ff6a10",
+      "url": "https://dataride.uci.ch/iframe/GetRankingsRaceTypes/?disciplineId=7&disciplineSeasonId=445"
+    },
+    {
+      "fileStem": "004-post-iframe-rankingsdiscipline-b9e854af",
+      "url": "https://dataride.uci.ch/iframe/RankingsDiscipline/"
+    },
+    {
+      "fileStem": "005-post-iframe-rankingsdiscipline-ce0b6f7d",
+      "url": "https://dataride.uci.ch/iframe/RankingsDiscipline/"
+    }
+  ]
+}

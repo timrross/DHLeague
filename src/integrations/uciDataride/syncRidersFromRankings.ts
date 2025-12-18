@@ -1,5 +1,8 @@
-import { db } from "../../../server/db";
-import { riders, type InsertRider, type Rider } from "@shared/schema";
+import {
+  riders,
+  type InsertRider,
+  type Rider,
+} from "../../../shared/schema";
 import { eq } from "drizzle-orm";
 
 import { BASE_URL, RACE_TYPES, SPORT } from "./constants";
@@ -16,11 +19,25 @@ const PAGE_SIZE = 100;
 
 type Logger = (message: string) => void;
 
+type AppDb = typeof import("../../../server/db") extends { db: infer DB }
+  ? DB
+  : never;
+
+type DatarideHttpClient = {
+  getJson: (url: string) => Promise<any>;
+  postForm: (
+    url: string,
+    form: Record<string, string | number | undefined | null>,
+  ) => Promise<any>;
+};
+
 type SyncOptions = {
   seasonId?: number | "latest";
   rankingTypeId?: number;
   dryRun?: boolean;
   log?: Logger;
+  httpClient?: DatarideHttpClient;
+  db?: AppDb;
 };
 
 type Season = {
@@ -62,14 +79,12 @@ function applyKendoFilters(
   filters: Array<{ field: string; value: string | number | undefined | null }>,
 ) {
   let index = 0;
-  form["filter[logic]"] = "and";
   for (const filter of filters) {
-    if (filter.value === undefined || filter.value === null || filter.value === "") {
+    if (filter.value === undefined || filter.value === null) {
       continue;
     }
 
     form[`filter[filters][${index}][field]`] = filter.field;
-    form[`filter[filters][${index}][operator]`] = "eq";
     form[`filter[filters][${index}][value]`] = filter.value;
     index += 1;
   }
@@ -81,6 +96,7 @@ type RankingsDisciplineRow = {
   RaceTypeId?: number;
   CategoryId?: number;
   RankingTypeId?: number;
+  GenderId?: number;
   MomentId?: number;
 };
 
@@ -107,10 +123,13 @@ function genderFromCategory(category: CategoryKey): "male" | "female" {
     : "male";
 }
 
-async function fetchLatestSeasonId(log: Logger): Promise<number> {
+async function fetchLatestSeasonId(
+  httpClient: DatarideHttpClient,
+  log: Logger,
+): Promise<number> {
   const path = `/iframe/GetDisciplineSeasons/?disciplineId=${SPORT.MTB}`;
   log(`GET ${BASE_URL}${path}`);
-  const seasons = (await getJson(path)) as Season[];
+  const seasons = (await httpClient.getJson(path)) as Season[];
   if (!Array.isArray(seasons) || seasons.length === 0) {
     throw new Error("No seasons returned from Dataride");
   }
@@ -141,11 +160,15 @@ async function fetchLatestSeasonId(log: Logger): Promise<number> {
   return normalized[0].DisciplineSeasonId!;
 }
 
-async function fetchRaceTypes(seasonId: number, log: Logger): Promise<RaceType[]> {
+async function fetchRaceTypes(
+  httpClient: DatarideHttpClient,
+  seasonId: number,
+  log: Logger,
+): Promise<RaceType[]> {
   const path = `/iframe/GetRankingsRaceTypes/?disciplineId=${SPORT.MTB}&disciplineSeasonId=${seasonId}`;
   log(`GET ${BASE_URL}${path}`);
-  const raceTypes = (await getJson(path)) as RaceType[];
-  const allowedIds = new Set([RACE_TYPES.DHI, RACE_TYPES.XCO]);
+  const raceTypes = (await httpClient.getJson(path)) as RaceType[];
+  const allowedIds = new Set<number>([RACE_TYPES.DHI, RACE_TYPES.XCO]);
   const allowedCodes = new Set(["DHI", "XCO"]);
   return raceTypes.filter(rt => {
     const id = resolveRaceTypeId(rt);
@@ -155,10 +178,14 @@ async function fetchRaceTypes(seasonId: number, log: Logger): Promise<RaceType[]
   });
 }
 
-async function fetchCategories(seasonId: number, log: Logger) {
+async function fetchCategories(
+  httpClient: DatarideHttpClient,
+  seasonId: number,
+  log: Logger,
+) {
   const path = `/iframe/GetRankingsCategories/?disciplineId=${SPORT.MTB}&disciplineSeasonId=${seasonId}`;
   log(`GET ${BASE_URL}${path}`);
-  const categories = (await getJson(path)) as Category[];
+  const categories = (await httpClient.getJson(path)) as Category[];
 
   const wanted = new Map<CategoryKey, Category>();
   for (const rawCategory of categories) {
@@ -199,13 +226,20 @@ async function fetchCategories(seasonId: number, log: Logger) {
   return wanted;
 }
 
+type RankingDefinition = {
+  id: number;
+  gender?: "male" | "female";
+};
+
 async function fetchRankingIds(
+  httpClient: DatarideHttpClient,
   seasonId: number,
   raceTypeId: number,
   categoryId: number,
   rankingTypeId: number,
+  categoryKey: CategoryKey,
   log: Logger,
-): Promise<number[]> {
+): Promise<RankingDefinition[]> {
   const path = `/iframe/RankingsDiscipline/`;
   const form: Record<string, string | number> = {
     disciplineId: SPORT.MTB,
@@ -215,12 +249,14 @@ async function fetchRankingIds(
     pageSize: PAGE_SIZE,
   };
   applyKendoFilters(form, [
-    { field: "RaceTypeId", value: raceTypeId },
-    { field: "CategoryId", value: categoryId },
+    // Dataride only returns complete ranking definitions when the filters
+    // request "All" (value=0) for race type and category. Filter client-side.
+    { field: "RaceTypeId", value: 0 },
+    { field: "CategoryId", value: 0 },
     { field: "SeasonId", value: seasonId },
   ]);
   log(`POST ${BASE_URL}${path} body=${JSON.stringify(form)}`);
-  const response = (await postForm(path, form)) as
+  const response = (await httpClient.postForm(path, form)) as
     | RankingsDisciplineGroup[]
     | { data?: RankingsDisciplineGroup[] };
 
@@ -230,7 +266,7 @@ async function fetchRankingIds(
       ? response.data
       : [];
 
-  const rankingIds = new Set<number>();
+  const rankingDefs: RankingDefinition[] = [];
   for (const group of groups) {
     for (const ranking of group?.Rankings ?? []) {
       const id = ranking.Id ?? ranking.RankingId;
@@ -256,14 +292,29 @@ async function fetchRankingIds(
       ) {
         continue;
       }
-      rankingIds.add(id);
+      const gender =
+        ranking.GenderId === 2
+          ? "male"
+          : ranking.GenderId === 3
+            ? "female"
+            : undefined;
+      rankingDefs.push({ id, gender: gender ?? genderFromCategory(categoryKey) ?? undefined });
     }
   }
 
-  return Array.from(rankingIds);
+  const deduped = new Map<number, RankingDefinition>();
+  for (const def of rankingDefs) {
+    const existing = deduped.get(def.id);
+    if (!existing || (!existing.gender && def.gender)) {
+      deduped.set(def.id, def);
+    }
+  }
+
+  return Array.from(deduped.values());
 }
 
 async function fetchRankingRows(
+  httpClient: DatarideHttpClient,
   rankingId: number,
   filters: { seasonId: number; raceTypeId?: number; categoryId?: number },
   rankingTypeId: number,
@@ -277,7 +328,7 @@ async function fetchRankingRows(
   // eslint-disable-next-line no-constant-condition
   while (true) {
     const path = `/iframe/ObjectRankings/`;
-    const requestPayload = {
+    const requestPayload: Record<string, string | number | undefined | null> = {
       rankingId,
       disciplineId: SPORT.MTB,
       rankingTypeId,
@@ -285,19 +336,20 @@ async function fetchRankingRows(
       skip,
       page,
       pageSize: PAGE_SIZE,
-      RaceTypeId: filters.raceTypeId,
-      CategoryId: filters.categoryId,
-      SeasonId: filters.seasonId,
     };
     applyKendoFilters(requestPayload, [
       { field: "RaceTypeId", value: filters.raceTypeId },
       { field: "CategoryId", value: filters.categoryId },
       { field: "SeasonId", value: filters.seasonId },
+      { field: "MomentId", value: 0 },
+      { field: "CountryId", value: "" },
+      { field: "IndividualName", value: "" },
+      { field: "TeamName", value: "" },
     ]);
     log(
       `POST ${BASE_URL}${path}?rankingId=${rankingId}&page=${page} body=${JSON.stringify(requestPayload)}`,
     );
-    const response = (await postForm(path, requestPayload)) as {
+    const response = (await httpClient.postForm(path, requestPayload)) as {
       data: ObjectRankingRow[];
       total: number;
     };
@@ -322,6 +374,7 @@ async function fetchRankingRows(
 }
 
 async function upsertRiders(
+  database: AppDb,
   normalized: NormalizedRider[],
   existingByUciId: Map<string, Rider>,
   summary: Summary,
@@ -355,7 +408,7 @@ async function upsertRiders(
       continue;
     }
 
-    await db
+    await database
       .insert(riders)
       .values(insertPayload)
       .onConflictDoUpdate({
@@ -379,7 +432,7 @@ async function upsertRiders(
       summary.ridersUpdated += 1;
     } else {
       summary.ridersUpserted += 1;
-      const refreshed = await db
+      const refreshed = await database
         .select()
         .from(riders)
         .where(eq(riders.uciId, rider.uciId));
@@ -390,8 +443,23 @@ async function upsertRiders(
   }
 }
 
+let cachedDbPromise: Promise<AppDb> | null = null;
+
+async function resolveDatabase(provided?: AppDb) {
+  if (provided) return provided;
+  if (!cachedDbPromise) {
+    cachedDbPromise = import("../../../server/db").then((module) => module.db as AppDb);
+  }
+  return cachedDbPromise;
+}
+
 export async function syncRidersFromRankings(options: SyncOptions = {}): Promise<Summary> {
   const log: Logger = options.log ?? (() => {});
+  const httpClient: DatarideHttpClient = options.httpClient ?? {
+    getJson,
+    postForm,
+  };
+  const database = await resolveDatabase(options.db);
 
   const summary: Summary = {
     seasonId: 0,
@@ -409,14 +477,14 @@ export async function syncRidersFromRankings(options: SyncOptions = {}): Promise
   const seasonId =
     options.seasonId && options.seasonId !== "latest"
       ? options.seasonId
-      : await fetchLatestSeasonId(log);
+      : await fetchLatestSeasonId(httpClient, log);
 
   log(`Using season ${seasonId}${options.seasonId === "latest" || !options.seasonId ? " (latest)" : ""}`);
   summary.seasonId = seasonId;
 
-  const raceTypes = await fetchRaceTypes(seasonId, log);
+  const raceTypes = await fetchRaceTypes(httpClient, seasonId, log);
   log(`Fetched ${raceTypes.length} race types`);
-  const categories = await fetchCategories(seasonId, log);
+  const categories = await fetchCategories(httpClient, seasonId, log);
   log(`Fetched ${categories.size} categories`);
 
   const relevantCategories = Array.from(categories.entries()).filter(([key]) =>
@@ -426,7 +494,7 @@ export async function syncRidersFromRankings(options: SyncOptions = {}): Promise
   log(`Processing ${relevantCategories.length} category/race type combinations`);
 
   const existingRiders = new Map<string, Rider>();
-  const existingRows = await db.select().from(riders);
+  const existingRows = await database.select().from(riders);
   for (const rider of existingRows) {
     existingRiders.set(rider.uciId, rider);
   }
@@ -443,14 +511,16 @@ export async function syncRidersFromRankings(options: SyncOptions = {}): Promise
       if (!category) continue;
       summary.combosProcessed += 1;
 
-      const rankingIds = await fetchRankingIds(
+      const rankingDefs = await fetchRankingIds(
+        httpClient,
         seasonId,
         raceTypeId,
-        category.DisciplineSeasonCategoryId,
+        category.DisciplineSeasonCategoryId!,
         rankingTypeId,
+        categoryKey,
         log,
       );
-      summary.rankingsProcessed += rankingIds.length;
+      summary.rankingsProcessed += rankingDefs.length;
 
       const categoryLabel =
         category.CategoryName ?? category.CategoryCode ?? category.DisciplineSeasonCategoryId;
@@ -458,12 +528,18 @@ export async function syncRidersFromRankings(options: SyncOptions = {}): Promise
         raceType.DisplayText ??
         ([raceType.Code, raceType.Name].filter(Boolean).join(" / ") || raceTypeId);
       log(
-        `Fetched ${rankingIds.length} ranking IDs for ${raceLabel} / ${categoryLabel}`,
+        `Fetched ${rankingDefs.length} ranking IDs for ${raceLabel} / ${categoryLabel}`,
       );
 
-      for (const rankingId of rankingIds) {
+      for (const { id: rankingId, gender } of rankingDefs) {
+        const normalizedGender = gender ?? genderFromCategory(categoryKey);
+        if (!normalizedGender) {
+          log(`Skipping ranking ${rankingId} due to unknown gender (GenderId=${gender ?? "n/a"})`);
+          continue;
+        }
         try {
           const rows = await fetchRankingRows(
+            httpClient,
             rankingId,
             {
               seasonId,
@@ -476,10 +552,16 @@ export async function syncRidersFromRankings(options: SyncOptions = {}): Promise
           );
 
           const normalizedRows = rows.map(row =>
-            normalizeRiderRow(row, genderFromCategory(categoryKey)),
+            normalizeRiderRow(row, normalizedGender),
           );
 
-          await upsertRiders(normalizedRows, existingRiders, summary, options.dryRun);
+          await upsertRiders(
+            database,
+            normalizedRows,
+            existingRiders,
+            summary,
+            options.dryRun,
+          );
         } catch (error) {
           summary.errors += 1;
           // eslint-disable-next-line no-console

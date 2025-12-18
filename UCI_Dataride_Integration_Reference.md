@@ -53,9 +53,34 @@ export const DEFAULT_RIDER_IMAGE =
 - `Content-Type: application/x-www-form-urlencoded; charset=UTF-8`
 - Required Kendo-style filters:
   - `SeasonId = {seasonId}`
-  - `RaceTypeId = {raceTypeId}`
-  - `CategoryId = {categoryId}`
+  - `RaceTypeId = 0` (request “All” race types; the API only returns the complete list when `value=0`)
+  - `CategoryId = 0` (request “All” categories for the same reason)
 - Paging: `take`, `skip`, `page`, `pageSize`
+
+**Important:** Even though we fetch the definitions with `RaceTypeId=0` and `CategoryId=0`, the response still includes the true `RaceTypeId`, `CategoryId`, `RankingTypeId`, and `MomentId` for each ranking. Filter those client-side to isolate:
+
+- Race types: Downhill (`19`) and Cross-country Olympic (`92`)
+- Categories: Elite Men (`22`), Elite Women (`23`), Junior Men (`24`), Junior Women (`25`)
+- Ranking type: `1` (individual rankings)
+
+Without the “All” filters, Dataride omits the women’s groups entirely.
+
+The filters follow the standard Telerik/Kendo syntax. A canonical body looks like:
+
+```
+disciplineId=7
+&take=100&skip=0&page=1&pageSize=100
+&filter[filters][0][field]=RaceTypeId
+&filter[filters][0][value]=0
+&filter[filters][1][field]=CategoryId
+&filter[filters][1][value]=0
+&filter[filters][2][field]=SeasonId
+&filter[filters][2][value]={seasonId}
+```
+
+Note: The live site requests do not include `filter[logic]` or `filter[filters][i][operator]` — just `field` + `value`.
+
+Reuse the same structure for `ObjectRankings`, swapping the `value` entries for the actual `RaceTypeId`/`CategoryId` you’re processing so pagination stays scoped correctly.
 
 ### Ranking rows (the table data)
 `POST {BASE}/iframe/ObjectRankings/`

@@ -1,0 +1,49 @@
+id: 007-post-iframe-objectrankings-d9641690
+meta:
+  startedDateTime: 2025-12-17T21:46:46.033Z
+  timeMs: 1683.7349999696016
+  resourceType: xhr
+request:
+  method: POST
+  url: https://dataride.uci.ch/iframe/ObjectRankings/
+  query: {}
+  headers:
+    accept: application/json, text/javascript, */*; q=0.01
+    content-type: application/x-www-form-urlencoded; charset=UTF-8
+    origin: https://dataride.uci.ch
+    referer: https://dataride.uci.ch/iframe/RankingDetails/149?disciplineId=7&groupId=36&momentId=196414&disciplineSeasonId=445&rankingTypeId=1&categoryId=22&raceTypeId=19
+    user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36
+      (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+    x-requested-with: XMLHttpRequest
+  body:
+    encoding: form-urlencoded
+    data:
+      rankingId: "149"
+      disciplineId: "7"
+      rankingTypeId: "1"
+      take: "40"
+      skip: "0"
+      page: "1"
+      pageSize: "40"
+      filter%5Bfilters%5D%5B0%5D%5Bfield%5D: RaceTypeId
+      filter%5Bfilters%5D%5B0%5D%5Bvalue%5D: "19"
+      filter%5Bfilters%5D%5B1%5D%5Bfield%5D: CategoryId
+      filter%5Bfilters%5D%5B1%5D%5Bvalue%5D: "22"
+      filter%5Bfilters%5D%5B2%5D%5Bfield%5D: SeasonId
+      filter%5Bfilters%5D%5B2%5D%5Bvalue%5D: "445"
+      filter%5Bfilters%5D%5B3%5D%5Bfield%5D: MomentId
+      filter%5Bfilters%5D%5B3%5D%5Bvalue%5D: ""
+      filter%5Bfilters%5D%5B4%5D%5Bfield%5D: CountryId
+      filter%5Bfilters%5D%5B4%5D%5Bvalue%5D: ""
+      filter%5Bfilters%5D%5B5%5D%5Bfield%5D: IndividualName
+      filter%5Bfilters%5D%5B5%5D%5Bvalue%5D: ""
+      filter%5Bfilters%5D%5B6%5D%5Bfield%5D: TeamName
+      filter%5Bfilters%5D%5B6%5D%5Bvalue%5D: ""
+response:
+  status: 200
+  statusText: ""
+  mimeType: application/json
+  headers:
+    content-type: application/json; charset=utf-8
+  body:
+    file: 007-post-iframe-objectrankings-d9641690.response.json

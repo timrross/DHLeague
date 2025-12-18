@@ -1,0 +1,24 @@
+id: 004-get-iframe-getcountries-5c7e35bb
+meta:
+  startedDateTime: 2025-12-17T21:46:45.195Z
+  timeMs: 3911.354999989271
+  resourceType: xhr
+request:
+  method: GET
+  url: https://dataride.uci.ch/iframe/GetCountries/
+  query: {}
+  headers:
+    accept: application/json, text/javascript, */*; q=0.01
+    referer: https://dataride.uci.ch/iframe/RankingDetails/149?disciplineId=7&groupId=36&momentId=196414&disciplineSeasonId=445&rankingTypeId=1&categoryId=22&raceTypeId=19
+    user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36
+      (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+    x-requested-with: XMLHttpRequest
+  body: null
+response:
+  status: 200
+  statusText: ""
+  mimeType: application/json
+  headers:
+    content-type: application/json; charset=utf-8
+  body:
+    file: 004-get-iframe-getcountries-5c7e35bb.response.json

@@ -1,0 +1,44 @@
+{
+  "sourceHar": "/Users/tim/Documents/Workspace/dhleague/tools/RankingDetails.dataride.uci.ch.har",
+  "createdAt": "2025-12-17T21:52:29.843Z",
+  "totalEntries": 40,
+  "xhrEntries": 9,
+  "fixtures": [
+    {
+      "fileStem": "001-get-iframe-getlegalstatus-4f4845f5",
+      "url": "https://dataride.uci.ch/iframe/GetLegalStatus/?take=40&skip=0&page=1&pageSize=40"
+    },
+    {
+      "fileStem": "002-post-iframe-objectrankings-5d87f9bc",
+      "url": "https://dataride.uci.ch/iframe/ObjectRankings/"
+    },
+    {
+      "fileStem": "003-get-iframe-getdisciplineseasons-209efcc5",
+      "url": "https://dataride.uci.ch/iframe/GetDisciplineSeasons/?disciplineId=7"
+    },
+    {
+      "fileStem": "004-get-iframe-getcountries-5c7e35bb",
+      "url": "https://dataride.uci.ch/iframe/GetCountries/"
+    },
+    {
+      "fileStem": "005-post-iframe-typeofrankings-9cfb3c1c",
+      "url": "https://dataride.uci.ch/iframe/TypeOfRankings/"
+    },
+    {
+      "fileStem": "006-get-iframe-getrankingmoments-d08209bf",
+      "url": "https://dataride.uci.ch/iframe/GetRankingMoments/?disciplineId=7&disciplineSeasonId=445&rankingId=149"
+    },
+    {
+      "fileStem": "007-post-iframe-objectrankings-d9641690",
+      "url": "https://dataride.uci.ch/iframe/ObjectRankings/"
+    },
+    {
+      "fileStem": "008-post-iframe-typeofrankings-f43a7262",
+      "url": "https://dataride.uci.ch/iframe/TypeOfRankings/"
+    },
+    {
+      "fileStem": "009-post-iframe-objectrankings-2adc8266",
+      "url": "https://dataride.uci.ch/iframe/ObjectRankings/"
+    }
+  ]
+}

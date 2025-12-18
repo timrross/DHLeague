@@ -1,0 +1,50 @@
+[
+    {
+        "Id": 0,
+        "Name": "All",
+        "Code": "All",
+        "Icon": null,
+        "Sequence": 0,
+        "DisplayText": "All / All"
+    },
+    {
+        "Id": 22,
+        "Name": "Men Elite",
+        "Code": "ME",
+        "Icon": null,
+        "Sequence": 0,
+        "DisplayText": "ME / Men Elite"
+    },
+    {
+        "Id": 23,
+        "Name": "Women Elite",
+        "Code": "WE",
+        "Icon": null,
+        "Sequence": 0,
+        "DisplayText": "WE / Women Elite"
+    },
+    {
+        "Id": 24,
+        "Name": "Men Junior",
+        "Code": "MJ",
+        "Icon": null,
+        "Sequence": 0,
+        "DisplayText": "MJ / Men Junior"
+    },
+    {
+        "Id": 25,
+        "Name": "Women Junior",
+        "Code": "WJ",
+        "Icon": null,
+        "Sequence": 0,
+        "DisplayText": "WJ / Women Junior"
+    },
+    {
+        "Id": 45,
+        "Name": "Mixed Elite",
+        "Code": "XE",
+        "Icon": null,
+        "Sequence": 0,
+        "DisplayText": "XE / Mixed Elite"
+    }
+]

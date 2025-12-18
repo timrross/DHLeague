@@ -1,0 +1,28 @@
+id: 001-get-iframe-getlegalstatus-4f4845f5
+meta:
+  startedDateTime: 2025-12-17T21:46:45.182Z
+  timeMs: 677.5759999873117
+  resourceType: xhr
+request:
+  method: GET
+  url: https://dataride.uci.ch/iframe/GetLegalStatus/?take=40&skip=0&page=1&pageSize=40
+  query:
+    take: "40"
+    skip: "0"
+    page: "1"
+    pageSize: "40"
+  headers:
+    accept: application/json, text/javascript, */*; q=0.01
+    referer: https://dataride.uci.ch/iframe/RankingDetails/149?disciplineId=7&groupId=36&momentId=196414&disciplineSeasonId=445&rankingTypeId=1&categoryId=22&raceTypeId=19
+    user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36
+      (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+    x-requested-with: XMLHttpRequest
+  body: null
+response:
+  status: 200
+  statusText: ""
+  mimeType: application/json
+  headers:
+    content-type: application/json; charset=utf-8
+  body:
+    file: 001-get-iframe-getlegalstatus-4f4845f5.response.json

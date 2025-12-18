@@ -1,0 +1,26 @@
+id: 002-get-iframe-getrankingscategories-021375c3
+meta:
+  startedDateTime: 2025-12-17T21:34:11.194Z
+  timeMs: 596.2819999549538
+  resourceType: xhr
+request:
+  method: GET
+  url: https://dataride.uci.ch/iframe/GetRankingsCategories/?disciplineId=7&disciplineSeasonId=445
+  query:
+    disciplineId: "7"
+    disciplineSeasonId: "445"
+  headers:
+    accept: application/json, text/javascript, */*; q=0.01
+    referer: https://dataride.uci.ch/iframe/Rankings/7
+    user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36
+      (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+    x-requested-with: XMLHttpRequest
+  body: null
+response:
+  status: 200
+  statusText: ""
+  mimeType: application/json
+  headers:
+    content-type: application/json; charset=utf-8
+  body:
+    file: 002-get-iframe-getrankingscategories-021375c3.response.json
