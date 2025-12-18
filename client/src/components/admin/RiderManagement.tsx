@@ -13,8 +13,18 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -25,6 +35,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Loader2, Pencil, Trash2, Plus, Search } from "lucide-react";
+import { getColorFromName, getInitials, safeImageUrl } from "@/lib/utils";
+
+const BROKEN_DEFAULT_UCI_IMAGES = new Set<string>([
+  "https://www.uci.org/docs/default-source/imported-images/discipline/discipline-mountain-bike.jpg",
+  "https://uci.org/docs/default-source/imported-images/discipline/discipline-mountain-bike.jpg",
+]);
 
 export default function RiderManagement() {
   const { toast } = useToast();
@@ -32,6 +48,7 @@ export default function RiderManagement() {
 
   // Form state
   const [showAddRiderForm, setShowAddRiderForm] = useState(false);
+  const [showClearDialog, setShowClearDialog] = useState(false);
 
   // Inline edit state
   const [inlineEditRiderId, setInlineEditRiderId] = useState<number | null>(
@@ -152,6 +169,33 @@ export default function RiderManagement() {
     },
   });
 
+  const clearAllRidersMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest<{ message?: string; deleted?: number }>("/api/admin/riders", {
+        method: "DELETE",
+      });
+    },
+    onSuccess: (data) => {
+      setShowClearDialog(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/riders"] });
+
+      toast({
+        title: "Riders cleared",
+        description:
+          typeof data?.deleted === "number"
+            ? `Deleted ${data.deleted} rider${data.deleted === 1 ? "" : "s"}`
+            : "All riders were deleted",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: `Failed to clear riders: ${error.message || "Unknown error"}`,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Handle add rider button click
   const handleAddRiderClick = () => {
     setShowAddRiderForm(true);
@@ -212,9 +256,52 @@ export default function RiderManagement() {
               isSubmitting={addRiderMutation.isPending}
             />
           ) : (
-            <Button onClick={handleAddRiderClick}>
-              <Plus className="mr-2 h-4 w-4" /> Add New Rider
-            </Button>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <Button onClick={handleAddRiderClick}>
+                <Plus className="mr-2 h-4 w-4" /> Add New Rider
+              </Button>
+
+              <Dialog open={showClearDialog} onOpenChange={setShowClearDialog}>
+                <DialogTrigger asChild>
+                  <Button variant="destructive" disabled={clearAllRidersMutation.isPending}>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Clear Rider Database
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Clear all riders?</DialogTitle>
+                    <DialogDescription>
+                      This permanently deletes all riders from the database and
+                      removes riders from any teams.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowClearDialog(false)}
+                      disabled={clearAllRidersMutation.isPending}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={() => clearAllRidersMutation.mutate()}
+                      disabled={clearAllRidersMutation.isPending}
+                    >
+                      {clearAllRidersMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Clearing...
+                        </>
+                      ) : (
+                        "Clear Riders"
+                      )}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -311,22 +398,24 @@ export default function RiderManagement() {
                       <TableRow>
                         <TableCell className="font-medium">
                           <div className="flex items-center space-x-2">
-                            <div className="w-8 h-8 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center">
-                              {rider.image ? (
-                                <img
-                                  src={rider.image}
-                                  alt={rider.name}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <span className="text-xs font-bold">
-                                  {rider.name
-                                    .split(" ")
-                                    .map((n: string) => n[0])
-                                    .join("")}
-                                </span>
-                              )}
-                            </div>
+                            <Avatar className="w-8 h-8 border border-muted-foreground/20">
+                              <AvatarImage
+                                src={
+                                  BROKEN_DEFAULT_UCI_IMAGES.has(
+                                    safeImageUrl(rider.image) ?? "",
+                                  )
+                                    ? undefined
+                                    : safeImageUrl(rider.image)
+                                }
+                                alt={rider.name}
+                                className="object-cover"
+                              />
+                              <AvatarFallback
+                                className={`${getColorFromName(rider.name)} text-white text-xs font-bold`}
+                              >
+                                {getInitials(rider.name)}
+                              </AvatarFallback>
+                            </Avatar>
                             <span>{rider.name}</span>
                           </div>
                         </TableCell>
