@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/table";
 import { Loader2, Pencil, Trash2, Plus, Search } from "lucide-react";
 import { getColorFromName, getInitials, safeImageUrl } from "@/lib/utils";
+import { formatRiderDisplayName } from "@shared/utils";
 
 export default function RiderManagement() {
   const { toast } = useToast();
@@ -365,98 +366,102 @@ export default function RiderManagement() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredRiders.map((rider: any) => (
-                  <React.Fragment key={rider.id}>
-                    {inlineEditRiderId === rider.id ? (
-                      <TableRow>
-                        <TableCell colSpan={9}>
-                          <SimpleRiderForm
-                            initialData={{
-                              id: rider.id,
-                              name: rider.name,
-                              team: rider.team,
-                              country: rider.country,
-                              gender: rider.gender,
-                              cost: rider.cost,
-                              lastYearStanding: rider.lastYearStanding,
-                              points: rider.points,
-                              image: rider.image,
-                              injured: rider.injured || false,
-                            }}
-                            onSubmit={handleInlineRiderEditSave}
-                            onCancel={handleInlineRiderEditCancel}
-                            isSubmitting={updateRiderMutation.isPending}
-                          />
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      <TableRow>
-                        <TableCell className="font-medium">
-                          <div className="flex items-center space-x-2">
-                            <Avatar className="w-8 h-8 border border-muted-foreground/20">
-                              <AvatarImage
-                                src={safeImageUrl(rider.image)}
-                                alt={rider.name}
-                                className="object-cover"
-                              />
-                              <AvatarFallback
-                                className={`${getColorFromName(rider.name)} text-white text-xs font-bold`}
-                              >
-                                {getInitials(rider.name)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span>{rider.name}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>{rider.team}</TableCell>
-                        <TableCell>{rider.country}</TableCell>
-                        <TableCell className="capitalize">
-                          {rider.gender}
-                        </TableCell>
-                        <TableCell>${rider.cost.toLocaleString()}</TableCell>
-                        <TableCell>{rider.lastYearStanding}</TableCell>
-                        <TableCell>{rider.points}</TableCell>
-                        <TableCell>
-                          {rider.injured ? (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                              Injured
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                              Active
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end space-x-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleInlineEditRider(rider)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                if (
-                                  window.confirm(
-                                    `Are you sure you want to delete ${rider.name}?`,
-                                  )
-                                ) {
-                                  deleteRiderMutation.mutate(rider.id);
-                                }
+                {filteredRiders.map((rider: any) => {
+                  const displayName = formatRiderDisplayName(rider) || rider.name;
+
+                  return (
+                    <React.Fragment key={rider.id}>
+                      {inlineEditRiderId === rider.id ? (
+                        <TableRow>
+                          <TableCell colSpan={9}>
+                            <SimpleRiderForm
+                              initialData={{
+                                id: rider.id,
+                                name: rider.name,
+                                team: rider.team,
+                                country: rider.country,
+                                gender: rider.gender,
+                                cost: rider.cost,
+                                lastYearStanding: rider.lastYearStanding,
+                                points: rider.points,
+                                image: rider.image,
+                                injured: rider.injured || false,
                               }}
-                            >
-                              <Trash2 className="h-4 w-4 text-red-500" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </React.Fragment>
-                ))}
+                              onSubmit={handleInlineRiderEditSave}
+                              onCancel={handleInlineRiderEditCancel}
+                              isSubmitting={updateRiderMutation.isPending}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        <TableRow>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center space-x-2">
+                              <Avatar className="w-8 h-8 border border-muted-foreground/20">
+                                <AvatarImage
+                                  src={safeImageUrl(rider.image)}
+                                  alt={displayName}
+                                  className="object-cover"
+                                />
+                                <AvatarFallback
+                                  className={`${getColorFromName(displayName)} text-white text-xs font-bold`}
+                                >
+                                  {getInitials(displayName)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span>{displayName}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>{rider.team}</TableCell>
+                          <TableCell>{rider.country}</TableCell>
+                          <TableCell className="capitalize">
+                            {rider.gender}
+                          </TableCell>
+                          <TableCell>${rider.cost.toLocaleString()}</TableCell>
+                          <TableCell>{rider.lastYearStanding}</TableCell>
+                          <TableCell>{rider.points}</TableCell>
+                          <TableCell>
+                            {rider.injured ? (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                Injured
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                Active
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end space-x-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleInlineEditRider(rider)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  if (
+                                    window.confirm(
+                                      `Are you sure you want to delete ${displayName}?`,
+                                    )
+                                  ) {
+                                    deleteRiderMutation.mutate(rider.id);
+                                  }
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4 text-red-500" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
               </TableBody>
             </Table>
           )}

@@ -2,8 +2,9 @@ import { Rider } from "@shared/schema";
 import { X, RefreshCw } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { safeImageUrl, getInitials, getColorFromName } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { formatRiderDisplayName } from "@shared/utils";
+import { safeImageUrl, getInitials, getColorFromName } from "@/lib/utils";
 
 interface TeamSummaryProps {
   selectedRiders: Rider[];
@@ -133,7 +134,7 @@ export default function TeamSummary({
             <div className="flex justify-between items-center">
               <div className="flex items-center space-x-2">
                 <RefreshCw className="h-4 w-4 text-amber-600" />
-                <span>Select a rider to replace <strong>{swapRider.name}</strong></span>
+                <span>Select a rider to replace <strong>{formatRiderDisplayName(swapRider) || swapRider.name}</strong></span>
               </div>
               {cancelSwap && (
                 <Button 
@@ -155,7 +156,10 @@ export default function TeamSummary({
           </div>
         )}
         
-        {selectedRiders.map((rider) => (
+        {selectedRiders.map((rider) => {
+          const displayName = formatRiderDisplayName(rider) || rider.name;
+
+          return (
           <div 
             key={rider.id} 
             className={`bg-white rounded-md p-3 shadow-sm flex flex-col md:flex-row justify-between relative overflow-hidden ${
@@ -179,13 +183,13 @@ export default function TeamSummary({
                     ? 'border-blue-300' 
                     : 'border-pink-300'
               }`}>
-                <AvatarImage src={safeImageUrl(rider.image)} alt={rider.name} className="object-cover" />
-                <AvatarFallback className={getColorFromName(rider.name)}>
-                  {getInitials(rider.name)}
+                <AvatarImage src={safeImageUrl(rider.image)} alt={displayName} className="object-cover" />
+                <AvatarFallback className={getColorFromName(displayName)}>
+                  {getInitials(displayName)}
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1 truncate">
-                <h5 className="font-heading font-bold text-secondary text-sm truncate">{rider.name}</h5>
+                <h5 className="font-heading font-bold text-secondary text-sm truncate">{displayName}</h5>
                 <div className="flex items-center flex-wrap">
                   <span className={`${rider.gender === 'male' ? 'text-blue-600' : 'text-pink-600'} text-xs font-medium truncate`}>
                     {rider.gender === 'male' ? 'Male' : 'Female'} • {rider.team}
@@ -221,7 +225,8 @@ export default function TeamSummary({
               )}
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

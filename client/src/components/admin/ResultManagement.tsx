@@ -3,7 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Race, Rider, Result } from '@shared/schema';
-import { safeImageUrl } from '@/lib/utils';
+import { formatRiderDisplayName } from '@shared/utils';
+import { getInitials, safeImageUrl } from '@/lib/utils';
 
 import {
   Card,
@@ -237,7 +238,7 @@ export default function ResultManagement() {
                         <SelectContent>
                           {filteredRiders.map((rider: any) => (
                             <SelectItem key={rider.id} value={rider.id.toString()}>
-                              {rider.name} ({rider.gender === 'female' ? 'F' : 'M'})
+                              {formatRiderDisplayName(rider) || rider.name} ({rider.gender === 'female' ? 'F' : 'M'})
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -350,6 +351,7 @@ export default function ResultManagement() {
                     <TableBody>
                       {raceResults.map((result: any) => {
                         const imageSrc = safeImageUrl(result?.rider?.image);
+                        const displayName = formatRiderDisplayName(result.rider) || result.rider.name;
                         return (
                           <TableRow key={result.id}>
                             <TableCell className="font-medium">{result.position}</TableCell>
@@ -358,15 +360,15 @@ export default function ResultManagement() {
                                 {imageSrc ? (
                                   <img 
                                     src={imageSrc}
-                                    alt={result.rider.name}
+                                    alt={displayName}
                                     className="h-6 w-6 rounded-full object-cover"
                                   />
                                 ) : (
                                   <div className="h-6 w-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold">
-                                    {result.rider.name.split(' ').map((n: string) => n[0]).join('')}
+                                    {getInitials(displayName)}
                                   </div>
                                 )}
-                                <span>{result.rider.name}</span>
+                                <span>{displayName}</span>
                               </div>
                             </TableCell>
                             <TableCell>
