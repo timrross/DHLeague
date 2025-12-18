@@ -168,8 +168,8 @@ async function fetchRaceTypes(
   const path = `/iframe/GetRankingsRaceTypes/?disciplineId=${SPORT.MTB}&disciplineSeasonId=${seasonId}`;
   log(`GET ${BASE_URL}${path}`);
   const raceTypes = (await httpClient.getJson(path)) as RaceType[];
-  const allowedIds = new Set<number>([RACE_TYPES.DHI, RACE_TYPES.XCO]);
-  const allowedCodes = new Set(["DHI", "XCO"]);
+  const allowedIds = new Set<number>([RACE_TYPES.DHI]);
+  const allowedCodes = new Set(["DHI"]);
   return raceTypes.filter(rt => {
     const id = resolveRaceTypeId(rt);
     if (id && allowedIds.has(id)) return true;
@@ -490,7 +490,7 @@ export async function syncRidersFromRankings(options: SyncOptions = {}): Promise
   log(`Fetched ${categories.size} categories`);
 
   const relevantCategories = Array.from(categories.entries()).filter(([key]) =>
-    ["ELITE_MEN", "ELITE_WOMEN", "JUNIOR_MEN", "JUNIOR_WOMEN"].includes(key),
+    ["ELITE_MEN", "ELITE_WOMEN"].includes(key),
   );
 
   log(
