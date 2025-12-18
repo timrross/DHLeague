@@ -8,10 +8,14 @@ import { createRiderSchema, updateRiderSchema } from "./riders.validation";
 export async function getRiders(req: Request, res: Response) {
   try {
     const filters: RiderFilters = {};
-    const { gender, team, search } = req.query;
+    const { gender, category, team, search } = req.query;
 
     if (gender && typeof gender === "string") {
       filters.gender = gender;
+    }
+
+    if (category && typeof category === "string") {
+      filters.category = category;
     }
 
     if (team && typeof team === "string") {

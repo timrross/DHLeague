@@ -13,7 +13,8 @@ export async function getUserTeam(req: any, res: Response) {
       return res.status(401).json({ message: "Not authenticated" });
     }
 
-    const team = await storage.getUserTeam(userId);
+    const teamType = req.query.teamType === "junior" ? "junior" : "elite";
+    const team = await storage.getUserTeam(userId, teamType);
     res.json(team || null);
   } catch (error) {
     console.error("Error fetching user team:", error);
@@ -32,24 +33,47 @@ export async function createTeam(req: any, res: Response) {
       return res.status(401).json({ message: "Not authenticated" });
     }
 
-    const { name, riderIds, useJokerCard = false } = req.body;
+    const { name, riderIds, useJokerCard = false, teamType } = req.body;
+    const normalizedTeamType = teamType === "junior" ? "junior" : "elite";
 
     if (!name || !riderIds || !Array.isArray(riderIds)) {
       return res.status(400).json({ message: "Invalid request data" });
     }
 
     // Check if user already has a team
-    const existingTeam = await storage.getUserTeam(userId);
+    const existingTeam = await storage.getUserTeam(userId, normalizedTeamType);
     if (existingTeam && !useJokerCard) {
       return res.status(400).json({ 
-        message: "You already have a team. Use the joker card to create a new team or update your existing team instead." 
+        message: `You already have a ${normalizedTeamType} team. Update your existing team instead.` 
       });
+    }
+
+    if (existingTeam) {
+      if (existingTeam.isLocked) {
+        return res.status(400).json({
+          message:
+            "Team is locked for the upcoming race. Use the swap feature instead.",
+        });
+      }
+
+      const updatedTeam = await storage.updateTeam(
+        existingTeam.id,
+        { name },
+        riderIds,
+      );
+
+      if (useJokerCard) {
+        await storage.updateUser(userId, { jokerCardUsed: true });
+      }
+
+      return res.status(200).json(updatedTeam);
     }
 
     // Create the team
     const teamData = {
       name,
       userId,
+      teamType: normalizedTeamType,
       jokerCardUsed: useJokerCard,
       swapsUsed: 0,
       isLocked: false,
@@ -218,6 +242,16 @@ export async function swapTeamRider(req: any, res: Response) {
     const addedRider = await riderDataClient.getRider(addedRiderId);
     if (!addedRider) {
       return res.status(404).json({ message: "Added rider not found" });
+    }
+
+    const teamType = team.teamType === "junior" ? "junior" : "elite";
+    if (addedRider.category !== teamType) {
+      return res.status(400).json({
+        message:
+          teamType === "junior"
+            ? "You can only add junior riders to your junior team"
+            : "You can only add elite riders to your elite team",
+      });
     }
 
     // Check if added rider is already on the team

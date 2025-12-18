@@ -29,6 +29,7 @@ export type NormalizedRider = {
   firstName?: string;
   lastName?: string;
   gender: "male" | "female";
+  category: "elite" | "junior";
   team: string;
   country?: string;
   points: number;
@@ -105,6 +106,7 @@ function splitName(name: string): { firstName?: string; lastName?: string } {
 export function normalizeRiderRow(
   row: ObjectRankingRow,
   gender: "male" | "female",
+  category: "elite" | "junior" = "elite",
 ): NormalizedRider {
   const cleanedFullName = stripLeadingAsterisk(row.IndividualFullName);
   const displayName = stripLeadingAsterisk(row.DisplayName);
@@ -126,6 +128,7 @@ export function normalizeRiderRow(
     firstName: nameParts.firstName,
     lastName: nameParts.lastName,
     gender,
+    category,
     team,
     country: row.CountryIsoCode2,
     points,

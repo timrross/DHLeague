@@ -1,4 +1,4 @@
-import { useQuery, UseQueryOptions } from "@tanstack/react-query";
+import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
 import { Race, Rider, Result } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -14,8 +14,25 @@ export const riderDataEndpoints = {
 
 type RidersResponse = Rider[] | { data?: Rider[] };
 
-export async function fetchRiders() {
-  const response = await apiRequest<RidersResponse>(riderDataEndpoints.riders);
+export type RiderQueryParams = {
+  category?: string;
+  page?: number;
+  pageSize?: number;
+};
+
+type QueryOptions<T> = Omit<UseQueryOptions<T>, "queryKey" | "queryFn">;
+
+function buildRidersUrl(params?: RiderQueryParams) {
+  const searchParams = new URLSearchParams();
+  if (params?.category) searchParams.set("category", params.category);
+  if (params?.page) searchParams.set("page", String(params.page));
+  if (params?.pageSize) searchParams.set("pageSize", String(params.pageSize));
+  const queryString = searchParams.toString();
+  return queryString ? `${riderDataEndpoints.riders}?${queryString}` : riderDataEndpoints.riders;
+}
+
+export async function fetchRiders(params?: RiderQueryParams) {
+  const response = await apiRequest<RidersResponse>(buildRidersUrl(params));
   if (Array.isArray(response)) {
     return response;
   }
@@ -38,15 +55,27 @@ export function fetchRaceResults(id: number | string) {
   return apiRequest<RaceResult[]>(riderDataEndpoints.raceResults(id));
 }
 
-export function useRidersQuery(options?: UseQueryOptions<Rider[]>) {
+export function useRidersQuery(options?: QueryOptions<Rider[]>) {
   return useQuery<Rider[]>({
     queryKey: [riderDataEndpoints.riders],
-    queryFn: fetchRiders,
+    queryFn: () => fetchRiders(),
     ...options,
   });
 }
 
-export function useRacesQuery(options?: UseQueryOptions<Race[]>) {
+export function useRidersQueryWithParams(
+  params: RiderQueryParams,
+  options?: QueryOptions<Rider[]>,
+) {
+  const url = buildRidersUrl(params);
+  return useQuery<Rider[]>({
+    queryKey: [url],
+    queryFn: () => fetchRiders(params),
+    ...options,
+  });
+}
+
+export function useRacesQuery(options?: QueryOptions<Race[]>) {
   return useQuery<Race[]>({
     queryKey: [riderDataEndpoints.races],
     queryFn: fetchRaces,
@@ -54,23 +83,25 @@ export function useRacesQuery(options?: UseQueryOptions<Race[]>) {
   });
 }
 
-export function useRaceQuery(id: number | string, options?: UseQueryOptions<Race>) {
+export function useRaceQuery(id: number | string, options?: QueryOptions<Race>) {
+  const enabled = Boolean(id) && (options?.enabled ?? true);
   return useQuery<Race>({
     queryKey: [riderDataEndpoints.race(id)],
     queryFn: () => fetchRace(id),
-    enabled: Boolean(id) && options?.enabled !== false,
     ...options,
+    enabled,
   });
 }
 
 export function useRaceResultsQuery(
   id: number | string,
-  options?: UseQueryOptions<RaceResult[]>,
+  options?: QueryOptions<RaceResult[]>,
 ) {
+  const enabled = Boolean(id) && (options?.enabled ?? true);
   return useQuery<RaceResult[]>({
     queryKey: [riderDataEndpoints.raceResults(id)],
     queryFn: () => fetchRaceResults(id),
-    enabled: Boolean(id) && options?.enabled !== false,
     ...options,
+    enabled,
   });
 }

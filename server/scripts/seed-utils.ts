@@ -5,8 +5,19 @@ import { storage } from "../storage";
 import { generateRiderId } from "@shared/utils";
 import { type InsertRider, type InsertRace } from "@shared/schema";
 
-type RiderSeed = Partial<InsertRider> & { name: string; gender: string; team: string; cost: number };
-type RaceSeed = Partial<InsertRace> & { name: string; location: string; country: string; startDate: string | Date; endDate: string | Date };
+export type RiderSeed = Partial<InsertRider> & {
+  name: string;
+  gender: string;
+  team: string;
+  cost: number;
+};
+export type RaceSeed = Partial<InsertRace> & {
+  name: string;
+  location: string;
+  country: string;
+  startDate: string | Date;
+  endDate: string | Date;
+};
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

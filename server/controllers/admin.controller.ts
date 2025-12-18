@@ -268,3 +268,20 @@ export async function bulkUpsertRaces(req: Request, res: Response) {
     });
   }
 }
+
+/**
+ * Clear all riders (admin only)
+ */
+export async function clearAllRiders(req: Request, res: Response) {
+  try {
+    const { total } = await storage.getRidersFiltered({}, { limit: 1, offset: 0 });
+    await storage.deleteAllRiders();
+    res.status(200).json({ message: "Riders cleared", deleted: total });
+  } catch (error) {
+    console.error("Error clearing riders:", error);
+    res.status(500).json({
+      message: "Failed to clear riders",
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+}

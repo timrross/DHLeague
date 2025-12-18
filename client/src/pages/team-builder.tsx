@@ -6,7 +6,7 @@ import { Link } from "wouter";
 import { Rider, TeamWithRiders } from "@shared/schema";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -16,11 +16,8 @@ import TeamSummary from "@/components/team-summary";
 import CountdownTimer from "@/components/countdown-timer";
 import JokerCardDialog from "@/components/joker-card-dialog";
 import JokerCardButton from "@/components/joker-card-button";
-import {
-  Search, AlertTriangle, Info, RefreshCw,
-  AlertCircle
-} from "lucide-react";
-import { useRacesQuery, useRidersQuery } from "@/services/riderDataApi";
+import { Search, AlertTriangle, Info, RefreshCw } from "lucide-react";
+import { useRacesQuery, useRidersQueryWithParams } from "@/services/riderDataApi";
 
 export default function TeamBuilder() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -30,7 +27,7 @@ export default function TeamBuilder() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRiders, setSelectedRiders] = useState<Rider[]>([]);
   const [teamName, setTeamName] = useState("My DH Team");
-  const [isCreatingTeam, setIsCreatingTeam] = useState(false);
+  const [draftInitialized, setDraftInitialized] = useState(false);
   const [swapMode, setSwapMode] = useState(false);
   const [swapRiderData, setSwapRiderData] = useState<Rider | null>(null);
   const [showJokerDialog, setShowJokerDialog] = useState(false);
@@ -46,14 +43,26 @@ export default function TeamBuilder() {
   const lockDate = nextRace ? new Date(new Date(nextRace.startDate).getTime() - 24 * 60 * 60 * 1000) : new Date();
   
   // Fetch riders
-  const { data: riders, isLoading: ridersLoading } = useRidersQuery();
+  const { data: riders, isLoading: ridersLoading } = useRidersQueryWithParams({
+    category: "elite",
+    pageSize: 200,
+  });
   const safeRiders = Array.isArray(riders) ? (riders as Rider[]) : [];
 
-  // Fetch user's team if authenticated
-  const { data: userTeam, isLoading: teamLoading } = useQuery<TeamWithRiders>({
-    queryKey: ['/api/teams/user'],
+  const userTeamQueryKey = "/api/teams/user";
+
+  // Fetch user's teams if authenticated
+  const { data: userTeam, isLoading: teamLoading } = useQuery<TeamWithRiders | null>({
+    queryKey: [userTeamQueryKey],
     enabled: isAuthenticated,
   });
+
+  const activeTeam = userTeam;
+  const isCreatingTeam = !isAuthenticated || !activeTeam;
+
+  const invalidateUserTeams = () => {
+    queryClient.invalidateQueries({ queryKey: [userTeamQueryKey] });
+  };
 
   // Create team mutation
   const createTeam = useMutation({
@@ -70,8 +79,7 @@ export default function TeamBuilder() {
         description: "Your fantasy team has been created.",
         variant: "default",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/teams/user'] });
-      setIsCreatingTeam(false);
+      invalidateUserTeams();
     },
     onError: (error: any) => {
       toast({
@@ -97,7 +105,7 @@ export default function TeamBuilder() {
         description: "Your fantasy team has been updated.",
         variant: "default",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/teams/user'] });
+      invalidateUserTeams();
     },
     onError: (error: any) => {
       toast({
@@ -124,7 +132,7 @@ export default function TeamBuilder() {
         description: `You have ${swapsRemaining - 1} swap${swapsRemaining - 1 !== 1 ? 's' : ''} remaining for this race.`,
         variant: "default",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/teams/user'] });
+      invalidateUserTeams();
       setSwapMode(false);
       setSwapRiderData(null);
     },
@@ -147,8 +155,8 @@ export default function TeamBuilder() {
   const femaleRidersCount = selectedRiders.filter(r => r.gender === "female").length;
   
   // Team lock status and swap tracking
-  const isTeamLocked = userTeam?.isLocked || false;
-  const swapsUsed = userTeam?.swapsUsed || 0;
+  const isTeamLocked = activeTeam?.isLocked || false;
+  const swapsUsed = activeTeam?.swapsUsed || 0;
   const swapsRemaining = 2 - swapsUsed;
   
   const isTeamValid = selectedRiders.length === 6 && 
@@ -156,23 +164,20 @@ export default function TeamBuilder() {
                      femaleRidersCount >= 2 && 
                      usedBudget <= totalBudget;
 
-  // Initialize selected riders from user's team and check joker card status
+  // Initialize draft from saved team (once)
   useEffect(() => {
-    if (userTeam && !isCreatingTeam) {
-      setSelectedRiders(userTeam.riders || []);
-      setTeamName(userTeam.name || "My DH Team");
+    if (activeTeam && !draftInitialized) {
+      setTeamName(activeTeam.name || "My DH Team");
+      setSelectedRiders(activeTeam.riders || []);
+      setDraftInitialized(true);
     }
-    
-    // Check if user has used joker card
+  }, [activeTeam, draftInitialized]);
+
+  useEffect(() => {
     if (user) {
       setJokerCardUsed(user.jokerCardUsed || false);
     }
-    
-    // For guest users, allow them to create a team without logging in
-    if (!isAuthenticated && !authLoading) {
-      setIsCreatingTeam(true);
-    }
-  }, [userTeam, isCreatingTeam, user, isAuthenticated, authLoading]);
+  }, [user]);
 
   // Filter riders based on search and tab
   const filteredRiders = safeRiders.filter((rider: Rider) => {
@@ -252,9 +257,9 @@ export default function TeamBuilder() {
       }
       
       // Perform the swap
-      if (userTeam && swapRiderData) {
+      if (activeTeam && swapRiderData) {
         performSwapRider.mutate({
-          teamId: userTeam.id,
+          teamId: activeTeam.id,
           removedRiderId: swapRiderData.id,
           addedRiderId: rider.id
         });
@@ -339,10 +344,10 @@ export default function TeamBuilder() {
     if (isAuthenticated) {
       const riderIds = selectedRiders.map(r => r.id);
       
-      if (userTeam && !isCreatingTeam) {
+      if (activeTeam && !isCreatingTeam) {
         // Update existing team
         updateTeam.mutate({
-          id: userTeam.id,
+          id: activeTeam.id,
           name: teamName,
           riderIds
         });
@@ -350,7 +355,7 @@ export default function TeamBuilder() {
         // Create new team
         createTeam.mutate({
           name: teamName,
-          riderIds
+          riderIds,
         });
         
         // Show immediate feedback toast
@@ -412,7 +417,7 @@ export default function TeamBuilder() {
     createTeam.mutate({
       name: teamName,
       riderIds,
-      useJokerCard: true
+      useJokerCard: true,
     });
     
     setShowJokerDialog(false);
@@ -424,36 +429,15 @@ export default function TeamBuilder() {
     });
   };
 
-  // Handle "Create New" button click
-  const handleCreateNewTeam = () => {
-    if (userTeam && !jokerCardUsed) {
-      setIsCreatingTeam(true);
-      setSelectedRiders([]);
-      setTeamName("My DH Team");
-    } else if (userTeam && jokerCardUsed) {
-      // If the user has already used their joker card, inform them
-      toast({
-        title: "Joker card already used",
-        description: "You have already used your joker card for this season and cannot create a new team.",
-        variant: "destructive",
-      });
-    } else {
-      // First time creating a team - no joker card needed
-      setSelectedRiders([]);
-      setTeamName("My DH Team");
-      setIsCreatingTeam(true);
-    }
-  };
-
   // Render UI components based on role
   const renderTeamSection = () => (
     <div className="bg-gray-50 p-5 rounded-lg">
-      <div className="mb-4">
+      <div className="mb-4 flex items-center justify-between">
         <h3 className="font-heading font-bold text-xl text-secondary">YOUR TEAM</h3>
       </div>
       
       {/* Team lock countdown */}
-      {nextRace && isAuthenticated && userTeam && (
+      {nextRace && isAuthenticated && activeTeam && (
         <div className="mb-5">
           <CountdownTimer 
             targetDate={lockDate} 
@@ -495,11 +479,11 @@ export default function TeamBuilder() {
               onClick={handleSaveTeam}
               disabled={!isTeamValid || createTeam.isPending || updateTeam.isPending}
             >
-              {userTeam && !isCreatingTeam ? 'Update Team' : 'Save Team'}
+              {activeTeam && !isCreatingTeam ? 'Update Team' : 'Save Team'}
             </Button>
             
             {/* Joker card button */}
-            {userTeam && (
+            {activeTeam && (
               <JokerCardButton
                 jokerCardUsed={jokerCardUsed}
                 onClick={handleUseJokerCard}

@@ -30,6 +30,7 @@ import { generateRiderId } from "@shared/utils";
 
 export type RiderFilters = {
   gender?: string;
+  category?: string;
   minCost?: number;
   maxCost?: number;
   team?: string;
@@ -82,7 +83,7 @@ export interface IStorage {
   // Team operations
   getTeam(id: number): Promise<Team | undefined>;
   getTeamWithRiders(id: number): Promise<TeamWithRiders | undefined>;
-  getUserTeam(userId: string): Promise<TeamWithRiders | undefined>;
+  getUserTeam(userId: string, teamType?: "elite" | "junior"): Promise<TeamWithRiders | undefined>;
   createTeam(team: InsertTeam, riderIds: number[]): Promise<TeamWithRiders>;
   updateTeam(id: number, team: Partial<Team>, riderIds?: number[]): Promise<TeamWithRiders | undefined>;
   deleteTeam(id: number): Promise<boolean>;
@@ -240,7 +241,7 @@ export class DatabaseStorage implements IStorage {
     
     return await Promise.all(
       allUsers.map(async (user) => {
-        const team = await this.getUserTeam(user.id);
+        const team = await this.getUserTeam(user.id, "elite");
         return {
           ...user,
           team
@@ -267,6 +268,10 @@ export class DatabaseStorage implements IStorage {
 
     if (filters.gender) {
       whereClauses.push(eq(riders.gender, filters.gender));
+    }
+
+    if (filters.category) {
+      whereClauses.push(eq(riders.category, filters.category));
     }
 
     if (filters.team) {
@@ -391,6 +396,9 @@ export class DatabaseStorage implements IStorage {
     // Then delete team-rider associations
     await db.delete(teamRiders);
 
+    // Clear swap history (references riders)
+    await db.delete(teamSwaps);
+
     // Finally delete all riders
     await db.delete(riders);
   }
@@ -450,11 +458,14 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async getUserTeam(userId: string): Promise<TeamWithRiders | undefined> {
+  async getUserTeam(
+    userId: string,
+    teamType: "elite" | "junior" = "elite",
+  ): Promise<TeamWithRiders | undefined> {
     const userTeamResult = await db
       .select()
       .from(teams)
-      .where(eq(teams.userId, userId));
+      .where(and(eq(teams.userId, userId), eq(teams.teamType, teamType)));
     
     if (userTeamResult.length === 0) return undefined;
     
@@ -463,6 +474,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTeam(teamData: InsertTeam, riderIds: number[]): Promise<TeamWithRiders> {
+    const teamType = teamData.teamType === "junior" ? "junior" : "elite";
+
+    const existingTeam = await db
+      .select({ id: teams.id })
+      .from(teams)
+      .where(and(eq(teams.userId, teamData.userId), eq(teams.teamType, teamType)))
+      .limit(1);
+
+    if (existingTeam.length) {
+      throw new Error(`User already has a ${teamType} team`);
+    }
+
     // Validate team composition
     const selectedRiders = await Promise.all(
       riderIds.map(id => this.getRider(id))
@@ -486,6 +509,13 @@ export class DatabaseStorage implements IStorage {
       throw new Error('Team must have at least 2 female riders');
     }
 
+    const invalidCategory = riders.filter((r) => r.category !== teamType);
+    if (invalidCategory.length) {
+      throw new Error(
+        `All riders must be ${teamType === "junior" ? "junior" : "elite"} riders`,
+      );
+    }
+
     // Check budget
     const totalCost = riders.reduce((sum, rider) => sum + rider.cost, 0);
     if (totalCost > 2000000) {
@@ -499,6 +529,7 @@ export class DatabaseStorage implements IStorage {
         .insert(teams)
         .values({
           ...teamData,
+          teamType,
           createdAt: new Date(),
           updatedAt: new Date(),
           totalPoints: 0
@@ -529,6 +560,8 @@ export class DatabaseStorage implements IStorage {
   async updateTeam(id: number, teamData: Partial<Team>, riderIds?: number[]): Promise<TeamWithRiders | undefined> {
     const team = await this.getTeam(id);
     if (!team) return undefined;
+    const teamType = team.teamType === "junior" ? "junior" : "elite";
+    const { teamType: _ignoredTeamType, ...safeTeamData } = teamData as any;
 
     // Update team in transaction if riderIds are provided
     if (riderIds && riderIds.length > 0) {
@@ -555,6 +588,13 @@ export class DatabaseStorage implements IStorage {
         throw new Error('Team must have at least 2 female riders');
       }
 
+      const invalidCategory = riders.filter((r) => r.category !== teamType);
+      if (invalidCategory.length) {
+        throw new Error(
+          `All riders must be ${teamType === "junior" ? "junior" : "elite"} riders`,
+        );
+      }
+
       // Check budget
       const totalCost = riders.reduce((sum, rider) => sum + rider.cost, 0);
       if (totalCost > 2000000) {
@@ -566,7 +606,7 @@ export class DatabaseStorage implements IStorage {
         await tx
           .update(teams)
           .set({
-            ...teamData,
+            ...safeTeamData,
             updatedAt: new Date()
           })
           .where(eq(teams.id, id));
@@ -591,7 +631,7 @@ export class DatabaseStorage implements IStorage {
       await db
         .update(teams)
         .set({
-          ...teamData,
+          ...safeTeamData,
           updatedAt: new Date()
         })
         .where(eq(teams.id, id));
@@ -774,7 +814,10 @@ export class DatabaseStorage implements IStorage {
 
   async updateTeamPoints(): Promise<void> {
     // Get all teams
-    const allTeams = await db.select().from(teams);
+    const allTeams = await db
+      .select()
+      .from(teams)
+      .where(eq(teams.teamType, "elite"));
     
     // For each team, recalculate points
     for (const team of allTeams) {
@@ -799,7 +842,11 @@ export class DatabaseStorage implements IStorage {
   // Leaderboard operations
   async getLeaderboard(): Promise<LeaderboardEntry[]> {
     // Get all teams with their total points
-    const allTeams = await db.select().from(teams).orderBy(desc(teams.totalPoints));
+    const allTeams = await db
+      .select()
+      .from(teams)
+      .where(eq(teams.teamType, "elite"))
+      .orderBy(desc(teams.totalPoints));
     
     // Build leaderboard
     const leaderboard: LeaderboardEntry[] = [];

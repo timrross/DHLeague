@@ -168,8 +168,8 @@ async function fetchRaceTypes(
   const path = `/iframe/GetRankingsRaceTypes/?disciplineId=${SPORT.MTB}&disciplineSeasonId=${seasonId}`;
   log(`GET ${BASE_URL}${path}`);
   const raceTypes = (await httpClient.getJson(path)) as RaceType[];
-  const allowedIds = new Set<number>([RACE_TYPES.DHI, RACE_TYPES.XCO]);
-  const allowedCodes = new Set(["DHI", "XCO"]);
+  const allowedIds = new Set<number>([RACE_TYPES.DHI]);
+  const allowedCodes = new Set(["DHI"]);
   return raceTypes.filter(rt => {
     const id = resolveRaceTypeId(rt);
     if (id && allowedIds.has(id)) return true;
@@ -392,6 +392,7 @@ async function upsertRiders(
       firstName: rider.firstName,
       lastName: rider.lastName,
       gender: rider.gender,
+      category: rider.category,
       team: rider.team,
       country: rider.country,
       points: rider.points,
@@ -418,6 +419,7 @@ async function upsertRiders(
           firstName: rider.firstName,
           lastName: rider.lastName,
           gender: rider.gender,
+          category: rider.category,
           team: rider.team,
           country: rider.country,
           points: rider.points,
@@ -488,7 +490,7 @@ export async function syncRidersFromRankings(options: SyncOptions = {}): Promise
   log(`Fetched ${categories.size} categories`);
 
   const relevantCategories = Array.from(categories.entries()).filter(([key]) =>
-    ["ELITE_MEN", "ELITE_WOMEN", "JUNIOR_MEN", "JUNIOR_WOMEN"].includes(key),
+    ["ELITE_MEN", "ELITE_WOMEN"].includes(key),
   );
 
   log(
@@ -540,6 +542,10 @@ export async function syncRidersFromRankings(options: SyncOptions = {}): Promise
           continue;
         }
         try {
+          const normalizedCategory =
+            categoryKey === "JUNIOR_MEN" || categoryKey === "JUNIOR_WOMEN"
+              ? "junior"
+              : "elite";
           const rows = await fetchRankingRows(
             httpClient,
             rankingId,
@@ -554,7 +560,7 @@ export async function syncRidersFromRankings(options: SyncOptions = {}): Promise
           );
 
           const normalizedRows = rows.map(row =>
-            normalizeRiderRow(row, normalizedGender),
+            normalizeRiderRow(row, normalizedGender, normalizedCategory),
           );
 
           await upsertRiders(

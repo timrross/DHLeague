@@ -1,10 +1,10 @@
-import { loadSeedFile, resolveFromScripts, upsertRaces } from "./seed-utils";
+import { loadSeedFile, resolveFromScripts, type RaceSeed, upsertRaces } from "./seed-utils";
 
 async function main() {
   const seedFile = process.argv[2] ?? resolveFromScripts("./data/races.sample.json");
   console.log(`Seeding races from ${seedFile}`);
 
-  const races = await loadSeedFile(seedFile);
+  const races = await loadSeedFile<RaceSeed>(seedFile);
   await upsertRaces(races);
   console.log("Finished race seeding");
 }
