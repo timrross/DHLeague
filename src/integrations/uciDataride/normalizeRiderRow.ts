@@ -23,12 +23,46 @@ function stripLeadingMarker(value?: string | null) {
   return value.replace(/^\*\s*/, "").trim();
 }
 
+function isUppercaseToken(token: string): boolean {
+  if (!token) return false;
+  const hasLetter = /[A-Z]/i.test(token);
+  return hasLetter && token === token.toUpperCase();
+}
+
 function splitName(value: string): { firstName?: string; lastName?: string } {
-  const parts = value.trim().split(/\s+/);
-  if (parts.length === 0) return {};
-  if (parts.length === 1) return { firstName: parts[0] };
-  const [first, ...rest] = parts;
-  return { firstName: first, lastName: rest.join(" ") || undefined };
+  const cleaned = value.trim();
+  if (!cleaned) return {};
+
+  const tokens = cleaned.split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return {};
+  if (tokens.length === 1) return { firstName: tokens[0] };
+
+  let uppercaseCount = 0;
+  for (const token of tokens) {
+    if (isUppercaseToken(token)) {
+      uppercaseCount += 1;
+    } else {
+      break;
+    }
+  }
+
+  if (uppercaseCount === 0) {
+    const [firstName, ...rest] = tokens;
+    return { firstName, lastName: rest.join(" ") || undefined };
+  }
+
+  const hasMixedCaseTail = uppercaseCount < tokens.length;
+  const lastNameTokens = hasMixedCaseTail
+    ? tokens.slice(0, uppercaseCount)
+    : tokens.slice(0, Math.max(tokens.length - 1, 1));
+  const firstNameTokens = hasMixedCaseTail
+    ? tokens.slice(uppercaseCount)
+    : tokens.slice(Math.max(tokens.length - 1, 1));
+
+  const firstName = firstNameTokens.join(" ").trim() || undefined;
+  const lastName = lastNameTokens.join(" ").trim() || undefined;
+
+  return { firstName, lastName };
 }
 
 export function normalizeRiderRow(

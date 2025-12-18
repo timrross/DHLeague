@@ -69,7 +69,7 @@ export default function RiderCard({
           </AvatarFallback>
         </Avatar>
         <div className="min-w-0 flex-1">
-          <h4 className="font-heading font-bold text-secondary truncate">{displayName}</h4>
+          <h4 className="font-heading normal-case font-bold text-secondary truncate">{displayName}</h4>
           <div className="flex flex-wrap items-center text-sm">
             <span className={`${rider.gender === 'male' ? 'text-blue-600' : 'text-pink-600'} font-medium mr-2`}>
               {rider.gender === 'male' ? 'Male' : 'Female'}

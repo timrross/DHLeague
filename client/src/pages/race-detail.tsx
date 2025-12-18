@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Race } from "@shared/schema";
 import { useRaceQuery, useRaceResultsQuery } from "@/services/riderDataApi";
+import { formatRiderDisplayName } from "@shared/utils";
 
 interface RaceDetailProps {
   id: number;
@@ -134,7 +135,9 @@ export default function RaceDetail({ id }: RaceDetailProps) {
                       podium.map((result) => (
                         <div key={result.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-md">
                           <div>
-                            <p className="font-semibold text-secondary">{result.rider.firstName} {result.rider.lastName}</p>
+                            <p className="font-semibold text-secondary">
+                              {formatRiderDisplayName(result.rider) || result.rider.name}
+                            </p>
                             <p className="text-xs text-gray-500">Position #{result.position}</p>
                           </div>
                           <Badge className="bg-primary text-white">{result.points} pts</Badge>
@@ -176,7 +179,7 @@ export default function RaceDetail({ id }: RaceDetailProps) {
                                 <td className="py-3 px-4 font-semibold">{result.position}</td>
                                 <td className="py-3 px-4">
                                   <p className="font-semibold text-secondary">
-                                    {result.rider.firstName} {result.rider.lastName}
+                                    {formatRiderDisplayName(result.rider) || result.rider.name}
                                   </p>
                                 </td>
                                 <td className="py-3 px-4 text-gray-600">{result.rider.country}</td>

@@ -101,15 +101,17 @@
   src: url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap');
 }
 
-.font-heading {
-  font-family: 'Roboto Condensed', sans-serif;
-  text-transform: uppercase;
-}
+@layer components {
+  .font-heading {
+    font-family: 'Roboto Condensed', sans-serif;
+    text-transform: uppercase;
+  }
 
-.font-body {
-  font-family: 'Open Sans', sans-serif;
-}
+  .font-body {
+    font-family: 'Open Sans', sans-serif;
+  }
 
-.font-accent {
-  font-family: 'Roboto', sans-serif;
+  .font-accent {
+    font-family: 'Roboto', sans-serif;
+  }
 }

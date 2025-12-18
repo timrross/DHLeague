@@ -85,7 +85,7 @@ export default function TopRiders({ riders }: TopRidersProps) {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
                 <div className="absolute bottom-3 left-3 right-3 text-white">
-                  <h3 className="font-heading font-bold text-xl">{displayName}</h3>
+                  <h3 className="font-heading normal-case font-bold text-xl">{displayName}</h3>
                   <p className="text-white/80 text-sm">{rider.team}</p>
                 </div>
               </div>

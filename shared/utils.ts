@@ -55,11 +55,67 @@ function isUppercaseToken(token: string): boolean {
   return hasLetter && token === token.toUpperCase();
 }
 
+function isAllUppercaseTokens(value: string): boolean {
+  const tokens = value.trim().split(/\s+/).filter(Boolean);
+  return tokens.length > 0 && tokens.every(isUppercaseToken);
+}
+
 function titleCaseTokens(tokens: string[]): string {
   return tokens
     .map(capitalizeWord)
     .filter((part) => part.trim().length > 0)
     .join(" ");
+}
+
+function formatLastNameFromTokens(tokens: string[]): string {
+  const titled = titleCaseTokens(tokens);
+  return titled.toUpperCase();
+}
+
+function splitNaturalOrderTokens(tokens: string[]): {
+  firstNameTokens: string[];
+  lastNameTokens: string[];
+} {
+  if (tokens.length <= 1) {
+    return { firstNameTokens: tokens, lastNameTokens: [] };
+  }
+
+  const surnameParticles = new Set([
+    "da",
+    "de",
+    "del",
+    "della",
+    "der",
+    "den",
+    "di",
+    "du",
+    "la",
+    "le",
+    "van",
+    "von",
+    "st",
+    "st.",
+    "saint",
+  ]);
+
+  let lastNameStart = tokens.length - 1;
+  while (
+    lastNameStart > 0 &&
+    surnameParticles.has(tokens[lastNameStart - 1].toLowerCase())
+  ) {
+    lastNameStart -= 1;
+  }
+
+  let lastNameTokens = tokens.slice(lastNameStart);
+  let firstNameTokens = tokens.slice(0, lastNameStart);
+
+  // If we have a long name with no particles detected, assume a 2-token surname.
+  if (lastNameTokens.length === 1 && tokens.length >= 4) {
+    lastNameTokens = tokens.slice(-2);
+    firstNameTokens = tokens.slice(0, Math.max(tokens.length - 2, 0));
+  }
+
+  return { firstNameTokens, lastNameTokens };
 }
 
 function formatNameFromSingleField(rawName: string): string {
@@ -81,7 +137,10 @@ function formatNameFromSingleField(rawName: string): string {
 
   // If the name doesn't start with uppercase tokens, assume it's already Firstname Lastname
   if (uppercaseCount === 0) {
-    return titleCaseTokens(tokens);
+    const { firstNameTokens, lastNameTokens } = splitNaturalOrderTokens(tokens);
+    const formattedFirst = titleCaseTokens(firstNameTokens);
+    const formattedLast = formatLastNameFromTokens(lastNameTokens);
+    return [formattedFirst, formattedLast].filter(Boolean).join(" ").trim();
   }
 
   const hasMixedCaseTail = uppercaseCount < tokens.length;
@@ -94,7 +153,7 @@ function formatNameFromSingleField(rawName: string): string {
     : tokens.slice(Math.max(tokens.length - 1, 1));
 
   const formattedFirst = titleCaseTokens(firstNameTokens);
-  const formattedLast = titleCaseTokens(lastNameTokens);
+  const formattedLast = formatLastNameFromTokens(lastNameTokens);
 
   return [formattedFirst, formattedLast].filter(Boolean).join(" ").trim();
 }
@@ -108,8 +167,26 @@ export function formatRiderDisplayName(rider: {
   const last = rider.lastName?.trim();
 
   if (first && last) {
+    const firstAllUpper = isAllUppercaseTokens(first);
+    const lastAllUpper = isAllUppercaseTokens(last);
+
+    // Some sources (and/or older imports) may store "LASTNAME" in firstName and
+    // "Firstname" in lastName. Detect that shape and swap for display.
+    if (firstAllUpper && !lastAllUpper) {
+      const formattedFirst = titleCaseTokens(last.split(/\s+/));
+      const formattedLast = formatLastNameFromTokens(first.split(/\s+/));
+      return `${formattedFirst} ${formattedLast}`.trim();
+    }
+
+    // If both fields are uppercase and we have a combined name, prefer parsing
+    // the combined field (handles cases like "SMITH JOHN").
+    if (firstAllUpper && lastAllUpper && rider.name) {
+      const fromName = formatNameFromSingleField(rider.name);
+      if (fromName) return fromName;
+    }
+
     const formattedFirst = titleCaseTokens(first.split(/\s+/));
-    const formattedLast = titleCaseTokens(last.split(/\s+/));
+    const formattedLast = formatLastNameFromTokens(last.split(/\s+/));
     return `${formattedFirst} ${formattedLast}`.trim();
   }
 

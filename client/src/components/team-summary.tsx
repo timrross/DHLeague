@@ -189,7 +189,7 @@ export default function TeamSummary({
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1 truncate">
-                <h5 className="font-heading font-bold text-secondary text-sm truncate">{displayName}</h5>
+                <h5 className="font-heading normal-case font-bold text-secondary text-sm truncate">{displayName}</h5>
                 <div className="flex items-center flex-wrap">
                   <span className={`${rider.gender === 'male' ? 'text-blue-600' : 'text-pink-600'} text-xs font-medium truncate`}>
                     {rider.gender === 'male' ? 'Male' : 'Female'} • {rider.team}
