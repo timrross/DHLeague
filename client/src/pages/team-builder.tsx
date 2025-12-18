@@ -6,7 +6,7 @@ import { Link } from "wouter";
 import { Rider, TeamWithRiders } from "@shared/schema";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -16,30 +16,18 @@ import TeamSummary from "@/components/team-summary";
 import CountdownTimer from "@/components/countdown-timer";
 import JokerCardDialog from "@/components/joker-card-dialog";
 import JokerCardButton from "@/components/joker-card-button";
-import {
-  Search, AlertTriangle, Info, RefreshCw,
-  AlertCircle
-} from "lucide-react";
+import { Search, AlertTriangle, Info, RefreshCw } from "lucide-react";
 import { useRacesQuery, useRidersQueryWithParams } from "@/services/riderDataApi";
 
 export default function TeamBuilder() {
-  type TeamType = "elite" | "junior";
-
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   
   const [selectedTab, setSelectedTab] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeTeamType, setActiveTeamType] = useState<TeamType>("elite");
-  const [teamDrafts, setTeamDrafts] = useState<
-    Record<TeamType, { name: string; riders: Rider[] }>
-  >({
-    elite: { name: "My Elite Team", riders: [] },
-    junior: { name: "My Junior Team", riders: [] },
-  });
-  const [draftInitialized, setDraftInitialized] = useState<
-    Record<TeamType, boolean>
-  >({ elite: false, junior: false });
+  const [selectedRiders, setSelectedRiders] = useState<Rider[]>([]);
+  const [teamName, setTeamName] = useState("My DH Team");
+  const [draftInitialized, setDraftInitialized] = useState(false);
   const [swapMode, setSwapMode] = useState(false);
   const [swapRiderData, setSwapRiderData] = useState<Rider | null>(null);
   const [showJokerDialog, setShowJokerDialog] = useState(false);
@@ -56,62 +44,29 @@ export default function TeamBuilder() {
   
   // Fetch riders
   const { data: riders, isLoading: ridersLoading } = useRidersQueryWithParams({
-    category: activeTeamType,
+    category: "elite",
     pageSize: 200,
   });
   const safeRiders = Array.isArray(riders) ? (riders as Rider[]) : [];
 
-  const eliteTeamQueryKey = "/api/teams/user?teamType=elite";
-  const juniorTeamQueryKey = "/api/teams/user?teamType=junior";
+  const userTeamQueryKey = "/api/teams/user";
 
   // Fetch user's teams if authenticated
-  const { data: eliteTeam, isLoading: eliteTeamLoading } = useQuery<TeamWithRiders | null>({
-    queryKey: [eliteTeamQueryKey],
-    enabled: isAuthenticated,
-  });
-  const { data: juniorTeam, isLoading: juniorTeamLoading } = useQuery<TeamWithRiders | null>({
-    queryKey: [juniorTeamQueryKey],
+  const { data: userTeam, isLoading: teamLoading } = useQuery<TeamWithRiders | null>({
+    queryKey: [userTeamQueryKey],
     enabled: isAuthenticated,
   });
 
-  const activeTeam = activeTeamType === "elite" ? eliteTeam : juniorTeam;
-  const teamLoading = activeTeamType === "elite" ? eliteTeamLoading : juniorTeamLoading;
+  const activeTeam = userTeam;
   const isCreatingTeam = !isAuthenticated || !activeTeam;
 
-  const teamName = teamDrafts[activeTeamType].name;
-  const selectedRiders = teamDrafts[activeTeamType].riders;
-
-  const setTeamName = (name: string) => {
-    setTeamDrafts((prev) => ({
-      ...prev,
-      [activeTeamType]: { ...prev[activeTeamType], name },
-    }));
-  };
-
-  const setSelectedRiders = (
-    value: Rider[] | ((prev: Rider[]) => Rider[]),
-  ) => {
-    setTeamDrafts((prev) => {
-      const prevRiders = prev[activeTeamType].riders;
-      const nextRiders =
-        typeof value === "function"
-          ? (value as (prev: Rider[]) => Rider[])(prevRiders)
-          : value;
-      return {
-        ...prev,
-        [activeTeamType]: { ...prev[activeTeamType], riders: nextRiders },
-      };
-    });
-  };
-
   const invalidateUserTeams = () => {
-    queryClient.invalidateQueries({ queryKey: [eliteTeamQueryKey] });
-    queryClient.invalidateQueries({ queryKey: [juniorTeamQueryKey] });
+    queryClient.invalidateQueries({ queryKey: [userTeamQueryKey] });
   };
 
   // Create team mutation
   const createTeam = useMutation({
-    mutationFn: async (data: { name: string, riderIds: number[], teamType: TeamType, useJokerCard?: boolean }) => {
+    mutationFn: async (data: { name: string, riderIds: number[], useJokerCard?: boolean }) => {
       return apiRequest('/api/teams', {
         method: 'POST',
         body: JSON.stringify(data),
@@ -209,37 +164,14 @@ export default function TeamBuilder() {
                      femaleRidersCount >= 2 && 
                      usedBudget <= totalBudget;
 
-  // Initialize drafts from saved teams (once per team type)
+  // Initialize draft from saved team (once)
   useEffect(() => {
-    if (eliteTeam && !draftInitialized.elite) {
-      setTeamDrafts((prev) => ({
-        ...prev,
-        elite: {
-          name: eliteTeam.name || prev.elite.name,
-          riders: eliteTeam.riders || [],
-        },
-      }));
-      setDraftInitialized((prev) => ({ ...prev, elite: true }));
+    if (activeTeam && !draftInitialized) {
+      setTeamName(activeTeam.name || "My DH Team");
+      setSelectedRiders(activeTeam.riders || []);
+      setDraftInitialized(true);
     }
-  }, [eliteTeam, draftInitialized.elite]);
-
-  useEffect(() => {
-    if (juniorTeam && !draftInitialized.junior) {
-      setTeamDrafts((prev) => ({
-        ...prev,
-        junior: {
-          name: juniorTeam.name || prev.junior.name,
-          riders: juniorTeam.riders || [],
-        },
-      }));
-      setDraftInitialized((prev) => ({ ...prev, junior: true }));
-    }
-  }, [juniorTeam, draftInitialized.junior]);
-
-  useEffect(() => {
-    setSwapMode(false);
-    setSwapRiderData(null);
-  }, [activeTeamType]);
+  }, [activeTeam, draftInitialized]);
 
   useEffect(() => {
     if (user) {
@@ -252,11 +184,7 @@ export default function TeamBuilder() {
     const matchesSearch = rider.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          rider.team.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesTab = selectedTab === "all" || rider.gender === selectedTab;
-    const matchesCategory =
-      activeTeamType === "junior"
-        ? rider.category === "junior"
-        : rider.category === "elite";
-    return matchesSearch && matchesTab && matchesCategory;
+    return matchesSearch && matchesTab;
   });
 
   // Handle rider selection/deselection
@@ -428,7 +356,6 @@ export default function TeamBuilder() {
         createTeam.mutate({
           name: teamName,
           riderIds,
-          teamType: activeTeamType,
         });
         
         // Show immediate feedback toast
@@ -490,7 +417,6 @@ export default function TeamBuilder() {
     createTeam.mutate({
       name: teamName,
       riderIds,
-      teamType: activeTeamType,
       useJokerCard: true,
     });
     
@@ -506,33 +432,9 @@ export default function TeamBuilder() {
   // Render UI components based on role
   const renderTeamSection = () => (
     <div className="bg-gray-50 p-5 rounded-lg">
-      <div className="mb-4">
-        <Tabs value={activeTeamType} onValueChange={(value) => setActiveTeamType(value as TeamType)}>
-          <TabsList className="w-full">
-            <TabsTrigger value="elite" className="flex-1">Elite Team</TabsTrigger>
-            <TabsTrigger value="junior" className="flex-1">Junior Team</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
-
       <div className="mb-4 flex items-center justify-between">
         <h3 className="font-heading font-bold text-xl text-secondary">YOUR TEAM</h3>
-        <Badge variant="secondary">
-          {activeTeamType === "elite" ? "Elite" : "Junior"}
-        </Badge>
       </div>
-
-      {isAuthenticated && activeTeamType === "junior" && !juniorTeam && (
-        <div className="mb-5">
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Junior team is optional</AlertTitle>
-            <AlertDescription>
-              Create a junior team if you want. You can still play with just an elite team.
-            </AlertDescription>
-          </Alert>
-        </div>
-      )}
       
       {/* Team lock countdown */}
       {nextRace && isAuthenticated && activeTeam && (
