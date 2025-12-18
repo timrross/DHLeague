@@ -396,6 +396,9 @@ export class DatabaseStorage implements IStorage {
     // Then delete team-rider associations
     await db.delete(teamRiders);
 
+    // Clear swap history (references riders)
+    await db.delete(teamSwaps);
+
     // Finally delete all riders
     await db.delete(riders);
   }
