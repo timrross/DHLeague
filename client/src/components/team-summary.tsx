@@ -179,23 +179,24 @@ export default function TeamSummary({
               <Avatar className={`w-8 h-8 border-2 mr-2 flex-shrink-0 ${
                 rider.injured 
                   ? 'border-red-400' 
-                  : rider.gender === 'male' 
-                    ? 'border-blue-300' 
-                    : 'border-pink-300'
+                  : 'border-transparent' 
+          
               }`}>
                 <AvatarImage src={safeImageUrl(rider.image)} alt={displayName} className="object-cover" />
-                <AvatarFallback className={getColorFromName(displayName)}>
+                <AvatarFallback className={`${getColorFromName(displayName)} text-white text-xs`}>
                   {getInitials(displayName)}
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1 truncate">
                 <h5 className="font-heading normal-case font-bold text-secondary text-sm truncate">{displayName}</h5>
-                <div className="flex items-center flex-wrap">
-                  <span className={`${rider.gender === 'male' ? 'text-blue-600' : 'text-pink-600'} text-xs font-medium truncate`}>
-                    {rider.gender === 'male' ? 'Male' : 'Female'} • {rider.team}
+                <div className="flex items-center flex-wrap text-xs">
+                  <span className={`${rider.gender === 'male' ? 'text-blue-600' : 'text-pink-600'} font-medium truncate`}>
+                    {rider.gender === 'male' ? 'Male' : 'Female'}
                   </span>
+                  
+                  <span className="text-gray-600 truncate text-xs ml-1"> {rider.team ? rider.team : ''}</span>
                   {rider.injured && (
-                    <span className="ml-1 text-red-600 font-medium text-xs">• Injured</span>
+                    <span className="ml-1 text-red-600 font-medium">Injured</span>
                   )}
                 </div>
               </div>
