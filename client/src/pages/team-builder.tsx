@@ -18,6 +18,7 @@ import JokerCardDialog from "@/components/joker-card-dialog";
 import JokerCardButton from "@/components/joker-card-button";
 import { Search, AlertTriangle, Info, RefreshCw } from "lucide-react";
 import { useRacesQuery, useRidersQueryWithParams } from "@/services/riderDataApi";
+import { formatRiderDisplayName } from "@shared/utils";
 
 export default function TeamBuilder() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -651,7 +652,7 @@ export default function TeamBuilder() {
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle>Swap Mode Active</AlertTitle>
               <AlertDescription className="flex justify-between items-center">
-                <span>Selecting {swapRiderData?.name}</span>
+                <span>Selecting {swapRiderData ? formatRiderDisplayName(swapRiderData) || swapRiderData.name : ''}</span>
                 <Button 
                   variant="outline" 
                   size="sm" 

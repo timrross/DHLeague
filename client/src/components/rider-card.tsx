@@ -1,6 +1,7 @@
 import { Rider } from "@shared/schema";
 import { Check, Plus } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { formatRiderDisplayName } from "@shared/utils";
 import { safeImageUrl, getInitials, getColorFromName } from "@/lib/utils";
 
 interface RiderCardProps {
@@ -28,6 +29,7 @@ export default function RiderCard({
 }: RiderCardProps) {
   // For backward compatibility, use either isSelected or selected
   const isRiderSelected = isSelected !== undefined ? isSelected : (selected || false);
+  const displayName = formatRiderDisplayName(rider) || rider.name;
   // Format cost as currency
   const formatCost = (cost: number) => {
     return `$${cost.toLocaleString()}`;
@@ -36,7 +38,7 @@ export default function RiderCard({
   // Get the color for the avatar background
   const avatarBgColor = isRiderSelected 
     ? 'bg-primary' 
-    : getColorFromName(rider.name);
+    : getColorFromName(displayName);
     
   // Determine card style based on selected and injured status
   const cardBorderClass = isRiderSelected 
@@ -61,13 +63,13 @@ export default function RiderCard({
       
       <div className="flex items-center mb-2 sm:mb-0">
         <Avatar className={`w-10 h-10 border-2 mr-3 flex-shrink-0 ${isRiderSelected ? 'border-primary' : rider.injured ? 'border-red-400' : 'border-transparent'}`}>
-          <AvatarImage src={safeImageUrl(rider.image)} alt={rider.name} className="object-cover" />
+          <AvatarImage src={safeImageUrl(rider.image)} alt={displayName} className="object-cover" />
           <AvatarFallback className={`${avatarBgColor} text-white`}>
-            {getInitials(rider.name)}
+            {getInitials(displayName)}
           </AvatarFallback>
         </Avatar>
         <div className="min-w-0 flex-1">
-          <h4 className="font-heading font-bold text-secondary truncate">{rider.name}</h4>
+          <h4 className="font-heading font-bold text-secondary truncate">{displayName}</h4>
           <div className="flex flex-wrap items-center text-sm">
             <span className={`${rider.gender === 'male' ? 'text-blue-600' : 'text-pink-600'} font-medium mr-2`}>
               {rider.gender === 'male' ? 'Male' : 'Female'}
