@@ -1,0 +1,28 @@
+id: 002-get-api-calendar-upcoming-ce4d8f18
+meta:
+  startedDateTime: 2025-12-18T14:12:35.589Z
+  timeMs: 490.27800001204014
+  resourceType: xhr
+request:
+  method: GET
+  url: https://www.uci.org/api/calendar/upcoming?discipline=MTB&raceCategory=ME,WE&raceType=DHI&raceClass=CDM&seasonId=100443
+  query:
+    discipline: MTB
+    raceCategory: ME,WE
+    raceType: DHI
+    raceClass: CDM
+    seasonId: "100443"
+  headers:
+    accept: application/json, text/plain, */*
+    referer: https://www.uci.org/calendar/mtb/1voMyukVGR4iZMhMlDfRv0?discipline=MTB&raceType=DHI&raceCategory=ME%2CWE&seasonId=100443&raceClass=CDM
+    user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36
+      (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+  body: null
+response:
+  status: 200
+  statusText: ""
+  mimeType: application/json
+  headers:
+    content-type: application/json; charset=utf-8
+  body:
+    file: 002-get-api-calendar-upcoming-ce4d8f18.response.json

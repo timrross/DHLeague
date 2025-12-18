@@ -1,0 +1,984 @@
+{
+    "filters": [
+        {
+            "label": "Category",
+            "queryParam": "raceCategory",
+            "items": [
+                {
+                    "code": "",
+                    "text": "All",
+                    "selected": false
+                },
+                {
+                    "code": "ME",
+                    "text": "Men Elite",
+                    "selected": false
+                },
+                {
+                    "code": "WE",
+                    "text": "Women Elite",
+                    "selected": false
+                },
+                {
+                    "code": "MU",
+                    "text": "Men Under 23",
+                    "selected": false
+                },
+                {
+                    "code": "WU",
+                    "text": "Women Under 23",
+                    "selected": false
+                },
+                {
+                    "code": "MJ",
+                    "text": "Men Junior",
+                    "selected": false
+                },
+                {
+                    "code": "WJ",
+                    "text": "Women Junior",
+                    "selected": false
+                },
+                {
+                    "code": "MM",
+                    "text": "Men Masters",
+                    "selected": false
+                },
+                {
+                    "code": "WM",
+                    "text": "Women Masters",
+                    "selected": false
+                },
+                {
+                    "code": "XE",
+                    "text": "Mixed Elite",
+                    "selected": false
+                }
+            ]
+        },
+        {
+            "label": "Race Type",
+            "queryParam": "raceType",
+            "items": [
+                {
+                    "code": "",
+                    "text": "All",
+                    "selected": false
+                },
+                {
+                    "code": "XCO",
+                    "text": "Cross-country Olympic",
+                    "selected": false
+                },
+                {
+                    "code": "XCM",
+                    "text": "Cross-country marathon",
+                    "selected": false
+                },
+                {
+                    "code": "XCC",
+                    "text": "Cross-country short circuit",
+                    "selected": false
+                },
+                {
+                    "code": "XCE",
+                    "text": "Cross-country eliminator",
+                    "selected": false
+                },
+                {
+                    "code": "XCR",
+                    "text": "Cross-country team relay",
+                    "selected": false
+                },
+                {
+                    "code": "DHI",
+                    "text": "Downhill",
+                    "selected": false
+                },
+                {
+                    "code": "4X",
+                    "text": "4X",
+                    "selected": false
+                },
+                {
+                    "code": "END",
+                    "text": "Enduro",
+                    "selected": false
+                },
+                {
+                    "code": "EDR",
+                    "text": "Enduro",
+                    "selected": false
+                },
+                {
+                    "code": "EDR-E",
+                    "text": "Enduro Electric",
+                    "selected": false
+                },
+                {
+                    "code": "E-END",
+                    "text": "E-MTB Enduro",
+                    "selected": false
+                },
+                {
+                    "code": "E-XC",
+                    "text": "E-MTB Cross-country",
+                    "selected": false
+                },
+                {
+                    "code": "E-XCM",
+                    "text": "E-MTB Cross-Country Marathon",
+                    "selected": false
+                },
+                {
+                    "code": "PUM",
+                    "text": "Pump Track",
+                    "selected": false
+                },
+                {
+                    "code": "SNO",
+                    "text": "Snow Bike",
+                    "selected": false
+                },
+                {
+                    "code": "SNO-DS",
+                    "text": "Snow Bike Dual Slalom",
+                    "selected": false
+                },
+                {
+                    "code": "SNO-SG",
+                    "text": "Snow Bike Super G",
+                    "selected": false
+                },
+                {
+                    "code": "XCO-JS",
+                    "text": "Cross-country Olympic Junior Series",
+                    "selected": false
+                }
+            ]
+        },
+        {
+            "label": "Class",
+            "queryParam": "raceClass",
+            "items": [
+                {
+                    "code": "",
+                    "text": "All",
+                    "selected": false
+                },
+                {
+                    "code": "1",
+                    "text": "1 - Class 1",
+                    "selected": false
+                },
+                {
+                    "code": "2",
+                    "text": "2 - Class 2",
+                    "selected": false
+                },
+                {
+                    "code": "3",
+                    "text": "3 - Class 3",
+                    "selected": false
+                },
+                {
+                    "code": "CC",
+                    "text": "CC - Continental Championships",
+                    "selected": false
+                },
+                {
+                    "code": "CDM",
+                    "text": "CDM - World Cup",
+                    "selected": false
+                },
+                {
+                    "code": "CM",
+                    "text": "CM - UCI World Championships",
+                    "selected": false
+                },
+                {
+                    "code": "CMM",
+                    "text": "CMM - World Masters Championships",
+                    "selected": false
+                },
+                {
+                    "code": "CN",
+                    "text": "CN - National Championships",
+                    "selected": false
+                },
+                {
+                    "code": "CS",
+                    "text": "CS - Continental Series",
+                    "selected": false
+                },
+                {
+                    "code": "HC",
+                    "text": "HC - Hors Class",
+                    "selected": false
+                },
+                {
+                    "code": "JR",
+                    "text": "JR - Regional Games",
+                    "selected": false
+                },
+                {
+                    "code": "S1",
+                    "text": "S1 - Stage Class 1",
+                    "selected": false
+                },
+                {
+                    "code": "S2",
+                    "text": "S2 - Stage Class 2",
+                    "selected": false
+                },
+                {
+                    "code": "SHC",
+                    "text": "SHC - Stage Hors Class",
+                    "selected": false
+                }
+            ]
+        },
+        {
+            "label": "Calendar",
+            "queryParam": "seasonId",
+            "items": [
+                {
+                    "code": "100443",
+                    "text": "All Competitions",
+                    "selected": false
+                },
+                {
+                    "code": "1002",
+                    "text": "UCI Events",
+                    "selected": false
+                },
+                {
+                    "code": "1003",
+                    "text": "International Competitions",
+                    "selected": false
+                },
+                {
+                    "code": "1004",
+                    "text": "National Championships",
+                    "selected": false
+                }
+            ]
+        }
+    ],
+    "items": [
+        {
+            "month": 5,
+            "year": 2026,
+            "monthName": "May 2026",
+            "isCurrentMonth": false,
+            "items": [
+                {
+                    "day": 1,
+                    "month": 5,
+                    "year": 2026,
+                    "competitionDate": "2026-05-01T00:00:00Z",
+                    "items": [
+                        {
+                            "name": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI",
+                            "colourCode": "mountain-bike",
+                            "venue": "Race of South Korea",
+                            "country": "KOR",
+                            "continentCode": "ASI",
+                            "dates": "01 May - 03 May 2026",
+                            "detailsLink": {
+                                "title": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI",
+                                "url": "/competition-details/2026/MTB/77093",
+                                "isExternal": false
+                            },
+                            "isUciEvent": false
+                        }
+                    ]
+                },
+                {
+                    "day": 2,
+                    "month": 5,
+                    "year": 2026,
+                    "competitionDate": "2026-05-02T00:00:00Z",
+                    "items": [
+                        {
+                            "name": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI",
+                            "colourCode": "mountain-bike",
+                            "venue": "Race of South Korea",
+                            "country": "KOR",
+                            "continentCode": "ASI",
+                            "dates": "01 May - 03 May 2026",
+                            "detailsLink": {
+                                "title": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI",
+                                "url": "/competition-details/2026/MTB/77093",
+                                "isExternal": false
+                            },
+                            "isUciEvent": false
+                        }
+                    ]
+                },
+                {
+                    "day": 3,
+                    "month": 5,
+                    "year": 2026,
+                    "competitionDate": "2026-05-03T00:00:00Z",
+                    "items": [
+                        {
+                            "name": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI",
+                            "colourCode": "mountain-bike",
+                            "venue": "Race of South Korea",
+                            "country": "KOR",
+                            "continentCode": "ASI",
+                            "dates": "01 May - 03 May 2026",
+                            "detailsLink": {
+                                "title": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI",
+                                "url": "/competition-details/2026/MTB/77093",
+                                "isExternal": false
+                            },
+                            "isUciEvent": false
+                        }
+                    ]
+                },
+                {
+                    "day": 28,
+                    "month": 5,
+                    "year": 2026,
+                    "competitionDate": "2026-05-28T00:00:00Z",
+                    "items": [
+                        {
+                            "name": "UCI MOUNTAIN BIKE WORLD CUP – DHI/EDR",
+                            "colourCode": "mountain-bike",
+                            "venue": "Loudenvielle-Peyragudes",
+                            "country": "FRA",
+                            "continentCode": "EUR",
+                            "dates": "28 May - 31 May 2026",
+                            "detailsLink": {
+                                "title": "UCI MOUNTAIN BIKE WORLD CUP – DHI/EDR",
+                                "url": "/competition-details/2026/MTB/77094",
+                                "isExternal": false
+                            },
+                            "isUciEvent": false
+                        }
+                    ]
+                },
+                {
+                    "day": 29,
+                    "month": 5,
+                    "year": 2026,
+                    "competitionDate": "2026-05-29T00:00:00Z",
+                    "items": [
+                        {
+                            "name": "UCI MOUNTAIN BIKE WORLD CUP – DHI/EDR",
+                            "colourCode": "mountain-bike",
+                            "venue": "Loudenvielle-Peyragudes",
+                            "country": "FRA",
+                            "continentCode": "EUR",
+                            "dates": "28 May - 31 May 2026",
+                            "detailsLink": {
+                                "title": "UCI MOUNTAIN BIKE WORLD CUP – DHI/EDR",
+                                "url": "/competition-details/2026/MTB/77094",
+                                "isExternal": false
+                            },
+                            "isUciEvent": false
+                        }
+                    ]
+                },
+                {
+                    "day": 30,
+                    "month": 5,
+                    "year": 2026,
+                    "competitionDate": "2026-05-30T00:00:00Z",
+                    "items": [
+                        {
+                            "name": "UCI MOUNTAIN BIKE WORLD CUP – DHI/EDR",
+                            "colourCode": "mountain-bike",
+                            "venue": "Loudenvielle-Peyragudes",
+                            "country": "FRA",
+                            "continentCode": "EUR",
+                            "dates": "28 May - 31 May 2026",
+                            "detailsLink": {
+                                "title": "UCI MOUNTAIN BIKE WORLD CUP – DHI/EDR",
+                                "url": "/competition-details/2026/MTB/77094",
+                                "isExternal": false
+                            },
+                            "isUciEvent": false
+                        }
+                    ]
+                },
+                {
+                    "day": 31,
+                    "month": 5,
+                    "year": 2026,
+                    "competitionDate": "2026-05-31T00:00:00Z",
+                    "items": [
+                        {
+                            "name": "UCI MOUNTAIN BIKE WORLD CUP – DHI/EDR",
+                            "colourCode": "mountain-bike",
+                            "venue": "Loudenvielle-Peyragudes",
+                            "country": "FRA",
+                            "continentCode": "EUR",
+                            "dates": "28 May - 31 May 2026",
+                            "detailsLink": {
+                                "title": "UCI MOUNTAIN BIKE WORLD CUP – DHI/EDR",
+                                "url": "/competition-details/2026/MTB/77094",
+                                "isExternal": false
+                            },
+                            "isUciEvent": false
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "month": 6,
+            "year": 2026,
+            "monthName": "June 2026",
+            "isCurrentMonth": false,
+            "items": [
+                {
+                    "day": 11,
+                    "month": 6,
+                    "year": 2026,
+                    "competitionDate": "2026-06-11T00:00:00Z",
+                    "items": [
+                        {
+                            "name": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI/EDR",
+                            "colourCode": "mountain-bike",
+                            "venue": "Saalfelden-Leogang Salzburgerland",
+                            "country": "AUT",
+                            "continentCode": "EUR",
+                            "dates": "11 Jun - 14 Jun 2026",
+                            "detailsLink": {
+                                "title": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI/EDR",
+                                "url": "/competition-details/2026/MTB/77081",
+                                "isExternal": false
+                            },
+                            "isUciEvent": false
+                        }
+                    ]
+                },
+                {
+                    "day": 12,
+                    "month": 6,
+                    "year": 2026,
+                    "competitionDate": "2026-06-12T00:00:00Z",
+                    "items": [
+                        {
+                            "name": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI/EDR",
+                            "colourCode": "mountain-bike",
+                            "venue": "Saalfelden-Leogang Salzburgerland",
+                            "country": "AUT",
+                            "continentCode": "EUR",
+                            "dates": "11 Jun - 14 Jun 2026",
+                            "detailsLink": {
+                                "title": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI/EDR",
+                                "url": "/competition-details/2026/MTB/77081",
+                                "isExternal": false
+                            },
+                            "isUciEvent": false
+                        }
+                    ]
+                },
+                {
+                    "day": 13,
+                    "month": 6,
+                    "year": 2026,
+                    "competitionDate": "2026-06-13T00:00:00Z",
+                    "items": [
+                        {
+                            "name": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI/EDR",
+                            "colourCode": "mountain-bike",
+                            "venue": "Saalfelden-Leogang Salzburgerland",
+                            "country": "AUT",
+                            "continentCode": "EUR",
+                            "dates": "11 Jun - 14 Jun 2026",
+                            "detailsLink": {
+                                "title": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI/EDR",
+                                "url": "/competition-details/2026/MTB/77081",
+                                "isExternal": false
+                            },
+                            "isUciEvent": false
+                        }
+                    ]
+                },
+                {
+                    "day": 14,
+                    "month": 6,
+                    "year": 2026,
+                    "competitionDate": "2026-06-14T00:00:00Z",
+                    "items": [
+                        {
+                            "name": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI/EDR",
+                            "colourCode": "mountain-bike",
+                            "venue": "Saalfelden-Leogang Salzburgerland",
+                            "country": "AUT",
+                            "continentCode": "EUR",
+                            "dates": "11 Jun - 14 Jun 2026",
+                            "detailsLink": {
+                                "title": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI/EDR",
+                                "url": "/competition-details/2026/MTB/77081",
+                                "isExternal": false
+                            },
+                            "isUciEvent": false
+                        }
+                    ]
+                },
+                {
+                    "day": 19,
+                    "month": 6,
+                    "year": 2026,
+                    "competitionDate": "2026-06-19T00:00:00Z",
+                    "items": [
+                        {
+                            "name": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI",
+                            "colourCode": "mountain-bike",
+                            "venue": "Lenzerheide",
+                            "country": "SUI",
+                            "continentCode": "EUR",
+                            "dates": "19 Jun - 21 Jun 2026",
+                            "detailsLink": {
+                                "title": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI",
+                                "url": "/competition-details/2026/MTB/77083",
+                                "isExternal": false
+                            },
+                            "isUciEvent": false
+                        }
+                    ]
+                },
+                {
+                    "day": 20,
+                    "month": 6,
+                    "year": 2026,
+                    "competitionDate": "2026-06-20T00:00:00Z",
+                    "items": [
+                        {
+                            "name": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI",
+                            "colourCode": "mountain-bike",
+                            "venue": "Lenzerheide",
+                            "country": "SUI",
+                            "continentCode": "EUR",
+                            "dates": "19 Jun - 21 Jun 2026",
+                            "detailsLink": {
+                                "title": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI",
+                                "url": "/competition-details/2026/MTB/77083",
+                                "isExternal": false
+                            },
+                            "isUciEvent": false
+                        }
+                    ]
+                },
+                {
+                    "day": 21,
+                    "month": 6,
+                    "year": 2026,
+                    "competitionDate": "2026-06-21T00:00:00Z",
+                    "items": [
+                        {
+                            "name": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI",
+                            "colourCode": "mountain-bike",
+                            "venue": "Lenzerheide",
+                            "country": "SUI",
+                            "continentCode": "EUR",
+                            "dates": "19 Jun - 21 Jun 2026",
+                            "detailsLink": {
+                                "title": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI",
+                                "url": "/competition-details/2026/MTB/77083",
+                                "isExternal": false
+                            },
+                            "isUciEvent": false
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "month": 7,
+            "year": 2026,
+            "monthName": "July 2026",
+            "isCurrentMonth": false,
+            "items": [
+                {
+                    "day": 3,
+                    "month": 7,
+                    "year": 2026,
+                    "competitionDate": "2026-07-03T00:00:00Z",
+                    "items": [
+                        {
+                            "name": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI/EDR",
+                            "colourCode": "mountain-bike",
+                            "venue": "La Thuile - Valle d'Aosta",
+                            "country": "ITA",
+                            "continentCode": "EUR",
+                            "dates": "03 Jul - 05 Jul 2026",
+                            "detailsLink": {
+                                "title": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI/EDR",
+                                "url": "/competition-details/2026/MTB/77085",
+                                "isExternal": false
+                            },
+                            "isUciEvent": false
+                        }
+                    ]
+                },
+                {
+                    "day": 4,
+                    "month": 7,
+                    "year": 2026,
+                    "competitionDate": "2026-07-04T00:00:00Z",
+                    "items": [
+                        {
+                            "name": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI/EDR",
+                            "colourCode": "mountain-bike",
+                            "venue": "La Thuile - Valle d'Aosta",
+                            "country": "ITA",
+                            "continentCode": "EUR",
+                            "dates": "03 Jul - 05 Jul 2026",
+                            "detailsLink": {
+                                "title": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI/EDR",
+                                "url": "/competition-details/2026/MTB/77085",
+                                "isExternal": false
+                            },
+                            "isUciEvent": false
+                        }
+                    ]
+                },
+                {
+                    "day": 5,
+                    "month": 7,
+                    "year": 2026,
+                    "competitionDate": "2026-07-05T00:00:00Z",
+                    "items": [
+                        {
+                            "name": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI/EDR",
+                            "colourCode": "mountain-bike",
+                            "venue": "La Thuile - Valle d'Aosta",
+                            "country": "ITA",
+                            "continentCode": "EUR",
+                            "dates": "03 Jul - 05 Jul 2026",
+                            "detailsLink": {
+                                "title": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI/EDR",
+                                "url": "/competition-details/2026/MTB/77085",
+                                "isExternal": false
+                            },
+                            "isUciEvent": false
+                        }
+                    ]
+                },
+                {
+                    "day": 8,
+                    "month": 7,
+                    "year": 2026,
+                    "competitionDate": "2026-07-08T00:00:00Z",
+                    "items": [
+                        {
+                            "name": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI",
+                            "colourCode": "mountain-bike",
+                            "venue": "Pal Arinsal",
+                            "country": "AND",
+                            "continentCode": "EUR",
+                            "dates": "08 Jul - 12 Jul 2026",
+                            "detailsLink": {
+                                "title": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI",
+                                "url": "/competition-details/2026/MTB/77086",
+                                "isExternal": false
+                            },
+                            "isUciEvent": false
+                        }
+                    ]
+                },
+                {
+                    "day": 9,
+                    "month": 7,
+                    "year": 2026,
+                    "competitionDate": "2026-07-09T00:00:00Z",
+                    "items": [
+                        {
+                            "name": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI",
+                            "colourCode": "mountain-bike",
+                            "venue": "Pal Arinsal",
+                            "country": "AND",
+                            "continentCode": "EUR",
+                            "dates": "08 Jul - 12 Jul 2026",
+                            "detailsLink": {
+                                "title": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI",
+                                "url": "/competition-details/2026/MTB/77086",
+                                "isExternal": false
+                            },
+                            "isUciEvent": false
+                        }
+                    ]
+                },
+                {
+                    "day": 10,
+                    "month": 7,
+                    "year": 2026,
+                    "competitionDate": "2026-07-10T00:00:00Z",
+                    "items": [
+                        {
+                            "name": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI",
+                            "colourCode": "mountain-bike",
+                            "venue": "Pal Arinsal",
+                            "country": "AND",
+                            "continentCode": "EUR",
+                            "dates": "08 Jul - 12 Jul 2026",
+                            "detailsLink": {
+                                "title": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI",
+                                "url": "/competition-details/2026/MTB/77086",
+                                "isExternal": false
+                            },
+                            "isUciEvent": false
+                        }
+                    ]
+                },
+                {
+                    "day": 11,
+                    "month": 7,
+                    "year": 2026,
+                    "competitionDate": "2026-07-11T00:00:00Z",
+                    "items": [
+                        {
+                            "name": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI",
+                            "colourCode": "mountain-bike",
+                            "venue": "Pal Arinsal",
+                            "country": "AND",
+                            "continentCode": "EUR",
+                            "dates": "08 Jul - 12 Jul 2026",
+                            "detailsLink": {
+                                "title": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI",
+                                "url": "/competition-details/2026/MTB/77086",
+                                "isExternal": false
+                            },
+                            "isUciEvent": false
+                        }
+                    ]
+                },
+                {
+                    "day": 12,
+                    "month": 7,
+                    "year": 2026,
+                    "competitionDate": "2026-07-12T00:00:00Z",
+                    "items": [
+                        {
+                            "name": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI",
+                            "colourCode": "mountain-bike",
+                            "venue": "Pal Arinsal",
+                            "country": "AND",
+                            "continentCode": "EUR",
+                            "dates": "08 Jul - 12 Jul 2026",
+                            "detailsLink": {
+                                "title": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI",
+                                "url": "/competition-details/2026/MTB/77086",
+                                "isExternal": false
+                            },
+                            "isUciEvent": false
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "month": 8,
+            "year": 2026,
+            "monthName": "August 2026",
+            "isCurrentMonth": false,
+            "items": [
+                {
+                    "day": 21,
+                    "month": 8,
+                    "year": 2026,
+                    "competitionDate": "2026-08-21T00:00:00Z",
+                    "items": [
+                        {
+                            "name": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI",
+                            "colourCode": "mountain-bike",
+                            "venue": "Haute-Savoie",
+                            "country": "FRA",
+                            "continentCode": "EUR",
+                            "dates": "21 Aug - 23 Aug 2026",
+                            "detailsLink": {
+                                "title": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI",
+                                "url": "/competition-details/2026/MTB/77087",
+                                "isExternal": false
+                            },
+                            "isUciEvent": false
+                        }
+                    ]
+                },
+                {
+                    "day": 22,
+                    "month": 8,
+                    "year": 2026,
+                    "competitionDate": "2026-08-22T00:00:00Z",
+                    "items": [
+                        {
+                            "name": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI",
+                            "colourCode": "mountain-bike",
+                            "venue": "Haute-Savoie",
+                            "country": "FRA",
+                            "continentCode": "EUR",
+                            "dates": "21 Aug - 23 Aug 2026",
+                            "detailsLink": {
+                                "title": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI",
+                                "url": "/competition-details/2026/MTB/77087",
+                                "isExternal": false
+                            },
+                            "isUciEvent": false
+                        }
+                    ]
+                },
+                {
+                    "day": 23,
+                    "month": 8,
+                    "year": 2026,
+                    "competitionDate": "2026-08-23T00:00:00Z",
+                    "items": [
+                        {
+                            "name": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI",
+                            "colourCode": "mountain-bike",
+                            "venue": "Haute-Savoie",
+                            "country": "FRA",
+                            "continentCode": "EUR",
+                            "dates": "21 Aug - 23 Aug 2026",
+                            "detailsLink": {
+                                "title": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI",
+                                "url": "/competition-details/2026/MTB/77087",
+                                "isExternal": false
+                            },
+                            "isUciEvent": false
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "month": 9,
+            "year": 2026,
+            "monthName": "September 2026",
+            "isCurrentMonth": false,
+            "items": [
+                {
+                    "day": 26,
+                    "month": 9,
+                    "year": 2026,
+                    "competitionDate": "2026-09-26T00:00:00Z",
+                    "items": [
+                        {
+                            "name": "UCI MOUNTAIN BIKE WORLD CUP – DHI",
+                            "colourCode": "mountain-bike",
+                            "venue": "Whistler Mountain Bike Park, British Columbia",
+                            "country": "CAN",
+                            "continentCode": "AME",
+                            "dates": "26 Sep - 27 Sep 2026",
+                            "detailsLink": {
+                                "title": "UCI MOUNTAIN BIKE WORLD CUP – DHI",
+                                "url": "/competition-details/2026/MTB/77097",
+                                "isExternal": false
+                            },
+                            "isUciEvent": false
+                        }
+                    ]
+                },
+                {
+                    "day": 27,
+                    "month": 9,
+                    "year": 2026,
+                    "competitionDate": "2026-09-27T00:00:00Z",
+                    "items": [
+                        {
+                            "name": "UCI MOUNTAIN BIKE WORLD CUP – DHI",
+                            "colourCode": "mountain-bike",
+                            "venue": "Whistler Mountain Bike Park, British Columbia",
+                            "country": "CAN",
+                            "continentCode": "AME",
+                            "dates": "26 Sep - 27 Sep 2026",
+                            "detailsLink": {
+                                "title": "UCI MOUNTAIN BIKE WORLD CUP – DHI",
+                                "url": "/competition-details/2026/MTB/77097",
+                                "isExternal": false
+                            },
+                            "isUciEvent": false
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "month": 10,
+            "year": 2026,
+            "monthName": "October 2026",
+            "isCurrentMonth": false,
+            "items": [
+                {
+                    "day": 2,
+                    "month": 10,
+                    "year": 2026,
+                    "competitionDate": "2026-10-02T00:00:00Z",
+                    "items": [
+                        {
+                            "name": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI",
+                            "colourCode": "mountain-bike",
+                            "venue": "Lake Placid Olympic Sites, New York",
+                            "country": "USA",
+                            "continentCode": "AME",
+                            "dates": "02 Oct - 04 Oct 2026",
+                            "detailsLink": {
+                                "title": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI",
+                                "url": "/competition-details/2026/MTB/77089",
+                                "isExternal": false
+                            },
+                            "isUciEvent": false
+                        }
+                    ]
+                },
+                {
+                    "day": 3,
+                    "month": 10,
+                    "year": 2026,
+                    "competitionDate": "2026-10-03T00:00:00Z",
+                    "items": [
+                        {
+                            "name": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI",
+                            "colourCode": "mountain-bike",
+                            "venue": "Lake Placid Olympic Sites, New York",
+                            "country": "USA",
+                            "continentCode": "AME",
+                            "dates": "02 Oct - 04 Oct 2026",
+                            "detailsLink": {
+                                "title": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI",
+                                "url": "/competition-details/2026/MTB/77089",
+                                "isExternal": false
+                            },
+                            "isUciEvent": false
+                        }
+                    ]
+                },
+                {
+                    "day": 4,
+                    "month": 10,
+                    "year": 2026,
+                    "competitionDate": "2026-10-04T00:00:00Z",
+                    "items": [
+                        {
+                            "name": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI",
+                            "colourCode": "mountain-bike",
+                            "venue": "Lake Placid Olympic Sites, New York",
+                            "country": "USA",
+                            "continentCode": "AME",
+                            "dates": "02 Oct - 04 Oct 2026",
+                            "detailsLink": {
+                                "title": "UCI MOUNTAIN BIKE WORLD CUP – XCO/XCC/DHI",
+                                "url": "/competition-details/2026/MTB/77089",
+                                "isExternal": false
+                            },
+                            "isUciEvent": false
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "downloadButtons": {
+        "downloadPdfUrl": "https://api.uci.ch/v1.2/ucibws/competitions/getreportpdf",
+        "downloadXlsUrl": "https://api.uci.ch/v1.2/ucibws/competitions/getreportxls",
+        "disciplineCode": "MTB",
+        "year": 2026
+    }
+}

@@ -8,6 +8,7 @@ import {
   getUsersWithTeams,
   importRidersFromUci,
   importRacesFromUci,
+  updateTeamPoints,
   bulkUpsertRiders,
   bulkUpsertRaces,
   streamDatarideRiderSync,
@@ -25,6 +26,7 @@ router.get("/users-with-teams", requireAuth, isAdmin, getUsersWithTeams);
 // Admin-only routes for UCI data import
 router.post("/import-riders", requireAuth, isAdmin, importRidersFromUci);
 router.post("/import-races", requireAuth, isAdmin, importRacesFromUci);
+router.post("/update-team-points", requireAuth, isAdmin, updateTeamPoints);
 router.post("/seed/riders", requireAuth, isAdmin, bulkUpsertRiders);
 router.post("/seed/races", requireAuth, isAdmin, bulkUpsertRaces);
 router.get("/dataride/riders/stream", requireAuth, isAdmin, streamDatarideRiderSync);

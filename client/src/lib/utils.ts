@@ -11,8 +11,18 @@ export function cn(...inputs: ClassValue[]) {
  */
 export function safeImageUrl(url: string | null | undefined): string | undefined {
   if (!url) return undefined;
-  if (url.trim() === '') return undefined;
-  return url;
+  const trimmed = url.trim();
+  if (trimmed === "") return undefined;
+
+  // Filter out the UCI "discipline-mountain-bike.jpg" placeholder which causes
+  // redirect loops / broken loads in some environments.
+  const brokenUciDefaultPath =
+    "/docs/default-source/imported-images/discipline/discipline-mountain-bike.jpg";
+  if (trimmed.includes("uci.org") && trimmed.includes(brokenUciDefaultPath)) {
+    return undefined;
+  }
+
+  return trimmed;
 }
 
 /**

@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Race, Rider, Result } from '@shared/schema';
+import { safeImageUrl } from '@/lib/utils';
 
 import {
   Card,
@@ -55,11 +56,25 @@ export default function ResultManagement() {
 
   // Fetch riders
   const {
-    data: riders = [],
+    data: ridersData,
     isLoading: isLoadingRiders,
-  } = useQuery<Rider[]>({
+  } = useQuery({
     queryKey: ['/api/riders'],
   });
+
+  const riderList = useMemo(() => {
+    if (Array.isArray(ridersData)) {
+      return ridersData as Rider[];
+    }
+    if (
+      ridersData &&
+      typeof ridersData === "object" &&
+      Array.isArray((ridersData as { data?: Rider[] }).data)
+    ) {
+      return (ridersData as { data?: Rider[] }).data ?? [];
+    }
+    return [];
+  }, [ridersData]);
 
   // Fetch race results when a race is selected
   const {
@@ -67,16 +82,20 @@ export default function ResultManagement() {
     isLoading: isLoadingResults,
     refetch: refetchResults
   } = useQuery<(Result & { rider: Rider })[]>({
-    queryKey: ['/api/races', selectedRace, 'results'],
+    queryKey: [selectedRace ? `/api/races/${selectedRace}/results` : '/api/races/0/results'],
     enabled: !!selectedRace,
   });
 
   // Add result mutation
   const addResultMutation = useMutation({
-    mutationFn: async (resultData: any) => {
-      return apiRequest('/api/results', {
+    mutationFn: async (payload: { raceId: number; riderId: number; position: number; points: number }) => {
+      return apiRequest(`/api/races/${payload.raceId}/results`, {
         method: 'POST',
-        body: JSON.stringify(resultData)
+        body: JSON.stringify({
+          riderId: payload.riderId,
+          position: payload.position,
+          points: payload.points,
+        }),
       });
     },
     onSuccess: () => {
@@ -139,13 +158,13 @@ export default function ResultManagement() {
 
   // Filter riders by gender
   useEffect(() => {
-    if (selectedRaceDetails && riders) {
+    if (selectedRaceDetails) {
       // No filtering needed, all riders are eligible for results
-      setFilteredRiders(riders as Rider[]);
+      setFilteredRiders(riderList);
     } else {
       setFilteredRiders([]);
     }
-  }, [selectedRaceDetails, riders]);
+  }, [selectedRaceDetails, riderList]);
 
   // Handle add result form submission
   const handleAddResult = (e: React.FormEvent) => {
@@ -164,8 +183,7 @@ export default function ResultManagement() {
       raceId: parseInt(selectedRace, 10),
       riderId: parseInt(selectedRider, 10),
       position: parseInt(position, 10),
-      qualifyingPosition: qualifyingPosition ? parseInt(qualifyingPosition, 10) : null,
-      points: points ? parseInt(points, 10) : null, // Auto-calculate if not provided
+      points: points ? parseInt(points, 10) : 0, // default to 0 if not provided
     };
     
     addResultMutation.mutate(resultData);
@@ -219,7 +237,7 @@ export default function ResultManagement() {
                         <SelectContent>
                           {filteredRiders.map((rider: any) => (
                             <SelectItem key={rider.id} value={rider.id.toString()}>
-                              {rider.name} ({rider.gender === 'f' ? 'F' : 'M'})
+                              {rider.name} ({rider.gender === 'female' ? 'F' : 'M'})
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -330,37 +348,40 @@ export default function ResultManagement() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {raceResults.map((result: any) => (
-                        <TableRow key={result.id}>
-                          <TableCell className="font-medium">{result.position}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center space-x-2">
-                              {result.rider.image ? (
-                                <img 
-                                  src={result.rider.image}
-                                  alt={result.rider.name}
-                                  className="h-6 w-6 rounded-full object-cover"
-                                />
-                              ) : (
-                                <div className="h-6 w-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold">
-                                  {result.rider.name.split(' ').map((n: string) => n[0]).join('')}
-                                </div>
-                              )}
-                              <span>{result.rider.name}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${
-                              result.rider.gender === 'f' ? 'bg-pink-100 text-pink-800' : 'bg-blue-100 text-blue-800'
-                            }`}>
-                              {result.rider.gender === 'f' ? 'F' : 'M'}
-                            </span>
-                          </TableCell>
-                          <TableCell>{result.rider.team || '-'}</TableCell>
-                          <TableCell>{result.qualifyingPosition || '-'}</TableCell>
-                          <TableCell className="font-mono">{result.points}</TableCell>
-                        </TableRow>
-                      ))}
+                      {raceResults.map((result: any) => {
+                        const imageSrc = safeImageUrl(result?.rider?.image);
+                        return (
+                          <TableRow key={result.id}>
+                            <TableCell className="font-medium">{result.position}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center space-x-2">
+                                {imageSrc ? (
+                                  <img 
+                                    src={imageSrc}
+                                    alt={result.rider.name}
+                                    className="h-6 w-6 rounded-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="h-6 w-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold">
+                                    {result.rider.name.split(' ').map((n: string) => n[0]).join('')}
+                                  </div>
+                                )}
+                                <span>{result.rider.name}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${
+                                result.rider.gender === 'female' ? 'bg-pink-100 text-pink-800' : 'bg-blue-100 text-blue-800'
+                              }`}>
+                                {result.rider.gender === 'female' ? 'F' : 'M'}
+                              </span>
+                            </TableCell>
+                            <TableCell>{result.rider.team || '-'}</TableCell>
+                            <TableCell>{result.qualifyingPosition || '-'}</TableCell>
+                            <TableCell className="font-mono">{result.points}</TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 )}

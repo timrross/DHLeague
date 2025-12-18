@@ -424,7 +424,6 @@ async function upsertRiders(
           country: rider.country,
           points: rider.points,
           cost: rider.cost,
-          image: rider.image,
           datarideObjectId: rider.datarideObjectId,
           datarideTeamCode: rider.datarideTeamCode,
         },

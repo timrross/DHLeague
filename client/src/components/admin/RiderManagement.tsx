@@ -37,11 +37,6 @@ import {
 import { Loader2, Pencil, Trash2, Plus, Search } from "lucide-react";
 import { getColorFromName, getInitials, safeImageUrl } from "@/lib/utils";
 
-const BROKEN_DEFAULT_UCI_IMAGES = new Set<string>([
-  "https://www.uci.org/docs/default-source/imported-images/discipline/discipline-mountain-bike.jpg",
-  "https://uci.org/docs/default-source/imported-images/discipline/discipline-mountain-bike.jpg",
-]);
-
 export default function RiderManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -400,13 +395,7 @@ export default function RiderManagement() {
                           <div className="flex items-center space-x-2">
                             <Avatar className="w-8 h-8 border border-muted-foreground/20">
                               <AvatarImage
-                                src={
-                                  BROKEN_DEFAULT_UCI_IMAGES.has(
-                                    safeImageUrl(rider.image) ?? "",
-                                  )
-                                    ? undefined
-                                    : safeImageUrl(rider.image)
-                                }
+                                src={safeImageUrl(rider.image)}
                                 alt={rider.name}
                                 className="object-cover"
                               />

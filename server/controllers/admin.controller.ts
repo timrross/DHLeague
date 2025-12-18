@@ -164,14 +164,20 @@ export async function importRidersFromUci(req: Request, res: Response) {
  */
 export async function importRacesFromUci(req: Request, res: Response) {
   try {
-    // Get upcoming races from UCI API
-    const uciRaces = await uciApiService.getUpcomingMTBEvents();
-    const mappedRaces = uciApiService.mapRaceData(uciRaces);
+    // Get upcoming races from UCI calendar API (Downhill only)
+    const mappedRaces = await uciApiService.getUpcomingMTBDownhillRaces();
 
     // Save races to database
     const savedRaces = [];
     for (const race of mappedRaces) {
-      savedRaces.push(await storage.createRace(race));
+      const startDate = new Date(race.startDate as any);
+      const existing = await storage.getRaceByNameAndStartDate(race.name, startDate);
+      if (existing) {
+        const updated = await storage.updateRace(existing.id, race);
+        if (updated) savedRaces.push(updated);
+      } else {
+        savedRaces.push(await storage.createRace(race));
+      }
     }
 
     res.json(savedRaces);
@@ -180,6 +186,22 @@ export async function importRacesFromUci(req: Request, res: Response) {
     res.status(500).json({
       message: "Failed to import races",
       error: error instanceof Error ? error.message : String(error)
+    });
+  }
+}
+
+/**
+ * Recalculate team points (admin only)
+ */
+export async function updateTeamPoints(_req: Request, res: Response) {
+  try {
+    await storage.updateTeamPoints();
+    res.status(200).json({ message: "Team points updated" });
+  } catch (error) {
+    console.error("Error updating team points:", error);
+    res.status(500).json({
+      message: "Failed to update team points",
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 }

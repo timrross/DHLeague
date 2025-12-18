@@ -36,6 +36,39 @@ interface UCIRider {
   points: number;
 }
 
+type UciCalendarDetailsLink = {
+  title?: string;
+  url?: string;
+  isExternal?: boolean;
+};
+
+type UciCalendarCompetition = {
+  name?: string;
+  venue?: string;
+  country?: string;
+  continentCode?: string;
+  dates?: string;
+  detailsLink?: UciCalendarDetailsLink;
+  isUciEvent?: boolean;
+};
+
+type UciCalendarDay = {
+  competitionDate?: string;
+  items?: UciCalendarCompetition[];
+};
+
+type UciCalendarMonth = {
+  month?: number;
+  year?: number;
+  monthName?: string;
+  isCurrentMonth?: boolean;
+  items?: UciCalendarDay[];
+};
+
+type UciUpcomingCalendarResponse = {
+  items?: UciCalendarMonth[];
+};
+
 /**
  * Service to interact with the UCI API
  */
@@ -65,6 +98,120 @@ export class UCIApiService {
     } catch (error) {
       console.error("Error fetching UCI MTB events:", error);
       throw new Error("Failed to fetch UCI MTB events");
+    }
+  }
+
+  private extractDownhillRacesFromCalendarPayload(payload: unknown) {
+    const data = payload as UciUpcomingCalendarResponse | undefined;
+    const months = Array.isArray(data?.items) ? data.items : [];
+
+    type Aggregated = {
+      key: string;
+      name: string;
+      venue: string;
+      country: string;
+      startDate: Date;
+      endDate: Date;
+    };
+
+    const aggregated = new Map<string, Aggregated>();
+
+    for (const month of months) {
+      const days = Array.isArray(month?.items) ? month.items : [];
+      for (const day of days) {
+        const dayDateRaw = day?.competitionDate;
+        if (!dayDateRaw) continue;
+        const dayDate = new Date(dayDateRaw);
+        if (Number.isNaN(dayDate.getTime())) continue;
+
+        const competitions = Array.isArray(day?.items) ? day.items : [];
+        for (const competition of competitions) {
+          const name = (competition?.name ?? competition?.detailsLink?.title ?? "").trim();
+          if (!name) continue;
+          if (!name.toUpperCase().includes("DHI")) continue;
+
+          const venue = (competition?.venue ?? "").trim();
+          const country = (competition?.country ?? "").trim();
+          const linkUrl = (competition?.detailsLink?.url ?? "").trim();
+
+          const key = linkUrl || `${name}|${venue}|${country}`;
+          const existing = aggregated.get(key);
+
+          if (!existing) {
+            aggregated.set(key, {
+              key,
+              name,
+              venue,
+              country,
+              startDate: dayDate,
+              endDate: dayDate,
+            });
+            continue;
+          }
+
+          if (dayDate < existing.startDate) {
+            existing.startDate = dayDate;
+          }
+          if (dayDate > existing.endDate) {
+            existing.endDate = dayDate;
+          }
+          if (!existing.venue && venue) {
+            existing.venue = venue;
+          }
+          if (!existing.country && country) {
+            existing.country = country;
+          }
+        }
+      }
+    }
+
+    return Array.from(aggregated.values());
+  }
+
+  /**
+   * Fetch upcoming MTB Downhill (DHI) races from UCI calendar.
+   *
+   * Mirrors the browser XHR call:
+   * `GET /api/calendar/upcoming?discipline=MTB&raceCategory=ME,WE&raceType=DHI&raceClass=CDM&seasonId=...`
+   */
+  async getUpcomingMTBDownhillRaces(options?: {
+    discipline?: string;
+    raceCategory?: string;
+    raceType?: string;
+    raceClass?: string;
+    seasonId?: string | number;
+  }): Promise<InsertRace[]> {
+    try {
+      const seasonId =
+        options?.seasonId ??
+        process.env.UCI_CALENDAR_SEASON_ID ??
+        process.env.UCI_SEASON_ID ??
+        "100443";
+
+      const params: Record<string, string> = {
+        discipline: options?.discipline ?? "MTB",
+        raceCategory: options?.raceCategory ?? "ME,WE",
+        raceType: options?.raceType ?? "DHI",
+        raceClass: options?.raceClass ?? "CDM",
+        seasonId: String(seasonId),
+      };
+
+      const response = await axios.get(`${this.baseUrl}/calendar/upcoming`, {
+        params,
+      });
+
+      const races = this.extractDownhillRacesFromCalendarPayload(response.data);
+
+      return races.map((race) => ({
+        name: race.name,
+        location: race.venue || "TBD",
+        country: race.country || "TBD",
+        startDate: race.startDate,
+        endDate: race.endDate,
+      }));
+    } catch (error) {
+      console.error("Error fetching UCI MTB calendar upcoming races:", error);
+      throw new Error("Failed to fetch UCI MTB calendar upcoming races");
     }
   }
 
@@ -135,11 +282,11 @@ export class UCIApiService {
   /**
    * Get rider profile image
    */
-  async getRiderProfileImage(riderUrl: string): Promise<string> {
-    try {
-      if (!riderUrl) {
-        return "https://www.uci.org/docs/default-source/imported-images/discipline/discipline-mountain-bike.jpg";
-      }
+	  async getRiderProfileImage(riderUrl: string): Promise<string> {
+	    try {
+	      if (!riderUrl) {
+	        return "";
+	      }
 
       // The URL pattern is like "/rider-details/673156"
       // Extract the rider ID
@@ -160,17 +307,17 @@ export class UCIApiService {
         }
       }
 
-      // If no image found, return a default image
-      return `https://www.uci.org/docs/default-source/imported-images/discipline/discipline-mountain-bike.jpg`;
-    } catch (error) {
+	      // If no image found, return a default image
+	      return "";
+	    } catch (error) {
       console.error(
         `Error fetching rider profile image for ${riderUrl}:`,
         error,
       );
-      // Return a default image on error
-      return `https://www.uci.org/docs/default-source/imported-images/discipline/discipline-mountain-bike.jpg`;
-    }
-  }
+	      // Return a default image on error
+	      return "";
+	    }
+	  }
 
   /**
    * Map UCI race data to our race schema
@@ -304,12 +451,11 @@ export class UCIApiService {
         if (!imageUrl) {
           if (countryCode) {
             imageUrl = `https://flagcdn.com/w320/${countryCode.toLowerCase()}.png`;
-          } else {
-            // Default image if no country code
-            imageUrl =
-              "https://www.uci.org/docs/default-source/imported-images/discipline/discipline-mountain-bike.jpg";
-          }
-        }
+	          } else {
+	            // Default image if no country code
+	            imageUrl = "";
+	          }
+	        }
 
         // Combine given name and family name
         // First trim any whitespace

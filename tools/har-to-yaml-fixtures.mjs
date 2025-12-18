@@ -24,8 +24,8 @@ function isTargetDatarideIframe(entry) {
   try {
     const u = new URL(url);
     return (
-      u.hostname === "dataride.uci.ch" &&
-      u.pathname.startsWith("/iframe/") &&
+    //   u.hostname === "dataride.uci.ch" &&
+    //   u.pathname.startsWith("/iframe/") &&
       isXhrOrFetch(entry)
     );
   } catch {

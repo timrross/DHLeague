@@ -10,4 +10,4 @@ export const RACE_TYPES = {
 } as const;
 
 export const DEFAULT_RIDER_IMAGE =
-  "https://www.uci.org/docs/default-source/imported-images/discipline/discipline-mountain-bike.jpg";
+  "";

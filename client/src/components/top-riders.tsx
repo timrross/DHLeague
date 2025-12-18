@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Rider } from "@shared/schema";
+import { safeImageUrl } from "@/lib/utils";
 
 interface TopRidersProps {
   riders?: Rider[];
@@ -76,7 +77,7 @@ export default function TopRiders({ riders }: TopRidersProps) {
             <Card key={rider.id} className="bg-white rounded-lg shadow-md overflow-hidden">
               <div className="h-40 bg-secondary relative overflow-hidden">
                 <img 
-                  src={rider.image || `https://pixabay.com/get/g3a1af921072d00ed8251d3fe0d9eaeedfb61d355148715a2330a66168baf531a8f01cfc7aac1a2cab21a2271872ba386711d8b1dadd91c9a9928b09f0d99b440_1280.jpg`} 
+                  src={safeImageUrl(rider.image) || `https://pixabay.com/get/g3a1af921072d00ed8251d3fe0d9eaeedfb61d355148715a2330a66168baf531a8f01cfc7aac1a2cab21a2271872ba386711d8b1dadd91c9a9928b09f0d99b440_1280.jpg`} 
                   alt={rider.name} 
                   className="w-full h-full object-cover"
                 />

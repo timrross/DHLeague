@@ -1,0 +1,28 @@
+{
+  "sourceHar": "/Users/tim/Documents/Workspace/dhleague/tools/www.uci-races.har",
+  "createdAt": "2025-12-18T14:20:06.334Z",
+  "totalEntries": 5,
+  "xhrEntries": 5,
+  "fixtures": [
+    {
+      "fileStem": "001-get-assets-1-0-41388-sprite-store-svg-ea3bd127",
+      "url": "https://www.uci.org/assets/1.0.41388/sprite-store.svg"
+    },
+    {
+      "fileStem": "002-get-api-calendar-upcoming-ce4d8f18",
+      "url": "https://www.uci.org/api/calendar/upcoming?discipline=MTB&raceCategory=ME,WE&raceType=DHI&raceClass=CDM&seasonId=100443"
+    },
+    {
+      "fileStem": "003-get-settings-b90c2797",
+      "url": "https://syndication.twitter.com/settings?session_id=c0f456dea8b086c5090a48bd5f71c7be2c09d4b8"
+    },
+    {
+      "fileStem": "004-get-api-calendar-cwc-7db56403",
+      "url": "https://www.uci.org/api/calendar/cwc?discipline=MTB"
+    },
+    {
+      "fileStem": "005-post-g-collect-1150a178",
+      "url": "https://region1.analytics.google.com/g/collect?v=2&tid=G-LKPKTSYSBG&gtm=45je5ca1v887637142z8812678114za20gzb812678114zd812678114&_p=1766067155398&gcs=G111&gcd=13r3r3r3r5l1&npa=0&dma=0&cid=398348456.1765819847&ecid=1117588036&ul=en-gb&sr=2560x1440&ir=1&uaa=arm&uab=64&uafvl=Google%2520Chrome%3B143.0.7499.109%7CChromium%3B143.0.7499.109%7CNot%2520A(Brand%3B24.0.0.0&uamb=0&uam=&uap=macOS&uapv=15.6.1&uaw=0&are=1&frm=0&pscdl=noapi&_eu=EAAAAAQ&_s=1&tag_exp=103116026~103200004~104527907~104528500~104684208~104684211~105391253~115583767~115616986~115938466~115938468~116184927~116184929~116251938~116251940&sid=1766064117&sct=3&seg=1&dl=https%3A%2F%2Fwww.uci.org%2Fcalendar%2Fmtb%2F1voMyukVGR4iZMhMlDfRv0%3Fdiscipline%3DMTB%26raceType%3DDHI%26raceCategory%3DME%252CWE%26seasonId%3D100443%26raceClass%3DCDM&dt=Mountain%20Bike%20calendar%20%7C%20UCI&en=page_view&tfd=5589"
+    }
+  ]
+}

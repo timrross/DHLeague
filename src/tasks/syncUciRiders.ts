@@ -32,8 +32,7 @@ type CachedPayload = {
 };
 
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
-const DEFAULT_IMAGE =
-  "https://www.uci.org/docs/default-source/imported-images/discipline/discipline-mountain-bike.jpg";
+const DEFAULT_IMAGE = "";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -103,7 +102,7 @@ function mapRider(raw: UciRider, gender: "male" | "female"): InsertRider {
     country: raw.NationFullName || raw.Country || raw.CountryIsoCode2 || "",
     points: Number(raw.Points ?? 0),
     rank: raw.Rank ?? raw.Position ?? 0,
-    image: DEFAULT_IMAGE,
+    image: undefined,
   });
 
   const riderId = generateRiderId(parsed.name);
