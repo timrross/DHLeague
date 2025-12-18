@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
@@ -21,7 +21,7 @@ export default function ImportData() {
   // Import data mutation
   const importDataMutation = useMutation({
     mutationFn: async (dataType: string) => {
-      return apiRequest(`/api/admin/import/${dataType}`, {
+      return apiRequest(`/api/admin/import-${dataType}`, {
         method: 'POST'
       });
     },
@@ -54,35 +54,11 @@ export default function ImportData() {
         <CardHeader>
           <CardTitle>Import Data</CardTitle>
           <CardDescription>
-            Import rider and race data from the UCI API.
+            Import race data from the UCI API.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-4">
-            <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
-              <h3 className="text-sm font-medium mb-2">UCI MTB Downhill Riders</h3>
-              <p className="text-sm text-gray-500 mb-4">
-                Import the latest rider data from the UCI Mountain Bike Downhill rankings.
-              </p>
-              <Button
-                onClick={() => handleImportData('riders')}
-                disabled={importDataMutation.isPending}
-                className="w-full"
-              >
-                {importDataMutation.isPending && importDataMutation.variables === 'riders' ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Importing Riders...
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Import UCI Riders
-                  </>
-                )}
-              </Button>
-            </div>
-
             <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
               <h3 className="text-sm font-medium mb-2">UCI MTB Downhill Events</h3>
               <p className="text-sm text-gray-500 mb-4">
