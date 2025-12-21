@@ -10,7 +10,7 @@ import { syncRidersFromRankings } from "../../src/integrations/uciDataride/syncR
 /**
  * Get all users (admin only)
  */
-export async function getAllUsers(req: Request, res: Response) {
+export async function getAllUsers(_req: Request, res: Response) {
   try {
     const users = await storage.getAllUsers();
     res.json(users);
@@ -73,7 +73,7 @@ export async function deleteUser(req: Request, res: Response) {
 /**
  * Get users with their teams (admin only)
  */
-export async function getUsersWithTeams(req: Request, res: Response) {
+export async function getUsersWithTeams(_req: Request, res: Response) {
   try {
     const usersWithTeams = await storage.getUsersWithTeams();
     res.json(usersWithTeams);
@@ -162,7 +162,7 @@ export async function importRidersFromUci(req: Request, res: Response) {
 /**
  * Import races from UCI API (admin only)
  */
-export async function importRacesFromUci(req: Request, res: Response) {
+export async function importRacesFromUci(_req: Request, res: Response) {
   try {
     // Get upcoming races from UCI calendar API (Downhill only)
     const mappedRaces = await uciApiService.getUpcomingMTBDownhillRaces();
@@ -294,7 +294,7 @@ export async function bulkUpsertRaces(req: Request, res: Response) {
 /**
  * Clear all riders (admin only)
  */
-export async function clearAllRiders(req: Request, res: Response) {
+export async function clearAllRiders(_req: Request, res: Response) {
   try {
     const { total } = await storage.getRidersFiltered({}, { limit: 1, offset: 0 });
     await storage.deleteAllRiders();

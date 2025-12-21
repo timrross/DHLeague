@@ -186,11 +186,10 @@ export async function runMigrations() {
       console.log('swaps_remaining column already exists, skipping migration.');
     }
     
-    // Add unique constraints to team name and one team per user
+    // Add unique constraint to team name and align uniqueness with team types
     try {
       console.log('Adding unique constraints to teams table...');
       
-      // Check if unique constraints already exist
       const checkUniqueNameConstraint = await db.execute(sql`
         SELECT constraint_name
         FROM information_schema.table_constraints
@@ -200,7 +199,6 @@ export async function runMigrations() {
       `);
       
       if (checkUniqueNameConstraint.rows.length === 0) {
-        // Add unique constraint to team name
         await db.execute(sql`
           ALTER TABLE teams
           ADD CONSTRAINT unique_team_name UNIQUE (name)
@@ -209,24 +207,42 @@ export async function runMigrations() {
       } else {
         console.log('Unique constraint for team name already exists.');
       }
-      
-      const checkUniqueUserConstraint = await db.execute(sql`
-        SELECT constraint_name
-        FROM information_schema.table_constraints
-        WHERE table_name = 'teams' 
-        AND constraint_type = 'UNIQUE'
-        AND constraint_name = 'unique_user_id'
+
+      const checkTeamTypeColumn = await db.execute(sql`
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = 'teams' AND column_name = 'team_type'
       `);
-      
-      if (checkUniqueUserConstraint.rows.length === 0) {
-        // Add unique constraint to user_id (one team per user)
+
+      if (checkTeamTypeColumn.rows.length === 0) {
+        console.log('Adding team_type column to teams table...');
         await db.execute(sql`
           ALTER TABLE teams
-          ADD CONSTRAINT unique_user_id UNIQUE (user_id)
+          ADD COLUMN team_type TEXT DEFAULT 'elite'
         `);
-        console.log('Unique constraint for one team per user added successfully.');
+      }
+
+      await db.execute(sql`UPDATE teams SET team_type = 'elite' WHERE team_type IS NULL`);
+      await db.execute(sql`ALTER TABLE teams ALTER COLUMN team_type SET DEFAULT 'elite'`);
+      await db.execute(sql`ALTER TABLE teams ALTER COLUMN team_type SET NOT NULL`);
+
+      await db.execute(sql`ALTER TABLE teams DROP CONSTRAINT IF EXISTS unique_user_id`);
+      await db.execute(sql`ALTER TABLE teams DROP CONSTRAINT IF EXISTS teams_user_id_key`);
+
+      const checkCompositeIndex = await db.execute(sql`
+        SELECT 1
+        FROM pg_indexes
+        WHERE tablename = 'teams'
+        AND indexname = 'idx_teams_user_type'
+      `);
+
+      if (checkCompositeIndex.rows.length === 0) {
+        console.log('Adding unique composite index for teams (user_id, team_type)...');
+        await db.execute(sql`
+          CREATE UNIQUE INDEX idx_teams_user_type ON teams(user_id, team_type)
+        `);
       } else {
-        console.log('Unique constraint for one team per user already exists.');
+        console.log('Composite user/team_type index already exists.');
       }
     } catch (error) {
       console.error('Error adding unique constraints:', error);

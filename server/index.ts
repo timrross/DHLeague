@@ -5,13 +5,12 @@ import { setupAuth } from "./auth";
 import { ensureDatabaseSchema } from "./setupDatabase";
 import path from "path";
 import fs from "fs";
-//import { runMigrations } from "./migrations";
 
 const app = express();
 const isDevEnv = process.env.NODE_ENV?.toLowerCase() === "development";
 app.disable("x-powered-by");
 // Special route for ads.txt - add before other middleware
-app.get('/ads.txt', (req, res) => {
+app.get('/ads.txt', (_req, res) => {
   const adsPath = path.join(process.cwd(), 'public', 'ads.txt');
   if (fs.existsSync(adsPath)) {
     res.setHeader('Content-Type', 'text/plain');
@@ -27,7 +26,6 @@ app.use(express.urlencoded({ extended: true }));
 
 (async () => {
   // Run database migrations first
-  //await runMigrations();
   await ensureDatabaseSchema();
   setupAuth(app);
 

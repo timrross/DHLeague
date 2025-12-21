@@ -23,6 +23,9 @@ const schemaStatements = [
   `CREATE TABLE IF NOT EXISTS riders (
     id SERIAL PRIMARY KEY,
     rider_id TEXT NOT NULL UNIQUE,
+    uci_id TEXT NOT NULL UNIQUE,
+    dataride_object_id TEXT,
+    dataride_team_code TEXT,
     name TEXT NOT NULL,
     first_name TEXT,
     last_name TEXT,
@@ -40,7 +43,6 @@ const schemaStatements = [
   `ALTER TABLE riders ADD COLUMN IF NOT EXISTS uci_id TEXT`,
   `ALTER TABLE riders ADD COLUMN IF NOT EXISTS dataride_object_id TEXT`,
   `ALTER TABLE riders ADD COLUMN IF NOT EXISTS dataride_team_code TEXT`,
-  `ALTER TABLE riders ADD COLUMN IF NOT EXISTS category TEXT`,
   `UPDATE riders SET uci_id = rider_id WHERE uci_id IS NULL`,
   `ALTER TABLE riders ALTER COLUMN uci_id SET NOT NULL`,
   `UPDATE riders SET category = 'elite' WHERE category IS NULL`,
@@ -71,6 +73,7 @@ const schemaStatements = [
     locked_at TIMESTAMPTZ
   )`,
   `ALTER TABLE teams DROP CONSTRAINT IF EXISTS teams_user_id_key`,
+  `ALTER TABLE teams DROP CONSTRAINT IF EXISTS unique_user_id`,
   `ALTER TABLE teams ADD COLUMN IF NOT EXISTS team_type TEXT`,
   `UPDATE teams SET team_type = 'elite' WHERE team_type IS NULL`,
   `ALTER TABLE teams ALTER COLUMN team_type SET NOT NULL`,
