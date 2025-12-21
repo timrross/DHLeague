@@ -792,19 +792,27 @@ export class DatabaseStorage implements IStorage {
   
   // Result operations
   async getResults(raceId: number): Promise<(Result & { rider: Rider })[]> {
-    const raceResults = await db.select().from(results).where(eq(results.raceId, raceId));
-    
-    const resultsWithRiders = await Promise.all(
-      raceResults.map(async (result) => {
-        const rider = await this.getRider(result.riderId);
-        return {
-          ...result,
-          rider: rider as Rider
-        };
+    const raceResults = await db
+      .select({
+        result: results,
+        rider: riders
       })
-    );
-    
-    return resultsWithRiders;
+      .from(results)
+      .leftJoin(riders, eq(results.riderId, riders.id))
+      .where(eq(results.raceId, raceId));
+
+    const missingRiders = raceResults.filter(({ rider }) => !rider);
+    if (missingRiders.length > 0) {
+      const missingRiderIds = missingRiders.map(({ result }) => result.riderId).join(", ");
+      console.warn(`Missing rider records for race ${raceId}: [${missingRiderIds}]`);
+    }
+
+    return raceResults
+      .filter(({ rider }) => rider)
+      .map(({ result, rider }) => ({
+        ...result,
+        rider: rider as Rider
+      }));
   }
 
   async addResult(result: InsertResult): Promise<Result> {
