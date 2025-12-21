@@ -5,7 +5,6 @@ import { setupAuth } from "./auth";
 import { ensureDatabaseSchema } from "./setupDatabase";
 import path from "path";
 import fs from "fs";
-//import { runMigrations } from "./migrations";
 
 const app = express();
 const isDevEnv = process.env.NODE_ENV?.toLowerCase() === "development";
@@ -27,7 +26,6 @@ app.use(express.urlencoded({ extended: true }));
 
 (async () => {
   // Run database migrations first
-  //await runMigrations();
   await ensureDatabaseSchema();
   setupAuth(app);
 
