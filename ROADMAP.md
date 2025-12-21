@@ -38,6 +38,21 @@ This roadmap captures the minimum deliverable for the project in a Codex-friendl
    - Surface user feedback via toasts for saves/errors and keep Home hero links to Team Builder/Rules prominent.
    - Monitor cross-service health (timeouts/availability) and degrade gracefully if either service is unavailable.
 
+9. [ ] **Harden admin access control**
+   - Remove the header-based admin override, derive admin roles from identity provider claims or stored user flags, and add tests that cover admin-only routes.
+
+10. [ ] **Deterministic, efficient leaderboard**
+    - Replace random placeholder values, compute last-round points from recent results, and eliminate N+1 queries by batching team/user hydration.
+
+11. [ ] **Result retrieval without N+1 queries**
+    - Join rider data when fetching race results to return atomic rows and handle missing riders explicitly.
+
+12. [ ] **Unified schema management**
+    - Choose a single migration path (Drizzle migrations or the runtime schema creation), delete redundant DDL, and align unique constraints with the `(user_id, team_type)` model.
+
+13. [ ] **Dead code and import hygiene**
+    - Remove unused imports (e.g., `generateRiderId` in storage) and run static analysis to catch drift in data-layer modules.
+
 ## Release Criteria for the Minimum Deliverable
 
 - Users can create a team, view upcoming races, and see a leaderboard after at least one race is scored.  
