@@ -21,7 +21,8 @@ import {
   type InsertUser
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, asc, desc, sql, gte, lte, ilike, or } from "drizzle-orm";
+import { eq, and, asc, desc, sql, gte, lte, ilike, or, inArray } from "drizzle-orm";
+
 
 export type RiderFilters = {
   gender?: string;
@@ -122,6 +123,37 @@ export interface IStorage {
   updateUser(id: string, userData: Partial<User>): Promise<User | undefined>;
   deleteUser(id: string): Promise<boolean>;
   getUsersWithTeams(): Promise<(User & { team?: TeamWithRiders })[]>;
+}
+
+export function buildLeaderboardEntries(
+  teamsWithUsers: { team: TeamWithRiders; user: User }[],
+  latestRacePoints: Map<number, number> = new Map()
+): LeaderboardEntry[] {
+  const sortedTeams = [...teamsWithUsers].sort((a, b) => {
+    const pointsA = a.team.totalPoints ?? 0;
+    const pointsB = b.team.totalPoints ?? 0;
+
+    if (pointsA !== pointsB) {
+      return pointsB - pointsA;
+    }
+
+    return a.team.name.localeCompare(b.team.name);
+  });
+
+  return sortedTeams.map(({ team, user }, index) => {
+    const lastRoundPoints = team.riders.reduce(
+      (sum, rider) => sum + (latestRacePoints.get(rider.id) ?? 0),
+      0
+    );
+
+    return {
+      rank: index + 1,
+      team,
+      user,
+      lastRoundPoints,
+      totalPoints: team.totalPoints ?? 0
+    };
+  });
 }
 
 export class DatabaseStorage implements IStorage {
@@ -844,37 +876,78 @@ export class DatabaseStorage implements IStorage {
   
   // Leaderboard operations
   async getLeaderboard(): Promise<LeaderboardEntry[]> {
-    // Get all teams with their total points
-    const allTeams = await db
-      .select()
+    const teamRows = await db
+      .select({
+        team: teams,
+        user: users
+      })
       .from(teams)
+      .innerJoin(users, eq(users.id, teams.userId))
       .where(eq(teams.teamType, "elite"))
-      .orderBy(desc(teams.totalPoints));
-    
-    // Build leaderboard
-    const leaderboard: LeaderboardEntry[] = [];
-    
-    for (let i = 0; i < allTeams.length; i++) {
-      const team = allTeams[i];
-      const teamWithRiders = await this.getTeamWithRiders(team.id);
-      if (!teamWithRiders) continue;
-      
-      const user = await this.getUser(team.userId);
-      if (!user) continue;
-      
-      // For demonstration purposes, use a random value for lastRoundPoints
-      const lastRoundPoints = Math.floor(Math.random() * 100);
-      
-      leaderboard.push({
-        rank: i + 1,
-        team: teamWithRiders,
-        user,
-        lastRoundPoints,
-        totalPoints: team.totalPoints || 0
-      });
+      .orderBy(desc(teams.totalPoints), asc(teams.name));
+
+    if (teamRows.length === 0) {
+      return [];
     }
-    
-    return leaderboard;
+
+    const teamIds = teamRows.map(({ team }) => team.id);
+
+    const teamRiderRows = await db
+      .select({
+        teamId: teamRiders.teamId,
+        rider: riders
+      })
+      .from(teamRiders)
+      .innerJoin(riders, eq(teamRiders.riderId, riders.id))
+      .where(inArray(teamRiders.teamId, teamIds));
+
+    const ridersByTeam = new Map<number, Rider[]>();
+    for (const row of teamRiderRows) {
+      const riderList = ridersByTeam.get(row.teamId) ?? [];
+      riderList.push(row.rider);
+      ridersByTeam.set(row.teamId, riderList);
+    }
+
+    const latestRace = await db
+      .select({
+        raceId: results.raceId,
+        endDate: races.endDate,
+        startDate: races.startDate
+      })
+      .from(results)
+      .innerJoin(races, eq(results.raceId, races.id))
+      .orderBy(desc(races.endDate), desc(races.startDate), desc(results.raceId))
+      .limit(1);
+
+    let latestRacePoints = new Map<number, number>();
+
+    if (latestRace[0]?.raceId) {
+      const racePoints = await db
+        .select({
+          riderId: results.riderId,
+          points: results.points
+        })
+        .from(results)
+        .where(eq(results.raceId, latestRace[0].raceId));
+
+      latestRacePoints = new Map(racePoints.map((row) => [row.riderId, row.points]));
+    }
+
+    const teamsWithUsers = teamRows.map(({ team, user }) => {
+      const teamRidersList = ridersByTeam.get(team.id) ?? [];
+      const totalCost = teamRidersList.reduce((sum, rider) => sum + rider.cost, 0);
+
+      return {
+        team: {
+          ...team,
+          riders: teamRidersList,
+          totalCost
+        } as TeamWithRiders,
+        user
+      };
+    });
+
+    return buildLeaderboardEntries(teamsWithUsers, latestRacePoints);
   }
 }
 
