@@ -16,7 +16,7 @@ import TeamSummary from "@/components/team-summary";
 import CountdownTimer from "@/components/countdown-timer";
 import JokerCardDialog from "@/components/joker-card-dialog";
 import JokerCardButton from "@/components/joker-card-button";
-import { Search, AlertTriangle, Info, RefreshCw } from "lucide-react";
+import { Search, AlertTriangle, Info, RefreshCw, ArrowUpDown } from "lucide-react";
 import { useRacesQuery, useRidersQueryWithParams } from "@/services/riderDataApi";
 import { formatRiderDisplayName } from "@shared/utils";
 import { formatRaceDateRange } from "@/components/race-label";
@@ -34,6 +34,7 @@ export default function TeamBuilder() {
   const [swapRiderData, setSwapRiderData] = useState<Rider | null>(null);
   const [showJokerDialog, setShowJokerDialog] = useState(false);
   const [jokerCardUsed, setJokerCardUsed] = useState(false);
+  const [sortBy, setSortBy] = useState<"rank" | "name" | "cost">("rank");
 
   // Fetch all races
   const { data: races, isLoading: racesLoading } = useRacesQuery();
@@ -187,6 +188,32 @@ export default function TeamBuilder() {
                          rider.team.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesTab = selectedTab === "all" || rider.gender === selectedTab;
     return matchesSearch && matchesTab;
+  });
+
+  const sortedRiders = [...filteredRiders].sort((a, b) => {
+    if (sortBy === "name") {
+      const aLast = a.lastName?.toLowerCase() || a.name.split(" ").pop()?.toLowerCase() || "";
+      const bLast = b.lastName?.toLowerCase() || b.name.split(" ").pop()?.toLowerCase() || "";
+      if (aLast !== bLast) return aLast.localeCompare(bLast);
+      const aFirst = a.firstName?.toLowerCase() || a.name.split(" ").slice(0, -1).join(" ").toLowerCase();
+      const bFirst = b.firstName?.toLowerCase() || b.name.split(" ").slice(0, -1).join(" ").toLowerCase();
+      return aFirst.localeCompare(bFirst);
+    }
+
+    if (sortBy === "cost") {
+      return b.cost - a.cost;
+    }
+
+    const aRank =
+      typeof a.lastYearStanding === "number" && a.lastYearStanding > 0
+        ? a.lastYearStanding
+        : Number.POSITIVE_INFINITY;
+    const bRank =
+      typeof b.lastYearStanding === "number" && b.lastYearStanding > 0
+        ? b.lastYearStanding
+        : Number.POSITIVE_INFINITY;
+    if (aRank !== bRank) return aRank - bRank;
+    return b.points - a.points;
   });
 
   // Handle rider selection/deselection
@@ -555,6 +582,28 @@ export default function TeamBuilder() {
           <TabsTrigger value="female" className="flex-1">Women</TabsTrigger>
         </TabsList>
       </Tabs>
+
+      <div className="flex items-center justify-between mb-3 text-sm text-gray-700">
+        <span className="flex items-center gap-2 font-medium">
+          <ArrowUpDown className="h-4 w-4" /> Sort by
+        </span>
+        <div className="flex gap-2">
+          {[
+            { value: "rank" as const, label: "Rank" },
+            { value: "name" as const, label: "Name (LASTNAME Firstname)" },
+            { value: "cost" as const, label: "Price" },
+          ].map((option) => (
+            <Button
+              key={option.value}
+              variant={sortBy === option.value ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSortBy(option.value)}
+            >
+              {option.label}
+            </Button>
+          ))}
+        </div>
+      </div>
       
       {/* Riders list */}
       {ridersLoading ? (
@@ -569,7 +618,7 @@ export default function TeamBuilder() {
               <p className="text-gray-500">No riders found</p>
             </div>
           ) : (
-            filteredRiders.map((rider: Rider) => (
+            sortedRiders.map((rider: Rider) => (
               <RiderCard
                 key={rider.id}
                 rider={rider}
