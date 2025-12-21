@@ -50,54 +50,49 @@ export class RankingUciApiService {
    * @returns Array of rider updates that can be applied to the database
    */
   async getRiderUpdates(existingRiders: Map<string, Rider>): Promise<RiderUpdate[]> {
-    try {
-      // Fetch male riders (CategoryId=22)
-      const maleRiders = await this.fetchUCIRankings("22");
+    // Fetch male riders (CategoryId=22)
+    const maleRiders = await this.fetchUCIRankings("22");
+    
+    // Fetch female riders (CategoryId=23)
+    const femaleRiders = await this.fetchUCIRankings("23");
+
+    const updates: RiderUpdate[] = [];
+
+    // Process male riders
+    for (const rider of maleRiders.data) {
+      const normalizedName = generateRiderId(rider.IndividualFullName);
+      const existingRider = existingRiders.get(normalizedName);
       
-      // Fetch female riders (CategoryId=23)
-      const femaleRiders = await this.fetchUCIRankings("23");
-
-      const updates: RiderUpdate[] = [];
-
-      // Process male riders
-      for (const rider of maleRiders.data) {
-        const normalizedName = generateRiderId(rider.IndividualFullName);
-        const existingRider = existingRiders.get(normalizedName);
-        
-        if (existingRider) {
-          updates.push({
-            id: existingRider.id,
-            gender: 'male',
-            team: rider.TeamName,
-            country: rider.NationFullName,
-            points: Math.round(rider.Points),
-            lastYearStanding: rider.Rank
-          });
-        }
+      if (existingRider) {
+        updates.push({
+          id: existingRider.id,
+          gender: 'male',
+          team: rider.TeamName,
+          country: rider.NationFullName,
+          points: Math.round(rider.Points),
+          lastYearStanding: rider.Rank
+        });
       }
-
-      // Process female riders
-      for (const rider of femaleRiders.data) {
-        const normalizedName = generateRiderId(rider.IndividualFullName);
-        const existingRider = existingRiders.get(normalizedName);
-        
-        if (existingRider) {
-          updates.push({
-            id: existingRider.id,
-            gender: 'female',
-            team: rider.TeamName,
-            country: rider.NationFullName,
-            points: Math.round(rider.Points),
-            lastYearStanding: rider.Rank
-          });
-        }
-      }
-
-      return updates;
-    } catch (error) {
-      console.error('Error fetching rider updates:', error);
-      throw error;
     }
+
+    // Process female riders
+    for (const rider of femaleRiders.data) {
+      const normalizedName = generateRiderId(rider.IndividualFullName);
+      const existingRider = existingRiders.get(normalizedName);
+      
+      if (existingRider) {
+        updates.push({
+          id: existingRider.id,
+          gender: 'female',
+          team: rider.TeamName,
+          country: rider.NationFullName,
+          points: Math.round(rider.Points),
+          lastYearStanding: rider.Rank
+        });
+      }
+    }
+
+    return updates;
   }
 }
 
