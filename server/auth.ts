@@ -2,7 +2,6 @@ import expressOpenIdConnect from "express-openid-connect";
 import type { ConfigParams } from "express-openid-connect";
 const { auth, requiresAuth } = expressOpenIdConnect;
 import type { Express, Request, Response } from "express";
-import { storage } from "./storage";
 
 function requireEnv(name: string, value?: string) {
   if (!value) {

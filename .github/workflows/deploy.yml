@@ -28,6 +28,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Lint data layer for unused code
+        run: npm run lint:data
+
       - name: Build client and server bundles
         run: npm run build
 

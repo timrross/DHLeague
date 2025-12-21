@@ -22,20 +22,6 @@ interface UCIRaceEvent {
   };
 }
 
-interface UCIRider {
-  id: string;
-  firstName: string;
-  lastName: string;
-  gender: string;
-  teamName: string;
-  nationality: {
-    name: string;
-    code: string;
-  };
-  ranking: number;
-  points: number;
-}
-
 type UciCalendarDetailsLink = {
   title?: string;
   url?: string;
@@ -290,8 +276,6 @@ export class UCIApiService {
 
       // The URL pattern is like "/rider-details/673156"
       // Extract the rider ID
-      const riderId = riderUrl.split("/").pop();
-
       // Try to get the rider detail page
       const response = await axios.get(`https://www.uci.org${riderUrl}`);
 
