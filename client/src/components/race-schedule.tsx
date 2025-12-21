@@ -19,10 +19,12 @@ export default function RaceSchedule({ races }: RaceScheduleProps) {
           <thead className="bg-secondary text-white">
             <tr>
               <th className="py-3 px-4 text-left font-heading font-bold">#</th>
-              <th className="py-3 px-4 text-left font-heading font-bold">LOCATION</th>
-              <th className="py-3 px-4 text-left font-heading font-bold">COUNTRY</th>
-              <th className="py-3 px-4 text-left font-heading font-bold">DATES</th>
-              <th className="py-3 px-4 text-left font-heading font-bold">STATUS</th>
+              <th className="py-3 px-4 text-left font-heading font-bold">
+                RACE
+              </th>
+              <th className="py-3 px-4 text-left font-heading font-bold">
+                STATUS
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -32,7 +34,7 @@ export default function RaceSchedule({ races }: RaceScheduleProps) {
 
             {races.length === 0 && (
               <tr>
-                <td colSpan={5} className="py-8 text-center text-gray-500">
+                <td colSpan={3} className="py-8 text-center text-gray-500">
                   No races scheduled at the moment. Check back later.
                 </td>
               </tr>

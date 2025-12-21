@@ -6,6 +6,7 @@ import { RefreshCw } from "lucide-react";
 import CountdownTimer from "@/components/countdown-timer";
 import TeamSummary from "@/components/team-summary";
 import JokerCardButton from "@/components/joker-card-button";
+import { formatRaceDateRange } from "@/components/race-label";
 
 interface TeamActionsProps {
   isAuthenticated: boolean;
@@ -63,7 +64,18 @@ export default function TeamActions({
         <div className="mb-5">
           <CountdownTimer 
             targetDate={lockDate} 
-            title={`${nextRace.name} (${new Date(nextRace.startDate).toLocaleDateString()})`}
+            title={
+              <>
+                <span className="font-heading font-bold">
+                  <span className="uppercase">{nextRace.location}</span>,{" "}
+                  <span className="uppercase">{nextRace.country}</span>
+                </span>
+                <span className="ml-2 text-xs opacity-80">
+                  {formatRaceDateRange(nextRace.startDate, nextRace.endDate)}
+                </span>
+              </>
+            }
+            subtitle={nextRace.name}
             showLockStatus
           />
         </div>

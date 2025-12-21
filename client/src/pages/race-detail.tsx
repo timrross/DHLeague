@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Race } from "@shared/schema";
 import { useRaceQuery, useRaceResultsQuery } from "@/services/riderDataApi";
 import { formatRiderDisplayName } from "@shared/utils";
+import RaceLabel from "@/components/race-label";
 
 interface RaceDetailProps {
   id: number;
@@ -90,8 +91,12 @@ export default function RaceDetail({ id }: RaceDetailProps) {
                   <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div>
                       <p className="text-sm text-gray-500 uppercase">UCI Downhill World Cup</p>
-                      <CardTitle className="text-3xl font-heading text-secondary">{race.name}</CardTitle>
-                      <p className="text-gray-600">{race.location}, {race.country}</p>
+                      <RaceLabel
+                        race={race}
+                        titleClassName="text-3xl text-secondary"
+                        dateClassName="text-sm opacity-70 text-secondary"
+                        subtitleClassName="text-sm opacity-80 text-gray-600"
+                      />
                     </div>
                     <StatusBadge status={race.status} />
                   </CardHeader>

@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { Race } from "@shared/schema";
+import RaceLabel from "@/components/race-label";
 
 interface RaceCardProps {
   race: Race;
@@ -8,15 +9,6 @@ interface RaceCardProps {
 }
 
 export default function RaceCard({ race, index }: RaceCardProps) {
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      month: 'long', 
-      day: 'numeric', 
-      year: 'numeric'
-    });
-  };
-
   // Determine status class
   const getStatusClass = (status: Race["status"] | undefined) => {
     switch (status) {
@@ -50,14 +42,12 @@ export default function RaceCard({ race, index }: RaceCardProps) {
   return (
     <tr className="border-b border-gray-200 hover:bg-gray-50 transition">
       <td className="py-3 px-4 font-accent font-bold text-gray-700">{index + 1}</td>
-      <td className="py-3 px-4 font-heading font-semibold text-secondary">
+      <td className="py-3 px-4 text-secondary">
         <Link href={`/races/${race.id}`}>
-          <div className="hover:text-primary transition cursor-pointer">{race.name}</div>
+          <div className="hover:text-primary transition cursor-pointer">
+            <RaceLabel race={race} />
+          </div>
         </Link>
-      </td>
-      <td className="py-3 px-4 text-gray-700">{race.country}</td>
-      <td className="py-3 px-4 font-accent text-gray-700">
-        {formatDate(race.startDate.toString())} - {formatDate(race.endDate.toString())}
       </td>
       <td className="py-3 px-4">
         <Badge className={`inline-block text-xs px-2 py-1 rounded-full font-semibold ${getStatusClass(raceStatus)}`}>

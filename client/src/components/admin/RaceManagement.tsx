@@ -4,6 +4,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Race } from "@shared/schema";
 import RaceForm from "./RaceForm";
+import RaceLabel from "@/components/race-label";
 
 import {
   Card,
@@ -204,9 +205,7 @@ export default function RaceManagement() {
               <TableCaption>List of all races</TableCaption>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Dates</TableHead>
+                  <TableHead>Race</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -216,7 +215,7 @@ export default function RaceManagement() {
                   <React.Fragment key={race.id}>
                     {inlineEditRaceId === race.id ? (
                       <TableRow>
-                        <TableCell colSpan={5}>
+                        <TableCell colSpan={3}>
                           <RaceForm
                             initialData={{
                               id: race.id,
@@ -239,14 +238,7 @@ export default function RaceManagement() {
                     ) : (
                       <TableRow>
                         <TableCell className="font-medium">
-                          {race.name}
-                        </TableCell>
-                        <TableCell>
-                          {race.location}, {race.country}
-                        </TableCell>
-                        <TableCell>
-                          {formatDate(race.startDate)} to{" "}
-                          {formatDate(race.endDate)}
+                          <RaceLabel race={race} />
                         </TableCell>
                         <TableCell>
                           <span

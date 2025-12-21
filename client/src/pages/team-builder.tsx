@@ -19,6 +19,7 @@ import JokerCardButton from "@/components/joker-card-button";
 import { Search, AlertTriangle, Info, RefreshCw } from "lucide-react";
 import { useRacesQuery, useRidersQueryWithParams } from "@/services/riderDataApi";
 import { formatRiderDisplayName } from "@shared/utils";
+import { formatRaceDateRange } from "@/components/race-label";
 
 export default function TeamBuilder() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -442,10 +443,18 @@ export default function TeamBuilder() {
         <div className="mb-5">
           <CountdownTimer 
             targetDate={lockDate} 
-            title={`${nextRace.name} (${new Date(nextRace.startDate).toLocaleDateString()})`}
-            subtitle={[nextRace.location, nextRace.country?.toUpperCase?.() ?? nextRace.country]
-              .filter(Boolean)
-              .join(", ")}
+            title={
+              <>
+                <span className="font-heading uppercase font-bold">
+                  {nextRace.location},{" "}
+                  <span className="uppercase">{nextRace.country}</span>
+                </span>
+                <span className="ml-2 text-xs opacity-80">
+                  {formatRaceDateRange(nextRace.startDate, nextRace.endDate)}
+                </span>
+              </>
+            }
+            subtitle={nextRace.name}
             showLockStatus
           />
         </div>

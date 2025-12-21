@@ -6,6 +6,7 @@ import { LeaderboardAd } from "@/components/ui/google-ad";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useRacesQuery, useRidersQuery } from "@/services/riderDataApi";
 import { Rider } from "@shared/schema";
+import RaceLabel from "@/components/race-label";
 
 export default function Home() {
   const { data: races, isLoading: racesLoading, isError: racesError, error: racesErrorDetail } = useRacesQuery();
@@ -75,12 +76,13 @@ export default function Home() {
             <div className="flex flex-col md:flex-row justify-between items-center">
               <div>
                 <h3 className="font-heading font-bold text-lg md:text-xl">NEXT RACE:</h3>
-                <p className="font-accent font-semibold">
-                  {nextRace.name.toUpperCase()} - {new Date(nextRace.startDate).toLocaleDateString()} to {new Date(nextRace.endDate).toLocaleDateString()}
-                </p>
-                <p className="text-xs text-white/80">
-                  {nextRace.location}, {nextRace.country.toUpperCase()}
-                </p>
+                <RaceLabel
+                  race={nextRace}
+                  className="mt-1"
+                  titleClassName="text-base md:text-lg"
+                  dateClassName="text-xs"
+                  subtitleClassName="text-xs"
+                />
               </div>
               <CountdownTimer targetDate={new Date(nextRace.startDate)} />
               <Link href={`/races/${nextRace.id}`}>

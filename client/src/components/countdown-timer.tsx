@@ -4,7 +4,7 @@ import { Lock, Unlock } from "lucide-react";
 
 interface CountdownTimerProps {
   targetDate: Date;
-  title?: string;
+  title?: ReactNode;
   subtitle?: ReactNode;
   showLockStatus?: boolean;
 }

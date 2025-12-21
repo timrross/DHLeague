@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Race, Rider, Result } from '@shared/schema';
 import { formatRiderDisplayName } from '@shared/utils';
 import { getInitials, safeImageUrl } from '@/lib/utils';
+import RaceLabel from '@/components/race-label';
 
 import {
   Card,
@@ -214,13 +215,13 @@ export default function ResultManagement() {
                 <div className="space-y-2">
                   <Label htmlFor="race">Select Race*</Label>
                   <Select value={selectedRace} onValueChange={setSelectedRace}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-auto py-3 items-start [&>span]:line-clamp-none">
                       <SelectValue placeholder="Select a race" />
                     </SelectTrigger>
                     <SelectContent>
                       {races.map((race: any) => (
                         <SelectItem key={race.id} value={race.id.toString()}>
-                          {race.name} ({race.location})
+                          <RaceLabel race={race} />
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -326,7 +327,14 @@ export default function ResultManagement() {
             {/* Results Table */}
             {selectedRaceDetails && (
               <div className="mt-8">
-                <h3 className="text-lg font-semibold mb-4">Results for {selectedRaceDetails.name}</h3>
+                <div className="mb-4">
+                  <RaceLabel
+                    race={selectedRaceDetails}
+                    titleClassName="text-lg"
+                    dateClassName="text-sm opacity-70"
+                    subtitleClassName="text-sm opacity-80"
+                  />
+                </div>
                 
                 {isLoadingResults ? (
                   <div className="flex justify-center items-center py-8">
