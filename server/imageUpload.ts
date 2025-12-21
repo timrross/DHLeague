@@ -14,7 +14,7 @@ if (!fs.existsSync(uploadDir)) {
 
 // Configure storage
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
+  destination: function (_req, _file, cb) {
     cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
@@ -45,7 +45,7 @@ export const upload = multer({
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB limit
   },
-  fileFilter: (req, file, cb) => {
+  fileFilter: (_req, file, cb) => {
     // Accept images only
     if (!file.originalname.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
       // @ts-ignore - multer typings are not accurate
@@ -56,7 +56,7 @@ export const upload = multer({
 });
 
 // Process uploaded image
-export const processImage = async (req: Request, res: Response, next: NextFunction) => {
+export const processImage = async (req: Request, _res: Response, next: NextFunction) => {
   try {
     // If no file was uploaded, continue to next middleware
     if (!req.file) {
@@ -101,7 +101,7 @@ export const processImage = async (req: Request, res: Response, next: NextFuncti
 };
 
 // Download image from URL
-export const downloadImage = async (req: Request, res: Response, next: NextFunction) => {
+export const downloadImage = async (req: Request, _res: Response, next: NextFunction) => {
   try {
     // If no imageUrl in request or file already uploaded, skip
     if (!req.body.imageUrl || req.file) {
@@ -166,7 +166,7 @@ export const downloadImage = async (req: Request, res: Response, next: NextFunct
       originalname: finalFilename || path.basename(imageUrl),
     } as Express.Multer.File;
     
-    await processImage(req, res, next);
+    await processImage(req, _res, next);
   } catch (error) {
     log(`Error downloading image: ${error}`, 'error');
     next(error);

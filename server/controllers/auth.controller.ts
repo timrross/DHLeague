@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import { storage } from "../storage";
 
 async function syncUserRecord(req: any) {

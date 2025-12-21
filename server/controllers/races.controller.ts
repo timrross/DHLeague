@@ -4,7 +4,7 @@ import { storage } from "../storage";
 /**
  * Get all races
  */
-export async function getAllRaces(req: Request, res: Response) {
+export async function getAllRaces(_req: Request, res: Response) {
   try {
     const { races } = await storage.getRaceStatusBuckets();
     res.json(races);

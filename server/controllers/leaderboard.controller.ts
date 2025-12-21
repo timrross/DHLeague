@@ -4,7 +4,7 @@ import { storage } from "../storage";
 /**
  * Get the leaderboard data
  */
-export async function getLeaderboard(req: Request, res: Response) {
+export async function getLeaderboard(_req: Request, res: Response) {
   try {
     const leaderboard = await storage.getLeaderboard();
     res.json(leaderboard);

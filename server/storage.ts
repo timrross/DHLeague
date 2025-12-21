@@ -8,8 +8,6 @@ import {
   type Team,
   type InsertTeam,
   teamRiders,
-  type TeamRider,
-  type InsertTeamRider,
   races,
   type Race,
   type InsertRace,
@@ -20,13 +18,10 @@ import {
   type RaceWithResults,
   type LeaderboardEntry,
   teamSwaps,
-  type TeamSwap,
-  type InsertTeamSwap,
   type InsertUser
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, asc, desc, sql, gte, lte, ilike, or } from "drizzle-orm";
-import { generateRiderId } from "@shared/utils";
 
 export type RiderFilters = {
   gender?: string;
