@@ -20,6 +20,13 @@ import { Search, AlertTriangle, Info, RefreshCw, ArrowUpDown } from "lucide-reac
 import { useRacesQuery, useRidersQueryWithParams } from "@/services/riderDataApi";
 import { formatRiderDisplayName } from "@shared/utils";
 import { formatRaceDateRange } from "@/components/race-label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function TeamBuilder() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -575,7 +582,11 @@ export default function TeamBuilder() {
       </div>
       
       {/* Tabs for filtering */}
-      <Tabs defaultValue="all" className="mb-4" onValueChange={setSelectedTab}>
+      <Tabs
+        value={selectedTab}
+        className="mb-4"
+        onValueChange={setSelectedTab}
+      >
         <TabsList className="w-full">
           <TabsTrigger value="all" className="flex-1">All</TabsTrigger>
           <TabsTrigger value="male" className="flex-1">Men</TabsTrigger>
@@ -583,11 +594,27 @@ export default function TeamBuilder() {
         </TabsList>
       </Tabs>
 
-      <div className="flex items-center justify-between mb-3 text-sm text-gray-700">
+      <div className="flex flex-col gap-2 mb-3 text-sm text-gray-700">
         <span className="flex items-center gap-2 font-medium">
           <ArrowUpDown className="h-4 w-4" /> Sort by
         </span>
-        <div className="flex gap-2">
+
+        {/* Mobile sort dropdown */}
+        <div className="lg:hidden">
+          <Select value={sortBy} onValueChange={(value: typeof sortBy) => setSortBy(value)}>
+            <SelectTrigger aria-label="Sort riders">
+              <SelectValue placeholder="Sort riders" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="rank">Rank</SelectItem>
+              <SelectItem value="name">Name (LASTNAME Firstname)</SelectItem>
+              <SelectItem value="cost">Price</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Desktop sort buttons */}
+        <div className="hidden lg:flex gap-2">
           {[
             { value: "rank" as const, label: "Rank" },
             { value: "name" as const, label: "Name (LASTNAME Firstname)" },
