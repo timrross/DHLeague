@@ -219,7 +219,7 @@ export function ImageUpload({
             />
             {!compact && (
               <p className="text-xs text-gray-500">
-                Accepted formats: JPG, PNG, GIF, WebP (max 5MB)
+                Accepted formats: JPG, PNG, WebP (max 5MB)
               </p>
             )}
           </div>

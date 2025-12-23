@@ -28,19 +28,17 @@ export async function createFantasyLeagueService() {
   app.use("/auth", authRoutes);
   app.use("/leaderboard", leaderboardRoutes);
 
-  app.use("/uploads", (req, res, next) => {
-    const filePath = path.join(
-      process.cwd(),
-      "public/uploads",
-      path.basename(req.url),
-    );
+  const uploadsDir = path.resolve(process.cwd(), "uploads");
+  const legacyUploadsDir = path.resolve(process.cwd(), "public/uploads");
 
-    res.sendFile(filePath, (err) => {
-      if (err) {
-        next();
-      }
-    });
-  });
+  const staticOpts = {
+    setHeaders: (res: any) => {
+      res.setHeader("Cache-Control", "public, max-age=604800, immutable");
+    },
+  };
+
+  app.use("/uploads", express.static(uploadsDir, staticOpts));
+  app.use("/uploads", express.static(legacyUploadsDir, staticOpts));
 
   app.post(
     "/upload-image",

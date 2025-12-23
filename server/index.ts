@@ -9,6 +9,9 @@ import fs from "fs";
 const app = express();
 const isDevEnv = process.env.NODE_ENV?.toLowerCase() === "development";
 app.disable("x-powered-by");
+const uploadsDir = path.resolve(process.cwd(), "uploads");
+const legacyUploadsDir = path.resolve(process.cwd(), "public/uploads");
+const flagsDir = path.resolve(process.cwd(), "src/assets/flags");
 // Special route for ads.txt - add before other middleware
 app.get('/ads.txt', (_req, res) => {
   const adsPath = path.join(process.cwd(), 'public', 'ads.txt');
@@ -23,6 +26,16 @@ app.get('/ads.txt', (_req, res) => {
 // Body parsing middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+const cacheStatic = {
+  setHeaders: (res: any) => {
+    res.setHeader("Cache-Control", "public, max-age=604800, immutable");
+  },
+};
+
+app.use("/uploads", express.static(uploadsDir, cacheStatic));
+app.use("/uploads", express.static(legacyUploadsDir, cacheStatic));
+app.use("/assets/flags", express.static(flagsDir, cacheStatic));
 
 (async () => {
   // Run database migrations first

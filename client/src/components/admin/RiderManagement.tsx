@@ -13,7 +13,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -35,8 +34,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Loader2, Pencil, Trash2, Plus, Search } from "lucide-react";
-import { getColorFromName, getInitials, safeImageUrl } from "@/lib/utils";
 import { formatRiderDisplayName } from "@shared/utils";
+import { RiderAvatar } from "@/components/rider-avatar";
 
 export default function RiderManagement() {
   const { toast } = useToast();
@@ -397,18 +396,7 @@ export default function RiderManagement() {
                         <TableRow>
                           <TableCell className="font-medium">
                             <div className="flex items-center space-x-2">
-                              <Avatar className="w-8 h-8 border border-muted-foreground/20">
-                                <AvatarImage
-                                  src={safeImageUrl(rider.image)}
-                                  alt={displayName}
-                                  className="object-cover"
-                                />
-                                <AvatarFallback
-                                  className={`${getColorFromName(displayName)} text-white text-xs font-bold`}
-                                >
-                                  {getInitials(displayName)}
-                                </AvatarFallback>
-                              </Avatar>
+                              <RiderAvatar rider={rider} size="sm" />
                               <span>{displayName}</span>
                             </div>
                           </TableCell>

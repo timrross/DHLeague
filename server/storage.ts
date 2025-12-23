@@ -70,6 +70,7 @@ export interface IStorage {
   ): Promise<{ riders: Rider[]; total: number }>;
   getRider(id: number): Promise<Rider | undefined>;
   getRiderByRiderId(riderId: string): Promise<Rider | undefined>;
+  getRiderByUciId(uciId: string): Promise<Rider | undefined>;
   createRider(rider: InsertRider): Promise<Rider>;
   updateRider(id: number, rider: Partial<Rider>): Promise<Rider | undefined>;
   getRidersByGender(gender: string): Promise<Rider[]>;
@@ -373,6 +374,11 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
+  async getRiderByUciId(uciId: string): Promise<Rider | undefined> {
+    const result = await db.select().from(riders).where(eq(riders.uciId, uciId));
+    return result[0];
+  }
+
   async createRider(rider: InsertRider): Promise<Rider> {
     const result = await db.insert(riders).values(rider).returning();
     return result[0];
@@ -382,10 +388,10 @@ export class DatabaseStorage implements IStorage {
     // Filter out undefined values that would cause "No values to set" error
     const cleanData: Record<string, any> = {};
     
-    // Only keep fields with defined, non-null, non-empty values
+    // Only keep fields that are explicitly provided
     Object.keys(riderData).forEach(key => {
       const value = riderData[key as keyof Rider];
-      if (value !== undefined && value !== null && value !== "") {
+      if (value !== undefined) {
         cleanData[key] = value;
       }
     });

@@ -107,6 +107,29 @@ export async function runMigrations() {
     await db.execute(sql`UPDATE riders SET image = '' WHERE image IS NULL`);
     await db.execute(sql`ALTER TABLE riders ALTER COLUMN image SET DEFAULT ''`);
     await db.execute(sql`ALTER TABLE riders ALTER COLUMN image SET NOT NULL`);
+    await db.execute(sql`
+      ALTER TABLE riders
+      ADD COLUMN IF NOT EXISTS image_source TEXT DEFAULT 'placeholder'
+    `);
+    await db.execute(sql`
+      ALTER TABLE riders
+      ADD COLUMN IF NOT EXISTS image_original_url TEXT
+    `);
+    await db.execute(sql`
+      ALTER TABLE riders
+      ADD COLUMN IF NOT EXISTS image_updated_at TIMESTAMPTZ
+    `);
+    await db.execute(sql`
+      ALTER TABLE riders
+      ADD COLUMN IF NOT EXISTS image_content_hash TEXT
+    `);
+    await db.execute(sql`
+      ALTER TABLE riders
+      ADD COLUMN IF NOT EXISTS image_mime_type TEXT
+    `);
+    await db.execute(sql`UPDATE riders SET image_source = 'placeholder' WHERE image_source IS NULL`);
+    await db.execute(sql`ALTER TABLE riders ALTER COLUMN image_source SET DEFAULT 'placeholder'`);
+    await db.execute(sql`ALTER TABLE riders ALTER COLUMN image_source SET NOT NULL`);
 
     await db.execute(sql`UPDATE riders SET form = '[]' WHERE form IS NULL`);
     await db.execute(sql`ALTER TABLE riders ALTER COLUMN form SET DEFAULT '[]'`);

@@ -1,10 +1,9 @@
 import { Rider } from "@shared/schema";
 import { X, RefreshCw } from "lucide-react";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatRiderDisplayName } from "@shared/utils";
-import { safeImageUrl, getInitials, getColorFromName } from "@/lib/utils";
+import { RiderAvatar } from "@/components/rider-avatar";
 
 interface TeamSummaryProps {
   selectedRiders: Rider[];
@@ -176,17 +175,12 @@ export default function TeamSummary({
               </div>
             )}
             <div className="flex items-center mb-2 md:mb-0 max-w-full lg:max-w-[60%] xl:max-w-[70%]">
-              <Avatar className={`w-8 h-8 border-2 mr-2 flex-shrink-0 ${
-                rider.injured 
-                  ? 'border-red-400' 
-                  : 'border-transparent' 
-          
-              }`}>
-                <AvatarImage src={safeImageUrl(rider.image)} alt={displayName} className="object-cover" />
-                <AvatarFallback className={`${getColorFromName(displayName)} text-white text-xs`}>
-                  {getInitials(displayName)}
-                </AvatarFallback>
-              </Avatar>
+              <RiderAvatar
+                rider={rider}
+                size="sm"
+                className="mr-2 flex-shrink-0"
+                highlight={rider.injured || swapRider?.id === rider.id}
+              />
               <div className="min-w-0 flex-1 truncate">
                 <h5 className="font-heading normal-case font-bold text-secondary text-sm truncate">{displayName}</h5>
                 <div className="flex items-center flex-wrap text-xs">

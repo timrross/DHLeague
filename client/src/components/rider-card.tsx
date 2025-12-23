@@ -1,8 +1,7 @@
 import { Rider } from "@shared/schema";
 import { Check, Plus } from "lucide-react";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { formatRiderDisplayName } from "@shared/utils";
-import { safeImageUrl, getInitials, getColorFromName } from "@/lib/utils";
+import { RiderAvatar } from "@/components/rider-avatar";
 
 interface RiderCardProps {
   rider: Rider;
@@ -36,10 +35,6 @@ export default function RiderCard({
   };
 
   // Get the color for the avatar background
-  const avatarBgColor = isRiderSelected 
-    ? 'bg-primary' 
-    : getColorFromName(displayName);
-    
   // Determine card style based on selected and injured status
   const cardBorderClass = isRiderSelected 
     ? 'border-primary bg-red-50' 
@@ -62,12 +57,12 @@ export default function RiderCard({
       )}
       
       <div className="flex items-center mb-2 sm:mb-0">
-        <Avatar className={`w-10 h-10 border-2 mr-3 flex-shrink-0 ${isRiderSelected ? 'border-primary' : rider.injured ? 'border-red-400' : 'border-transparent'}`}>
-          <AvatarImage src={safeImageUrl(rider.image)} alt={displayName} className="object-cover" />
-          <AvatarFallback className={`${avatarBgColor} text-white`}>
-            {getInitials(displayName)}
-          </AvatarFallback>
-        </Avatar>
+        <RiderAvatar
+          rider={rider}
+          size="sm"
+          className="mr-3 flex-shrink-0"
+          highlight={isRiderSelected || rider.injured}
+        />
         <div className="min-w-0 flex-1">
           <h4 className="font-heading normal-case font-bold text-secondary truncate">{displayName}</h4>
           <div className="flex flex-wrap items-center text-sm">
