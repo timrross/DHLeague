@@ -2,9 +2,9 @@ import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
 import sharp from 'sharp';
-import fetch from 'node-fetch';
 import { NextFunction, Request, Response } from 'express';
 import { log } from './vite';
+import { downloadImageToFile, validateRemoteImageUrl } from '../src/lib/safeImageFetch';
 
 // Ensure upload directory exists
 const uploadDir = './public/uploads';
@@ -47,7 +47,7 @@ export const upload = multer({
   },
   fileFilter: (_req, file, cb) => {
     // Accept images only
-    if (!file.originalname.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+    if (!file.originalname.match(/\.(jpg|jpeg|png|webp)$/i)) {
       // @ts-ignore - multer typings are not accurate
       return cb(new Error('Only image files are allowed!'), false);
     }
@@ -110,60 +110,32 @@ export const downloadImage = async (req: Request, _res: Response, next: NextFunc
 
     const imageUrl = req.body.imageUrl;
     
-    // Validate URL
-    if (!imageUrl.match(/^https?:\/\/.+\/.+$/i)) {
-      return next(new Error('Invalid image URL'));
-    }
-
-    // Create temp filename
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    let tmpFilename = `rider-remote-${uniqueSuffix}.tmp`;
-    let filepath = path.join(uploadDir, tmpFilename);
-
-    // Download image
-    log(`Downloading image from ${imageUrl}`, 'info');
-    const response = await fetch(imageUrl);
-    
-    if (!response.ok) {
-      return next(new Error(`Failed to download image: ${response.statusText}`));
-    }
-    
-    const contentType = response.headers.get('content-type') || '';
-    if (!contentType.startsWith('image/')) {
-      return next(new Error('URL does not point to an image'));
-    }
+    // Validate URL and guard against SSRF
+    await validateRemoteImageUrl(imageUrl);
 
     // Generate a better filename
-    let finalFilename = '';
+    let baseFilename = `rider-remote-${Date.now()}-${Math.round(Math.random() * 1e9)}`;
     if (req.body.name) {
       // Create a filename from rider name (lowercase, dashes for spaces)
       const sanitizedName = req.body.name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
       
       // Add a timestamp to ensure uniqueness for riders with the same name
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      finalFilename = `${sanitizedName}-${timestamp}${path.extname(path.basename(imageUrl)) || '.jpg'}`;
-      
-      // Update the filepath with the final name
-      const finalPath = path.join(uploadDir, finalFilename);
-      
-      // Save image to disk with the nice rider-based filename
-      const arrayBuffer = await response.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      fs.writeFileSync(finalPath, buffer);
-      
-      // Update filepath to our nice named file
-      filepath = finalPath;
-    } else {
-      // Save image to disk with the temp name
-      const arrayBuffer = await response.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      fs.writeFileSync(filepath, buffer);
+      baseFilename = `${sanitizedName}-${timestamp}`;
     }
+
+    // Download image securely
+    const downloadResult = await downloadImageToFile({
+      url: imageUrl,
+      destPath: path.join(uploadDir, baseFilename),
+      maxBytes: 5 * 1024 * 1024,
+      timeoutMs: 10_000,
+    });
 
     // Process image same as uploaded files
     req.file = {
-      path: filepath,
-      originalname: finalFilename || path.basename(imageUrl),
+      path: downloadResult.finalPath,
+      originalname: path.basename(downloadResult.finalPath),
     } as Express.Multer.File;
     
     await processImage(req, _res, next);

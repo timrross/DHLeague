@@ -4,7 +4,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Race, Rider, Result } from '@shared/schema';
 import { formatRiderDisplayName } from '@shared/utils';
-import { getInitials, safeImageUrl } from '@/lib/utils';
+import { RiderAvatar } from '@/components/rider-avatar';
 import RaceLabel from '@/components/race-label';
 
 import {
@@ -358,24 +358,13 @@ export default function ResultManagement() {
                     </TableHeader>
                     <TableBody>
                       {raceResults.map((result: any) => {
-                        const imageSrc = safeImageUrl(result?.rider?.image);
                         const displayName = formatRiderDisplayName(result.rider) || result.rider.name;
                         return (
                           <TableRow key={result.id}>
                             <TableCell className="font-medium">{result.position}</TableCell>
                             <TableCell>
                               <div className="flex items-center space-x-2">
-                                {imageSrc ? (
-                                  <img 
-                                    src={imageSrc}
-                                    alt={displayName}
-                                    className="h-6 w-6 rounded-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="h-6 w-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold">
-                                    {getInitials(displayName)}
-                                  </div>
-                                )}
+                                <RiderAvatar rider={result.rider} size="sm" />
                                 <span>{displayName}</span>
                               </div>
                             </TableCell>

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Rider } from "@shared/schema";
 import { formatRiderDisplayName } from "@shared/utils";
@@ -5,6 +6,27 @@ import { safeImageUrl } from "@/lib/utils";
 
 interface TopRidersProps {
   riders?: Rider[];
+}
+
+function FlagBadge({ country }: { country?: string | null }) {
+  const [failed, setFailed] = useState(false);
+  const code = country?.toUpperCase() ?? "?";
+  const src = country ? `/assets/flags/${country.toLowerCase()}.svg` : undefined;
+
+  return (
+    <div className="absolute top-3 right-3 w-10 h-10 rounded-full overflow-hidden border border-white bg-slate-900 text-white text-sm font-bold flex items-center justify-center shadow-lg">
+      {src && !failed ? (
+        <img
+          src={src}
+          alt={`${code} flag`}
+          className="w-full h-full object-cover"
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        <span>{code}</span>
+      )}
+    </div>
+  );
 }
 
 export default function TopRiders({ riders }: TopRidersProps) {
@@ -74,16 +96,24 @@ export default function TopRiders({ riders }: TopRidersProps) {
         {displayRiders.map((rider) => {
           const formArray = getFormArray(rider.form ?? '[]');
           const displayName = formatRiderDisplayName(rider) || rider.name;
+          const placeholderUrl = rider.uciId
+            ? `/api/riders/${encodeURIComponent(rider.uciId)}/placeholder.svg`
+            : undefined;
+          const imageSrc =
+            rider.imageSource === "placeholder" || !safeImageUrl(rider.image)
+              ? placeholderUrl
+              : safeImageUrl(rider.image) || placeholderUrl;
           
           return (
             <Card key={rider.id} className="bg-white rounded-lg shadow-md overflow-hidden">
               <div className="h-40 bg-secondary relative overflow-hidden">
                 <img 
-                  src={safeImageUrl(rider.image) || `https://pixabay.com/get/g3a1af921072d00ed8251d3fe0d9eaeedfb61d355148715a2330a66168baf531a8f01cfc7aac1a2cab21a2271872ba386711d8b1dadd91c9a9928b09f0d99b440_1280.jpg`} 
+                  src={imageSrc || placeholderUrl}
                   alt={displayName} 
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+                <FlagBadge country={rider.country} />
                 <div className="absolute bottom-3 left-3 right-3 text-white">
                   <h3 className="font-heading normal-case font-bold text-xl">{displayName}</h3>
                   <p className="text-white/80 text-sm">{rider.team}</p>

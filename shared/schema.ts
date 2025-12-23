@@ -40,6 +40,11 @@ export const riders = pgTable("riders", {
   cost: integer("cost").notNull().default(0),
   lastYearStanding: integer("last_year_standing").notNull().default(0),
   image: text("image").notNull().default(""),
+  imageSource: text("image_source").notNull().default("placeholder"),
+  imageOriginalUrl: text("image_original_url"),
+  imageUpdatedAt: timestamp("image_updated_at"),
+  imageContentHash: text("image_content_hash"),
+  imageMimeType: text("image_mime_type"),
   country: text("country"),
   points: integer("points").notNull().default(0),
   form: text("form").notNull().default("[]"), // JSON array of last 5 results
@@ -136,3 +141,10 @@ export type LeaderboardEntry = {
   lastRoundPoints: number;
   totalPoints: number;
 };
+
+export type RiderImageSource =
+  | "placeholder"
+  | "manual_url"
+  | "manual_copied"
+  | "scraped"
+  | "unknown";

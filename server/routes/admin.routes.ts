@@ -14,6 +14,7 @@ import {
   streamDatarideRiderSync,
   clearAllRiders
 } from "../controllers/admin.controller";
+import { updateRiderImage } from "../controllers/riderImages.controller";
 
 const router = Router();
 
@@ -31,5 +32,6 @@ router.post("/seed/riders", requireAuth, isAdmin, bulkUpsertRiders);
 router.post("/seed/races", requireAuth, isAdmin, bulkUpsertRaces);
 router.get("/dataride/riders/stream", requireAuth, isAdmin, streamDatarideRiderSync);
 router.delete("/riders", requireAuth, isAdmin, clearAllRiders);
+router.post("/riders/:uciId/image", requireAuth, isAdmin, updateRiderImage);
 
 export default router;
