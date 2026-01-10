@@ -8,6 +8,10 @@ import { RiderAvatar } from "@/components/rider-avatar";
 interface TeamSummaryProps {
   selectedRiders: Rider[];
   toggleRiderSelection?: (rider: Rider) => void;
+  benchRider?: Rider | null;
+  benchMode?: boolean;
+  onSelectBench?: () => void;
+  onRemoveBench?: () => void;
   totalBudget?: number;
   usedBudget?: number;
   remainingBudget?: number;
@@ -25,6 +29,10 @@ interface TeamSummaryProps {
 export default function TeamSummary({ 
   selectedRiders, 
   toggleRiderSelection,
+  benchRider = null,
+  benchMode = false,
+  onSelectBench,
+  onRemoveBench,
   totalBudget,
   usedBudget,
   remainingBudget,
@@ -222,6 +230,76 @@ export default function TeamSummary({
           </div>
           );
         })}
+      </div>
+
+      {/* Bench rider */}
+      <div className="space-y-3 w-full max-w-full overflow-hidden">
+        <div className="flex justify-between items-center">
+          <h4 className="font-heading font-semibold text-gray-700 text-sm">
+            BENCH <span className="text-xs font-normal text-gray-500">(Optional)</span>
+          </h4>
+          {!isTeamLocked && onSelectBench && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={onSelectBench}
+            >
+              {benchMode ? "Selecting..." : benchRider ? "Change Bench" : "Add Bench"}
+            </Button>
+          )}
+        </div>
+
+        {benchMode && !isTeamLocked && (
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-sm text-blue-700">
+            Select a rider below to set your bench.
+          </div>
+        )}
+
+        {!benchRider ? (
+          <div className="bg-gray-100 rounded-md p-4 text-center text-gray-500 text-sm">
+            No bench rider selected.
+          </div>
+        ) : (
+          <div className="bg-white rounded-md p-3 shadow-sm flex flex-col md:flex-row justify-between relative overflow-hidden">
+            <div className="flex items-center mb-2 md:mb-0 max-w-full lg:max-w-[60%] xl:max-w-[70%]">
+              <RiderAvatar
+                rider={benchRider}
+                size="sm"
+                className="mr-2 flex-shrink-0"
+              />
+              <div className="min-w-0 flex-1 truncate">
+                <div className="flex items-center gap-2">
+                  <h5 className="font-heading normal-case font-bold text-secondary text-sm truncate">
+                    {formatRiderDisplayName(benchRider) || benchRider.name}
+                  </h5>
+                  <Badge variant="secondary" className="text-[10px]">BENCH</Badge>
+                </div>
+                <div className="flex items-center flex-wrap text-xs">
+                  <span className={`${benchRider.gender === 'male' ? 'text-blue-600' : 'text-pink-600'} font-medium truncate`}>
+                    {benchRider.gender === 'male' ? 'Male' : 'Female'}
+                  </span>
+                  <span className="text-gray-600 truncate text-xs ml-1">
+                    {benchRider.team ? benchRider.team : ''}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-between md:justify-end w-full md:w-auto mt-2 md:mt-0 flex-shrink-0">
+              <span className="font-accent font-semibold text-primary text-sm mr-2">
+                ${benchRider.cost.toLocaleString()}
+              </span>
+              {!isTeamLocked && onRemoveBench && (
+                <button
+                  className="text-gray-400 hover:text-red-500 w-8 h-8 flex items-center justify-center transition duration-200"
+                  onClick={onRemoveBench}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

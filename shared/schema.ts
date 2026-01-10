@@ -211,6 +211,7 @@ export type InsertTeamSwap = typeof teamSwaps.$inferInsert;
 export type TeamWithRiders = Team & {
   riders: Rider[];
   totalCost: number;
+  benchRider?: Rider | null;
 };
 
 export type RaceWithResults = Race & {

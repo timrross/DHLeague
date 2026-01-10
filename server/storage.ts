@@ -8,6 +8,7 @@ import {
   type Team,
   type InsertTeam,
   teamRiders,
+  teamMembers,
   races,
   type Race,
   type InsertRace,
@@ -102,8 +103,17 @@ export interface IStorage {
     teamType?: "elite" | "junior",
     seasonId?: number,
   ): Promise<TeamWithRiders | undefined>;
-  createTeam(team: InsertTeam, riderIds: number[]): Promise<TeamWithRiders>;
-  updateTeam(id: number, team: Partial<Team>, riderIds?: number[]): Promise<TeamWithRiders | undefined>;
+  createTeam(
+    team: InsertTeam,
+    riderIds: number[],
+    benchRiderId?: number | null,
+  ): Promise<TeamWithRiders>;
+  updateTeam(
+    id: number,
+    team: Partial<Team>,
+    riderIds?: number[],
+    benchRiderId?: number | null,
+  ): Promise<TeamWithRiders | undefined>;
   deleteTeam(id: number): Promise<boolean>;
   
   // Race operations
@@ -435,6 +445,21 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
+  private async getBenchRiderForTeam(teamId: number): Promise<Rider | null> {
+    const benchRows = await db
+      .select()
+      .from(teamMembers)
+      .where(and(eq(teamMembers.teamId, teamId), eq(teamMembers.role, "BENCH")))
+      .limit(1);
+
+    if (!benchRows.length) {
+      return null;
+    }
+
+    const benchRider = await this.getRiderByUciId(benchRows[0].uciId);
+    return benchRider ?? null;
+  }
+
   async getTeamWithRiders(id: number): Promise<TeamWithRiders | undefined> {
     const team = await this.getTeam(id);
     if (!team) return undefined;
@@ -455,13 +480,18 @@ export class DatabaseStorage implements IStorage {
     // Filter out any undefined riders
     const riderList = teamRidersList.filter(rider => rider !== undefined) as Rider[];
     
+    const benchRider = await this.getBenchRiderForTeam(id);
+
     // Calculate total cost
-    const totalCost = riderList.reduce((sum, rider) => sum + rider.cost, 0);
+    const totalCost =
+      riderList.reduce((sum, rider) => sum + rider.cost, 0) +
+      (benchRider?.cost ?? 0);
 
     return {
       ...team,
       riders: riderList,
-      totalCost
+      totalCost,
+      benchRider,
     };
   }
 
@@ -488,7 +518,11 @@ export class DatabaseStorage implements IStorage {
     return this.getTeamWithRiders(team.id);
   }
 
-  async createTeam(teamData: InsertTeam, riderIds: number[]): Promise<TeamWithRiders> {
+  async createTeam(
+    teamData: InsertTeam,
+    riderIds: number[],
+    benchRiderId?: number | null,
+  ): Promise<TeamWithRiders> {
     const teamType = teamData.teamType === "junior" ? "junior" : "elite";
     const seasonId = await resolveSeasonId(teamData.seasonId);
     const budgetCap =
@@ -536,8 +570,28 @@ export class DatabaseStorage implements IStorage {
       );
     }
 
+    let benchRider: Rider | null = null;
+    if (benchRiderId !== undefined && benchRiderId !== null) {
+      benchRider = await this.getRider(benchRiderId);
+      if (!benchRider) {
+        throw new Error("Bench rider not found");
+      }
+    }
+
+    if (benchRider && riders.some((rider) => rider.id === benchRider?.id)) {
+      throw new Error("Bench rider is already a starter");
+    }
+
+    if (benchRider && benchRider.category !== teamType) {
+      throw new Error(
+        `Bench rider must be ${teamType === "junior" ? "junior" : "elite"}`,
+      );
+    }
+
     // Check budget
-    const totalCost = riders.reduce((sum, rider) => sum + rider.cost, 0);
+    const totalCost =
+      riders.reduce((sum, rider) => sum + rider.cost, 0) +
+      (benchRider?.cost ?? 0);
     if (totalCost > budgetCap) {
       throw new Error(`Team exceeds the budget of ${budgetCap}`);
     }
@@ -567,6 +621,35 @@ export class DatabaseStorage implements IStorage {
             riderId: riderId
           });
       }
+
+      const ridersById = new Map(riders.map((rider) => [rider.id, rider]));
+      for (const [index, riderId] of riderIds.entries()) {
+        const rider = ridersById.get(riderId);
+        if (!rider) continue;
+        await tx.insert(teamMembers).values({
+          teamId: newTeam.id,
+          uciId: rider.uciId,
+          role: "STARTER",
+          starterIndex: index,
+          gender: rider.gender,
+          costAtSave: rider.cost,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+      }
+
+      if (benchRider) {
+        await tx.insert(teamMembers).values({
+          teamId: newTeam.id,
+          uciId: benchRider.uciId,
+          role: "BENCH",
+          starterIndex: null,
+          gender: benchRider.gender,
+          costAtSave: benchRider.cost,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+      }
       
       return newTeam;
     });
@@ -575,11 +658,17 @@ export class DatabaseStorage implements IStorage {
     return {
       ...team,
       riders,
-      totalCost
+      totalCost,
+      benchRider,
     };
   }
 
-  async updateTeam(id: number, teamData: Partial<Team>, riderIds?: number[]): Promise<TeamWithRiders | undefined> {
+  async updateTeam(
+    id: number,
+    teamData: Partial<Team>,
+    riderIds?: number[],
+    benchRiderId?: number | null,
+  ): Promise<TeamWithRiders | undefined> {
     const team = await this.getTeam(id);
     if (!team) return undefined;
     const teamType = team.teamType === "junior" ? "junior" : "elite";
@@ -613,8 +702,30 @@ export class DatabaseStorage implements IStorage {
         );
       }
 
+      let benchRider: Rider | null = null;
+      if (benchRiderId === undefined) {
+        benchRider = await this.getBenchRiderForTeam(id);
+      } else if (benchRiderId !== null) {
+        benchRider = await this.getRider(benchRiderId);
+        if (!benchRider) {
+          throw new Error("Bench rider not found");
+        }
+      }
+
+      if (benchRider && riders.some((rider) => rider.id === benchRider?.id)) {
+        throw new Error("Bench rider is already a starter");
+      }
+
+      if (benchRider && benchRider.category !== teamType) {
+        throw new Error(
+          `Bench rider must be ${teamType === "junior" ? "junior" : "elite"}`,
+        );
+      }
+
       // Check budget
-      const totalCost = riders.reduce((sum, rider) => sum + rider.cost, 0);
+      const totalCost =
+        riders.reduce((sum, rider) => sum + rider.cost, 0) +
+        (benchRider?.cost ?? 0);
       const budgetCap =
         team.budgetCap ?? (teamType === "junior" ? 500000 : 2000000);
       if (totalCost > budgetCap) {
@@ -644,6 +755,39 @@ export class DatabaseStorage implements IStorage {
               teamId: id,
               riderId: riderId
             });
+        }
+
+        await tx
+          .delete(teamMembers)
+          .where(eq(teamMembers.teamId, id));
+
+        const ridersById = new Map(riders.map((rider) => [rider.id, rider]));
+        for (const [index, riderId] of riderIds.entries()) {
+          const rider = ridersById.get(riderId);
+          if (!rider) continue;
+          await tx.insert(teamMembers).values({
+            teamId: id,
+            uciId: rider.uciId,
+            role: "STARTER",
+            starterIndex: index,
+            gender: rider.gender,
+            costAtSave: rider.cost,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
+        }
+
+        if (benchRider) {
+          await tx.insert(teamMembers).values({
+            teamId: id,
+            uciId: benchRider.uciId,
+            role: "BENCH",
+            starterIndex: null,
+            gender: benchRider.gender,
+            costAtSave: benchRider.cost,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
         }
       });
     } else {

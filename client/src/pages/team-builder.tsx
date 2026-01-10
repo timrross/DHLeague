@@ -35,6 +35,8 @@ export default function TeamBuilder() {
   const [selectedTab, setSelectedTab] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRiders, setSelectedRiders] = useState<Rider[]>([]);
+  const [benchRider, setBenchRider] = useState<Rider | null>(null);
+  const [benchMode, setBenchMode] = useState(false);
   const [teamName, setTeamName] = useState("My DH Team");
   const [draftInitialized, setDraftInitialized] = useState(false);
   const [swapMode, setSwapMode] = useState(false);
@@ -76,7 +78,7 @@ export default function TeamBuilder() {
 
   // Create team mutation
   const createTeam = useMutation({
-    mutationFn: async (data: { name: string, riderIds: number[], useJokerCard?: boolean }) => {
+    mutationFn: async (data: { name: string, riderIds: number[], benchRiderId?: number | null, useJokerCard?: boolean }) => {
       return apiRequest('/api/teams', {
         method: 'POST',
         body: JSON.stringify(data),
@@ -102,10 +104,10 @@ export default function TeamBuilder() {
 
   // Update team mutation
   const updateTeam = useMutation({
-    mutationFn: async ({ id, name, riderIds }: { id: number, name: string, riderIds: number[] }) => {
+    mutationFn: async ({ id, name, riderIds, benchRiderId }: { id: number, name: string, riderIds: number[], benchRiderId?: number | null }) => {
       return apiRequest(`/api/teams/${id}`, {
         method: 'PUT',
-        body: JSON.stringify({ name, riderIds }),
+        body: JSON.stringify({ name, riderIds, benchRiderId }),
         headers: { 'Content-Type': 'application/json' }
       });
     },
@@ -157,7 +159,9 @@ export default function TeamBuilder() {
 
   // Calculate budget and team stats
   const totalBudget = 2000000;
-  const usedBudget = selectedRiders.reduce((sum, rider) => sum + rider.cost, 0);
+  const startersBudget = selectedRiders.reduce((sum, rider) => sum + rider.cost, 0);
+  const benchBudget = benchRider?.cost ?? 0;
+  const usedBudget = startersBudget + benchBudget;
   const remainingBudget = totalBudget - usedBudget;
   const budgetPercentage = (usedBudget / totalBudget) * 100;
   
@@ -169,16 +173,20 @@ export default function TeamBuilder() {
   const swapsUsed = activeTeam?.swapsUsed || 0;
   const swapsRemaining = 2 - swapsUsed;
   
+  const benchIsValid = !benchRider || !selectedRiders.some((rider) => rider.id === benchRider.id);
+
   const isTeamValid = selectedRiders.length === 6 && 
                      maleRidersCount <= 4 && 
                      femaleRidersCount >= 2 && 
-                     usedBudget <= totalBudget;
+                     usedBudget <= totalBudget &&
+                     benchIsValid;
 
   // Initialize draft from saved team (once)
   useEffect(() => {
     if (activeTeam && !draftInitialized) {
       setTeamName(activeTeam.name || "My DH Team");
       setSelectedRiders(activeTeam.riders || []);
+      setBenchRider(activeTeam.benchRider ?? null);
       setDraftInitialized(true);
     }
   }, [activeTeam, draftInitialized]);
@@ -303,12 +311,46 @@ export default function TeamBuilder() {
       
       return;
     }
+
+    if (benchMode) {
+      if (selectedRiders.some(r => r.id === rider.id)) {
+        toast({
+          title: "Rider already a starter",
+          description: "Your bench rider must be different from your starters.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const newBudget = startersBudget + rider.cost;
+      if (newBudget > totalBudget) {
+        toast({
+          title: "Budget exceeded",
+          description: "Adding this bench rider would exceed your $2,000,000 budget.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setBenchRider(rider);
+      setBenchMode(false);
+      return;
+    }
     
     // Regular rider selection/deselection (not in swap mode)
     setSelectedRiders(riders => {
       // If rider is already selected, remove them
       if (riders.some(r => r.id === rider.id)) {
         return riders.filter(r => r.id !== rider.id);
+      }
+
+      if (benchRider?.id === rider.id) {
+        toast({
+          title: "Bench rider selected",
+          description: "Remove this rider from your bench before adding as a starter.",
+          variant: "destructive",
+        });
+        return riders;
       }
       
       // Check if adding rider would exceed team limit
@@ -359,11 +401,29 @@ export default function TeamBuilder() {
     
     setSwapMode(true);
     setSwapRiderData(rider);
+    setBenchMode(false);
   };
   
   const cancelSwap = () => {
     setSwapMode(false);
     setSwapRiderData(null);
+  };
+
+  const startBenchSelection = () => {
+    if (isTeamLocked) return;
+    setBenchMode((current) => !current);
+    setSwapMode(false);
+    setSwapRiderData(null);
+  };
+
+  const removeBenchRider = () => {
+    if (isTeamLocked) return;
+    setBenchRider(null);
+    setBenchMode(false);
+  };
+
+  const cancelBenchSelection = () => {
+    setBenchMode(false);
   };
 
   // Handle save/update team
@@ -379,19 +439,22 @@ export default function TeamBuilder() {
     
     if (isAuthenticated) {
       const riderIds = selectedRiders.map(r => r.id);
+      const benchRiderId = benchRider ? benchRider.id : null;
       
       if (activeTeam && !isCreatingTeam) {
         // Update existing team
         updateTeam.mutate({
           id: activeTeam.id,
           name: teamName,
-          riderIds
+          riderIds,
+          benchRiderId,
         });
       } else {
         // Create new team
         createTeam.mutate({
           name: teamName,
           riderIds,
+          benchRiderId,
         });
         
         // Show immediate feedback toast
@@ -450,9 +513,11 @@ export default function TeamBuilder() {
     }
     
     const riderIds = selectedRiders.map(r => r.id);
+    const benchRiderId = benchRider ? benchRider.id : null;
     createTeam.mutate({
       name: teamName,
       riderIds,
+      benchRiderId,
       useJokerCard: true,
     });
     
@@ -509,6 +574,10 @@ export default function TeamBuilder() {
       <TeamSummary
         selectedRiders={selectedRiders}
         toggleRiderSelection={!isTeamLocked ? toggleRiderSelection : undefined}
+        benchRider={benchRider}
+        benchMode={benchMode}
+        onSelectBench={!isTeamLocked ? startBenchSelection : undefined}
+        onRemoveBench={!isTeamLocked ? removeBenchRider : undefined}
         totalBudget={totalBudget}
         usedBudget={usedBudget}
         remainingBudget={remainingBudget}
@@ -651,7 +720,9 @@ export default function TeamBuilder() {
                 rider={rider}
                 selected={selectedRiders.some(r => r.id === rider.id)}
                 onClick={() => toggleRiderSelection(rider)}
-                disabled={swapMode && selectedRiders.some(r => r.id === rider.id)}
+                disabled={
+                  (swapMode || benchMode) && selectedRiders.some(r => r.id === rider.id)
+                }
                 showSelectIcon
               />
             ))
@@ -745,6 +816,25 @@ export default function TeamBuilder() {
                   variant="outline" 
                   size="sm" 
                   onClick={cancelSwap}
+                >
+                  Cancel
+                </Button>
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+
+        {benchMode && !swapMode && (
+          <div className="mt-6">
+            <Alert>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Bench Selection Active</AlertTitle>
+              <AlertDescription className="flex justify-between items-center">
+                <span>Select a rider to set your bench.</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={cancelBenchSelection}
                 >
                   Cancel
                 </Button>

@@ -34,11 +34,30 @@ export async function createTeam(req: any, res: Response) {
       return res.status(401).json({ message: "Not authenticated" });
     }
 
-    const { name, riderIds, useJokerCard = false, teamType } = req.body;
+    const {
+      name,
+      riderIds,
+      useJokerCard = false,
+      teamType,
+      benchRiderId,
+    } = req.body;
     const normalizedTeamType = teamType === "junior" ? "junior" : "elite";
 
     if (!name || !riderIds || !Array.isArray(riderIds)) {
       return res.status(400).json({ message: "Invalid request data" });
+    }
+
+    let parsedBenchRiderId: number | null | undefined = undefined;
+    if (Object.prototype.hasOwnProperty.call(req.body, "benchRiderId")) {
+      if (benchRiderId === null) {
+        parsedBenchRiderId = null;
+      } else {
+        const parsed = Number(benchRiderId);
+        if (Number.isNaN(parsed)) {
+          return res.status(400).json({ message: "Invalid bench rider ID" });
+        }
+        parsedBenchRiderId = parsed;
+      }
     }
 
     // Check if user already has a team
@@ -61,6 +80,7 @@ export async function createTeam(req: any, res: Response) {
         existingTeam.id,
         { name },
         riderIds,
+        parsedBenchRiderId,
       );
 
       if (useJokerCard) {
@@ -84,7 +104,11 @@ export async function createTeam(req: any, res: Response) {
       totalPoints: 0
     };
 
-    const team = await storage.createTeam(teamData, riderIds);
+    const team = await storage.createTeam(
+      teamData,
+      riderIds,
+      parsedBenchRiderId ?? null,
+    );
 
     // If using joker card, update the user record
     if (useJokerCard) {
@@ -134,13 +158,31 @@ export async function updateTeam(req: any, res: Response) {
       });
     }
 
-    const { name, riderIds } = req.body;
+    const { name, riderIds, benchRiderId } = req.body;
     if (!name || !riderIds || !Array.isArray(riderIds)) {
       return res.status(400).json({ message: "Invalid request data" });
     }
 
+    let parsedBenchRiderId: number | null | undefined = undefined;
+    if (Object.prototype.hasOwnProperty.call(req.body, "benchRiderId")) {
+      if (benchRiderId === null) {
+        parsedBenchRiderId = null;
+      } else {
+        const parsed = Number(benchRiderId);
+        if (Number.isNaN(parsed)) {
+          return res.status(400).json({ message: "Invalid bench rider ID" });
+        }
+        parsedBenchRiderId = parsed;
+      }
+    }
+
     // Update the team
-    const updatedTeam = await storage.updateTeam(teamId, { name }, riderIds);
+    const updatedTeam = await storage.updateTeam(
+      teamId,
+      { name },
+      riderIds,
+      parsedBenchRiderId,
+    );
     res.json(updatedTeam);
   } catch (error) {
     console.error("Error updating team:", error);
