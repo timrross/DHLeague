@@ -43,7 +43,7 @@ export default function FeaturedSections() {
             RACE SCHEDULE
           </h3>
           <p className="text-gray-600 mb-4">
-            Stay updated with all the rounds of the 2025 UCI Downhill World Cup
+            Stay updated with all the races of the 2025 UCI Downhill World Cup
             season.
           </p>
           <Link href="/races">

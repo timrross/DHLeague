@@ -28,7 +28,7 @@ export default function Rules() {
                 
                 <h4 className="font-heading text-lg text-primary mb-2">Team Management</h4>
                 <p className="text-gray-700 mb-4">
-                  You can make changes to your team at any time before a race weekend begins. Once racing starts for a round, teams are locked until that round is complete.
+                  You can make changes to your team at any time before a race weekend begins. Once racing starts, teams are locked until that race is complete.
                 </p>
               </div>
               

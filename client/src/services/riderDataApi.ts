@@ -1,8 +1,8 @@
 import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
-import { Race, Rider, Result } from "@shared/schema";
+import { Race, Rider, RaceResult } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 
-export type RaceResult = Result & { rider: Rider };
+export type RaceResultRow = RaceResult & { rider: Rider; points: number };
 
 export const riderDataEndpoints = {
   riders: "/api/rider-data/riders",
@@ -52,7 +52,7 @@ export function fetchRace(id: number | string) {
 }
 
 export function fetchRaceResults(id: number | string) {
-  return apiRequest<RaceResult[]>(riderDataEndpoints.raceResults(id));
+  return apiRequest<RaceResultRow[]>(riderDataEndpoints.raceResults(id));
 }
 
 export function useRidersQuery(options?: QueryOptions<Rider[]>) {
@@ -95,10 +95,10 @@ export function useRaceQuery(id: number | string, options?: QueryOptions<Race>) 
 
 export function useRaceResultsQuery(
   id: number | string,
-  options?: QueryOptions<RaceResult[]>,
+  options?: QueryOptions<RaceResultRow[]>,
 ) {
   const enabled = Boolean(id) && (options?.enabled ?? true);
-  return useQuery<RaceResult[]>({
+  return useQuery<RaceResultRow[]>({
     queryKey: [riderDataEndpoints.raceResults(id)],
     queryFn: () => fetchRaceResults(id),
     ...options,

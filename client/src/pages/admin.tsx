@@ -12,8 +12,8 @@ import UserManagement from '@/components/admin/UserManagement';
 import ImportData from '@/components/admin/ImportData';
 import RaceManagement from '@/components/admin/RaceManagement';
 import RiderManagement from '@/components/admin/RiderManagement';
-import ResultManagement from '@/components/admin/ResultManagement';
 import RiderImages from '@/components/admin/RiderImages';
+import GameMechanics from '@/components/admin/GameMechanics';
 
 export default function Admin() {
   const { user, isAuthenticated } = useAuth();
@@ -39,13 +39,13 @@ export default function Admin() {
       <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
       
       <Tabs defaultValue="users" className="space-y-6">
-        <TabsList className="grid grid-cols-6 w-full">
+        <TabsList className="grid grid-cols-2 md:grid-cols-6 w-full">
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="import">Import</TabsTrigger>
           <TabsTrigger value="races">Races</TabsTrigger>
           <TabsTrigger value="riders">Riders</TabsTrigger>
-          <TabsTrigger value="results">Results</TabsTrigger>
           <TabsTrigger value="images">Rider Images</TabsTrigger>
+          <TabsTrigger value="game">Game</TabsTrigger>
         </TabsList>
         
         <TabsContent value="users" className="space-y-6">
@@ -64,12 +64,12 @@ export default function Admin() {
           <RiderManagement />
         </TabsContent>
         
-        <TabsContent value="results" className="space-y-6">
-          <ResultManagement />
-        </TabsContent>
-
         <TabsContent value="images" className="space-y-6">
           <RiderImages />
+        </TabsContent>
+
+        <TabsContent value="game" className="space-y-6">
+          <GameMechanics />
         </TabsContent>
       </Tabs>
     </div>

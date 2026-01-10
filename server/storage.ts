@@ -11,17 +11,18 @@ import {
   races,
   type Race,
   type InsertRace,
-  results,
-  type Result,
-  type InsertResult,
+  raceResults,
+  type RaceResult,
   type TeamWithRiders,
   type RaceWithResults,
-  type LeaderboardEntry,
   teamSwaps,
   type InsertUser
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, asc, desc, sql, gte, lte, ilike, or, inArray } from "drizzle-orm";
+import { getActiveSeasonId, getSeasonIdForDate } from "./services/game/seasons";
+import { scoreRiderResult } from "./services/game/scoring/scoreTeamSnapshot";
+import type { ResultStatus } from "./services/game/config";
 
 
 export type RiderFilters = {
@@ -36,6 +37,22 @@ export type RiderFilters = {
 export type RiderSortField = "name" | "cost" | "points" | "lastYearStanding" | "team";
 
 export type RiderSortDirection = "asc" | "desc";
+
+export type RaceInput = Omit<
+  InsertRace,
+  "seasonId" | "discipline" | "lockAt" | "gameStatus" | "needsResettle"
+> &
+  Partial<
+    Pick<
+      InsertRace,
+      "seasonId" | "discipline" | "lockAt" | "gameStatus" | "needsResettle"
+    >
+  >;
+
+async function resolveSeasonId(seasonId?: number): Promise<number> {
+  if (seasonId) return seasonId;
+  return await getActiveSeasonId();
+}
 export function calculateRaceStatus(
   startDate: Date,
   endDate: Date,
@@ -80,7 +97,11 @@ export interface IStorage {
   // Team operations
   getTeam(id: number): Promise<Team | undefined>;
   getTeamWithRiders(id: number): Promise<TeamWithRiders | undefined>;
-  getUserTeam(userId: string, teamType?: "elite" | "junior"): Promise<TeamWithRiders | undefined>;
+  getUserTeam(
+    userId: string,
+    teamType?: "elite" | "junior",
+    seasonId?: number,
+  ): Promise<TeamWithRiders | undefined>;
   createTeam(team: InsertTeam, riderIds: number[]): Promise<TeamWithRiders>;
   updateTeam(id: number, team: Partial<Team>, riderIds?: number[]): Promise<TeamWithRiders | undefined>;
   deleteTeam(id: number): Promise<boolean>;
@@ -99,62 +120,15 @@ export interface IStorage {
   getRaceWithStatus(id: number, now?: Date): Promise<Race | undefined>;
   getRaceWithResults(id: number): Promise<RaceWithResults | undefined>;
   getRaceByNameAndStartDate(name: string, startDate: Date): Promise<Race | undefined>;
-  createRace(race: InsertRace): Promise<Race>;
+  createRace(race: RaceInput): Promise<Race>;
   updateRace(id: number, race: Partial<Race>): Promise<Race | undefined>;
-  getRaceResultsStub(
-    raceId: number,
-    now?: Date
-  ): Promise<
-    | (Race & {
-      results: (Result & { rider: Rider })[];
-    })
-    | undefined
-  >;
-  
-  // Result operations
-  getResults(raceId: number): Promise<(Result & { rider: Rider })[]>;
-  addResult(result: InsertResult): Promise<Result>;
-  updateTeamPoints(): Promise<void>;
-  
-  // Leaderboard operations
-  getLeaderboard(): Promise<LeaderboardEntry[]>;
+  getRaceResults(raceId: number): Promise<(RaceResult & { rider: Rider; points: number })[]>;
   
   // Admin operations
   getAllUsers(): Promise<User[]>;
   updateUser(id: string, userData: Partial<User>): Promise<User | undefined>;
   deleteUser(id: string): Promise<boolean>;
   getUsersWithTeams(): Promise<(User & { team?: TeamWithRiders })[]>;
-}
-
-export function buildLeaderboardEntries(
-  teamsWithUsers: { team: TeamWithRiders; user: User }[],
-  latestRacePoints: Map<number, number> = new Map()
-): LeaderboardEntry[] {
-  const sortedTeams = [...teamsWithUsers].sort((a, b) => {
-    const pointsA = a.team.totalPoints ?? 0;
-    const pointsB = b.team.totalPoints ?? 0;
-
-    if (pointsA !== pointsB) {
-      return pointsB - pointsA;
-    }
-
-    return a.team.name.localeCompare(b.team.name);
-  });
-
-  return sortedTeams.map(({ team, user }, index) => {
-    const lastRoundPoints = team.riders.reduce(
-      (sum, rider) => sum + (latestRacePoints.get(rider.id) ?? 0),
-      0
-    );
-
-    return {
-      rank: index + 1,
-      team,
-      user,
-      lastRoundPoints,
-      totalPoints: team.totalPoints ?? 0
-    };
-  });
 }
 
 export class DatabaseStorage implements IStorage {
@@ -494,11 +468,19 @@ export class DatabaseStorage implements IStorage {
   async getUserTeam(
     userId: string,
     teamType: "elite" | "junior" = "elite",
+    seasonId?: number,
   ): Promise<TeamWithRiders | undefined> {
+    const resolvedSeasonId = await resolveSeasonId(seasonId);
     const userTeamResult = await db
       .select()
       .from(teams)
-      .where(and(eq(teams.userId, userId), eq(teams.teamType, teamType)));
+      .where(
+        and(
+          eq(teams.userId, userId),
+          eq(teams.teamType, teamType),
+          eq(teams.seasonId, resolvedSeasonId),
+        ),
+      );
     
     if (userTeamResult.length === 0) return undefined;
     
@@ -508,11 +490,20 @@ export class DatabaseStorage implements IStorage {
 
   async createTeam(teamData: InsertTeam, riderIds: number[]): Promise<TeamWithRiders> {
     const teamType = teamData.teamType === "junior" ? "junior" : "elite";
+    const seasonId = await resolveSeasonId(teamData.seasonId);
+    const budgetCap =
+      teamData.budgetCap ?? (teamType === "junior" ? 500000 : 2000000);
 
     const existingTeam = await db
       .select({ id: teams.id })
       .from(teams)
-      .where(and(eq(teams.userId, teamData.userId), eq(teams.teamType, teamType)))
+      .where(
+        and(
+          eq(teams.userId, teamData.userId),
+          eq(teams.teamType, teamType),
+          eq(teams.seasonId, seasonId),
+        ),
+      )
       .limit(1);
 
     if (existingTeam.length) {
@@ -534,12 +525,8 @@ export class DatabaseStorage implements IStorage {
       throw new Error('Team must have exactly 6 riders');
     }
     
-    if (maleRiders.length > 4) {
-      throw new Error('Team can have a maximum of 4 male riders');
-    }
-    
-    if (femaleRiders.length < 2) {
-      throw new Error('Team must have at least 2 female riders');
+    if (maleRiders.length !== 4 || femaleRiders.length !== 2) {
+      throw new Error('Team must have exactly 4 male and 2 female riders');
     }
 
     const invalidCategory = riders.filter((r) => r.category !== teamType);
@@ -551,8 +538,8 @@ export class DatabaseStorage implements IStorage {
 
     // Check budget
     const totalCost = riders.reduce((sum, rider) => sum + rider.cost, 0);
-    if (totalCost > 2000000) {
-      throw new Error('Team exceeds the budget of $2,000,000');
+    if (totalCost > budgetCap) {
+      throw new Error(`Team exceeds the budget of ${budgetCap}`);
     }
 
     // Create team in transaction
@@ -563,6 +550,8 @@ export class DatabaseStorage implements IStorage {
         .values({
           ...teamData,
           teamType,
+          seasonId,
+          budgetCap,
           createdAt: new Date(),
           updatedAt: new Date(),
           totalPoints: 0
@@ -613,12 +602,8 @@ export class DatabaseStorage implements IStorage {
         throw new Error('Team must have exactly 6 riders');
       }
       
-      if (maleRiders.length > 4) {
-        throw new Error('Team can have a maximum of 4 male riders');
-      }
-      
-      if (femaleRiders.length < 2) {
-        throw new Error('Team must have at least 2 female riders');
+      if (maleRiders.length !== 4 || femaleRiders.length !== 2) {
+        throw new Error('Team must have exactly 4 male and 2 female riders');
       }
 
       const invalidCategory = riders.filter((r) => r.category !== teamType);
@@ -630,8 +615,10 @@ export class DatabaseStorage implements IStorage {
 
       // Check budget
       const totalCost = riders.reduce((sum, rider) => sum + rider.cost, 0);
-      if (totalCost > 2000000) {
-        throw new Error('Team exceeds the budget of $2,000,000');
+      const budgetCap =
+        team.budgetCap ?? (teamType === "junior" ? 500000 : 2000000);
+      if (totalCost > budgetCap) {
+        throw new Error(`Team exceeds the budget of ${budgetCap}`);
       }
 
       await db.transaction(async (tx) => {
@@ -759,7 +746,7 @@ export class DatabaseStorage implements IStorage {
     const race = await this.getRace(id);
     if (!race) return undefined;
     
-    const raceResults = await this.getResults(id);
+    const raceResults = await this.getRaceResults(id);
     
     return {
       ...race,
@@ -767,9 +754,9 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async createRace(race: InsertRace): Promise<Race> {
+  async createRace(race: RaceInput): Promise<Race> {
     // Process date strings for new races as well
-    const processedRace = { ...race };
+    const processedRace: InsertRace = { ...race };
     
     if (typeof processedRace.startDate === 'string') {
       processedRace.startDate = new Date(processedRace.startDate);
@@ -778,8 +765,26 @@ export class DatabaseStorage implements IStorage {
     if (typeof processedRace.endDate === 'string') {
       processedRace.endDate = new Date(processedRace.endDate);
     }
-    
-    const result = await db.insert(races).values(processedRace).returning();
+
+    const startDate = processedRace.startDate as Date;
+    const seasonId = processedRace.seasonId ?? await getSeasonIdForDate(startDate);
+    const lockAt = processedRace.lockAt
+      ? new Date(processedRace.lockAt)
+      : new Date(startDate.getTime() - 24 * 60 * 60 * 1000);
+    const discipline = (processedRace.discipline ?? "DHI").toUpperCase();
+
+    const result = await db
+      .insert(races)
+      .values({
+        ...processedRace,
+        seasonId,
+        discipline,
+        lockAt,
+        gameStatus: processedRace.gameStatus ?? "scheduled",
+        needsResettle: processedRace.needsResettle ?? false,
+      })
+      .returning();
+
     return result[0];
   }
 
@@ -794,6 +799,15 @@ export class DatabaseStorage implements IStorage {
     if (typeof processedData.endDate === 'string') {
       processedData.endDate = new Date(processedData.endDate);
     }
+
+    if (processedData.startDate instanceof Date) {
+      processedData.lockAt = new Date(processedData.startDate.getTime() - 24 * 60 * 60 * 1000);
+      processedData.seasonId = await getSeasonIdForDate(processedData.startDate);
+    }
+
+    if (processedData.discipline) {
+      processedData.discipline = processedData.discipline.toUpperCase();
+    }
     
     const result = await db
       .update(races)
@@ -803,158 +817,42 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async getRaceResultsStub(
-    raceId: number,
-    now: Date = new Date()
-  ): Promise<
-    | (Race & {
-      results: (Result & { rider: Rider })[];
-    })
-    | undefined
-  > {
-    const raceWithStatus = await this.getRaceWithStatus(raceId, now);
-    if (!raceWithStatus) return undefined;
-
-    const raceResults = await this.getResults(raceId);
-
-    return {
-      ...raceWithStatus,
-      results: raceResults
-    };
-  }
-  
-  // Result operations
-  async getResults(raceId: number): Promise<(Result & { rider: Rider })[]> {
+  async getRaceResults(
+    raceId: number
+  ): Promise<(RaceResult & { rider: Rider; points: number })[]> {
     const raceResults = await db
       .select({
-        result: results,
+        result: raceResults,
         rider: riders
       })
-      .from(results)
-      .leftJoin(riders, eq(results.riderId, riders.id))
-      .where(eq(results.raceId, raceId));
+      .from(raceResults)
+      .leftJoin(riders, eq(raceResults.uciId, riders.uciId))
+      .where(eq(raceResults.raceId, raceId));
 
     const missingRiders = raceResults.filter(({ rider }) => !rider);
     if (missingRiders.length > 0) {
-      const missingRiderIds = missingRiders.map(({ result }) => result.riderId).join(", ");
-      console.warn(`Missing rider records for race ${raceId}: [${missingRiderIds}]`);
+      const missingUciIds = missingRiders.map(({ result }) => result.uciId).join(", ");
+      console.warn(`Missing rider records for race ${raceId}: [${missingUciIds}]`);
     }
 
     return raceResults
       .filter(({ rider }) => rider)
-      .map(({ result, rider }) => ({
-        ...result,
-        rider: rider as Rider
-      }));
+      .map(({ result, rider }) => {
+        const scored = scoreRiderResult({
+          uciId: result.uciId,
+          status: result.status as ResultStatus,
+          position: result.position ?? null,
+          qualificationPosition: result.qualificationPosition ?? null,
+        });
+
+        return {
+          ...result,
+          rider: rider as Rider,
+          points: scored.finalPoints,
+        };
+      });
   }
 
-  async addResult(result: InsertResult): Promise<Result> {
-    const insertedResult = await db.insert(results).values(result).returning();
-    return insertedResult[0];
-  }
-
-  async updateTeamPoints(): Promise<void> {
-    // Get all teams
-    const allTeams = await db
-      .select()
-      .from(teams)
-      .where(eq(teams.teamType, "elite"));
-    
-    // For each team, recalculate points
-    for (const team of allTeams) {
-      // Get the team's riders
-      const teamWithRiders = await this.getTeamWithRiders(team.id);
-      if (!teamWithRiders) continue;
-      
-      // Calculate total points by summing rider points
-      const totalPoints = teamWithRiders.riders.reduce(
-        (sum, rider) => sum + (rider.points || 0), 
-        0
-      );
-      
-      // Update team's total points
-      await db
-        .update(teams)
-        .set({ totalPoints })
-        .where(eq(teams.id, team.id));
-    }
-  }
-  
-  // Leaderboard operations
-  async getLeaderboard(): Promise<LeaderboardEntry[]> {
-    const teamRows = await db
-      .select({
-        team: teams,
-        user: users
-      })
-      .from(teams)
-      .innerJoin(users, eq(users.id, teams.userId))
-      .where(eq(teams.teamType, "elite"))
-      .orderBy(desc(teams.totalPoints), asc(teams.name));
-
-    if (teamRows.length === 0) {
-      return [];
-    }
-
-    const teamIds = teamRows.map(({ team }) => team.id);
-
-    const teamRiderRows = await db
-      .select({
-        teamId: teamRiders.teamId,
-        rider: riders
-      })
-      .from(teamRiders)
-      .innerJoin(riders, eq(teamRiders.riderId, riders.id))
-      .where(inArray(teamRiders.teamId, teamIds));
-
-    const ridersByTeam = new Map<number, Rider[]>();
-    for (const row of teamRiderRows) {
-      const riderList = ridersByTeam.get(row.teamId) ?? [];
-      riderList.push(row.rider);
-      ridersByTeam.set(row.teamId, riderList);
-    }
-
-    const latestRace = await db
-      .select({
-        raceId: results.raceId,
-        endDate: races.endDate,
-        startDate: races.startDate
-      })
-      .from(results)
-      .innerJoin(races, eq(results.raceId, races.id))
-      .orderBy(desc(races.endDate), desc(races.startDate), desc(results.raceId))
-      .limit(1);
-
-    let latestRacePoints = new Map<number, number>();
-
-    if (latestRace[0]?.raceId) {
-      const racePoints = await db
-        .select({
-          riderId: results.riderId,
-          points: results.points
-        })
-        .from(results)
-        .where(eq(results.raceId, latestRace[0].raceId));
-
-      latestRacePoints = new Map(racePoints.map((row) => [row.riderId, row.points]));
-    }
-
-    const teamsWithUsers = teamRows.map(({ team, user }) => {
-      const teamRidersList = ridersByTeam.get(team.id) ?? [];
-      const totalCost = teamRidersList.reduce((sum, rider) => sum + rider.cost, 0);
-
-      return {
-        team: {
-          ...team,
-          riders: teamRidersList,
-          totalCost
-        } as TeamWithRiders,
-        user
-      };
-    });
-
-    return buildLeaderboardEntries(teamsWithUsers, latestRacePoints);
-  }
 }
 
 export const storage = new DatabaseStorage();

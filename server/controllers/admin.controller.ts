@@ -191,22 +191,6 @@ export async function importRacesFromUci(_req: Request, res: Response) {
 }
 
 /**
- * Recalculate team points (admin only)
- */
-export async function updateTeamPoints(_req: Request, res: Response) {
-  try {
-    await storage.updateTeamPoints();
-    res.status(200).json({ message: "Team points updated" });
-  } catch (error) {
-    console.error("Error updating team points:", error);
-    res.status(500).json({
-      message: "Failed to update team points",
-      error: error instanceof Error ? error.message : String(error),
-    });
-  }
-}
-
-/**
  * Stream UCI Dataride rider sync output (admin only)
  */
 export async function streamDatarideRiderSync(req: Request, res: Response) {

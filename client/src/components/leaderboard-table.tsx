@@ -36,18 +36,19 @@ export default function LeaderboardTable({ leaderboard, userId }: LeaderboardTab
         <thead className="bg-gray-100">
           <tr>
             <th className="py-3 px-4 text-left font-heading font-bold text-gray-700">RANK</th>
-            <th className="py-3 px-4 text-left font-heading font-bold text-gray-700">TEAM</th>
             <th className="py-3 px-4 text-left font-heading font-bold text-gray-700">MANAGER</th>
-            <th className="py-3 px-4 text-left font-heading font-bold text-gray-700">LAST ROUND</th>
-            <th className="py-3 px-4 text-left font-heading font-bold text-gray-700">TOTAL POINTS</th>
+            <th className="py-3 px-4 text-left font-heading font-bold text-gray-700">TOTAL</th>
+            <th className="py-3 px-4 text-left font-heading font-bold text-gray-700">WINS</th>
+            <th className="py-3 px-4 text-left font-heading font-bold text-gray-700">BEST RACE</th>
+            <th className="py-3 px-4 text-left font-heading font-bold text-gray-700">PODIUMS</th>
           </tr>
         </thead>
         <tbody>
           {leaderboard.map((entry) => {
             const isCurrentUser = userId && entry.user.id === userId;
             return (
-              <tr 
-                key={entry.team.id} 
+              <tr
+                key={entry.user.id}
                 className={`border-b border-gray-200 hover:bg-gray-50 transition ${
                   isCurrentUser ? 'bg-yellow-50' : ''
                 }`}
@@ -58,9 +59,6 @@ export default function LeaderboardTable({ leaderboard, userId }: LeaderboardTab
                   } text-center leading-8`}>
                     {entry.rank}
                   </span>
-                </td>
-                <td className="py-3 px-4 font-heading font-semibold text-secondary">
-                  {entry.team.name}
                 </td>
                 <td className="py-3 px-4 flex items-center gap-2">
                   <Avatar className="h-6 w-6">
@@ -76,11 +74,17 @@ export default function LeaderboardTable({ leaderboard, userId }: LeaderboardTab
                     {isCurrentUser ? 'You' : (entry.user.firstName || entry.user.email || 'Anonymous')}
                   </span>
                 </td>
-                <td className="py-3 px-4 font-accent font-medium text-gray-700">
-                  {entry.lastRoundPoints}
-                </td>
                 <td className="py-3 px-4 font-accent font-bold text-primary">
                   {entry.totalPoints}
+                </td>
+                <td className="py-3 px-4 font-accent font-medium text-gray-700">
+                  {entry.raceWins}
+                </td>
+                <td className="py-3 px-4 font-accent font-medium text-gray-700">
+                  {entry.highestSingleRaceScore}
+                </td>
+                <td className="py-3 px-4 font-accent font-medium text-gray-700">
+                  {entry.podiumFinishes}
                 </td>
               </tr>
             );

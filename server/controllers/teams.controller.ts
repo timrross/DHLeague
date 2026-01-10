@@ -1,6 +1,7 @@
 import { Response } from "express";
 import { storage } from "../storage";
 import { riderDataClient } from "../services/riderDataClient";
+import { getActiveSeasonId } from "../services/game/seasons";
 
 /**
  * Get a user's team
@@ -70,11 +71,14 @@ export async function createTeam(req: any, res: Response) {
     }
 
     // Create the team
+    const seasonId = await getActiveSeasonId();
+    const budgetCap = normalizedTeamType === "junior" ? 500000 : 2000000;
     const teamData = {
       name,
       userId,
       teamType: normalizedTeamType,
-      jokerCardUsed: useJokerCard,
+      seasonId,
+      budgetCap,
       swapsUsed: 0,
       isLocked: false,
       totalPoints: 0
@@ -271,30 +275,24 @@ export async function swapTeamRider(req: any, res: Response) {
     const currentMaleCount = team.riders.filter(r => r.gender === "male").length;
     const currentFemaleCount = team.riders.filter(r => r.gender === "female").length;
 
-    if (removingMale && !addingMale) {
-      // Removing male, adding female - check if this would leave fewer than 2 male riders
-      if (currentMaleCount - 1 < 2) {
-        return res.status(400).json({ message: "Team must have at least 2 male riders" });
-      }
-      // Also check if this would exceed 4 female riders
-      if (currentFemaleCount + 1 > 4) {
-        return res.status(400).json({ message: "Team can have a maximum of 4 female riders" });
-      }
-    } else if (!removingMale && addingMale) {
-      // Removing female, adding male - check if this would leave fewer than 2 female riders
-      if (currentFemaleCount - 1 < 2) {
-        return res.status(400).json({ message: "Team must have at least 2 female riders" });
-      }
-      // Also check if this would exceed 4 male riders
-      if (currentMaleCount + 1 > 4) {
-        return res.status(400).json({ message: "Team can have a maximum of 4 male riders" });
-      }
+    const newMaleCount =
+      currentMaleCount - (removingMale ? 1 : 0) + (addingMale ? 1 : 0);
+    const newFemaleCount =
+      currentFemaleCount - (removingMale ? 0 : 1) + (addingMale ? 0 : 1);
+
+    if (newMaleCount !== 4 || newFemaleCount !== 2) {
+      return res
+        .status(400)
+        .json({ message: "Team must have exactly 4 male and 2 female riders" });
     }
 
     // Check budget
     const newTotalCost = team.totalCost - removedRider.cost + addedRider.cost;
-    if (newTotalCost > 2000000) {
-      return res.status(400).json({ message: "Swap would exceed the budget of $2,000,000" });
+    const budgetCap = team.budgetCap ?? 2000000;
+    if (newTotalCost > budgetCap) {
+      return res
+        .status(400)
+        .json({ message: `Swap would exceed the budget of ${budgetCap}` });
     }
 
     // Prepare new rider IDs list

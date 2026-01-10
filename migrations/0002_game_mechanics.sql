@@ -1,0 +1,150 @@
+CREATE TABLE IF NOT EXISTS seasons (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  start_at TIMESTAMPTZ NOT NULL,
+  end_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+INSERT INTO seasons (name, start_at, end_at)
+SELECT
+  'Season ' || EXTRACT(YEAR FROM NOW())::TEXT,
+  date_trunc('year', NOW()),
+  (date_trunc('year', NOW()) + interval '1 year' - interval '1 day')
+WHERE NOT EXISTS (SELECT 1 FROM seasons);
+
+CREATE TABLE IF NOT EXISTS races (
+  id SERIAL PRIMARY KEY,
+  season_id INTEGER NOT NULL REFERENCES seasons(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  location TEXT NOT NULL,
+  country TEXT NOT NULL,
+  start_date TIMESTAMPTZ NOT NULL,
+  end_date TIMESTAMPTZ NOT NULL,
+  image_url TEXT,
+  discipline TEXT NOT NULL DEFAULT 'DHI',
+  lock_at TIMESTAMPTZ NOT NULL,
+  game_status TEXT NOT NULL DEFAULT 'scheduled',
+  needs_resettle BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+ALTER TABLE races
+  ADD COLUMN IF NOT EXISTS season_id INTEGER REFERENCES seasons(id) ON DELETE CASCADE,
+  ADD COLUMN IF NOT EXISTS discipline TEXT,
+  ADD COLUMN IF NOT EXISTS lock_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS game_status TEXT,
+  ADD COLUMN IF NOT EXISTS needs_resettle BOOLEAN;
+
+UPDATE races
+SET season_id = (SELECT id FROM seasons ORDER BY start_at ASC LIMIT 1)
+WHERE season_id IS NULL;
+
+UPDATE races
+SET discipline = 'DHI'
+WHERE discipline IS NULL;
+
+UPDATE races
+SET lock_at = start_date - interval '1 day'
+WHERE lock_at IS NULL;
+
+UPDATE races
+SET game_status = 'scheduled'
+WHERE game_status IS NULL;
+
+UPDATE races
+SET needs_resettle = FALSE
+WHERE needs_resettle IS NULL;
+
+ALTER TABLE races
+  ALTER COLUMN season_id SET NOT NULL,
+  ALTER COLUMN discipline SET NOT NULL,
+  ALTER COLUMN lock_at SET NOT NULL,
+  ALTER COLUMN game_status SET NOT NULL,
+  ALTER COLUMN needs_resettle SET NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_races_season_id ON races(season_id);
+
+ALTER TABLE teams
+  ADD COLUMN IF NOT EXISTS season_id INTEGER REFERENCES seasons(id) ON DELETE CASCADE,
+  ADD COLUMN IF NOT EXISTS budget_cap INTEGER;
+
+UPDATE teams
+SET season_id = (SELECT id FROM seasons ORDER BY start_at ASC LIMIT 1)
+WHERE season_id IS NULL;
+
+UPDATE teams
+SET budget_cap = CASE WHEN team_type = 'junior' THEN 500000 ELSE 2000000 END
+WHERE budget_cap IS NULL;
+
+ALTER TABLE teams
+  ALTER COLUMN season_id SET NOT NULL,
+  ALTER COLUMN budget_cap SET NOT NULL;
+
+DROP INDEX IF EXISTS idx_teams_user_type;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_teams_user_season_type ON teams(user_id, season_id, team_type);
+
+CREATE TABLE IF NOT EXISTS team_members (
+  id SERIAL PRIMARY KEY,
+  team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+  uci_id TEXT NOT NULL REFERENCES riders(uci_id) ON DELETE CASCADE,
+  role TEXT NOT NULL,
+  starter_index INTEGER,
+  gender TEXT NOT NULL,
+  cost_at_save INTEGER,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_team_members_team_role_slot ON team_members(team_id, role, starter_index);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_team_members_team_bench ON team_members(team_id) WHERE role = 'BENCH';
+CREATE UNIQUE INDEX IF NOT EXISTS idx_team_members_team_uci ON team_members(team_id, uci_id);
+
+CREATE TABLE IF NOT EXISTS race_snapshots (
+  id SERIAL PRIMARY KEY,
+  race_id INTEGER NOT NULL REFERENCES races(id) ON DELETE CASCADE,
+  user_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  team_type TEXT NOT NULL,
+  starters_json JSONB NOT NULL,
+  bench_json JSONB,
+  total_cost_at_lock INTEGER NOT NULL,
+  snapshot_hash TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (race_id, user_id, team_type)
+);
+
+CREATE TABLE IF NOT EXISTS race_results (
+  id SERIAL PRIMARY KEY,
+  race_id INTEGER NOT NULL REFERENCES races(id) ON DELETE CASCADE,
+  uci_id TEXT NOT NULL,
+  status TEXT NOT NULL,
+  position INTEGER,
+  qualification_position INTEGER,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (race_id, uci_id)
+);
+
+CREATE TABLE IF NOT EXISTS race_result_sets (
+  race_id INTEGER PRIMARY KEY REFERENCES races(id) ON DELETE CASCADE,
+  results_hash TEXT NOT NULL,
+  source TEXT,
+  is_final BOOLEAN NOT NULL DEFAULT FALSE,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS race_scores (
+  id SERIAL PRIMARY KEY,
+  race_id INTEGER NOT NULL REFERENCES races(id) ON DELETE CASCADE,
+  user_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  team_type TEXT NOT NULL,
+  total_points INTEGER NOT NULL,
+  breakdown_json JSONB NOT NULL,
+  snapshot_hash_used TEXT NOT NULL,
+  results_hash_used TEXT NOT NULL,
+  settled_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (race_id, user_id, team_type)
+);
+
+CREATE INDEX IF NOT EXISTS idx_race_scores_race_id ON race_scores(race_id);
+CREATE INDEX IF NOT EXISTS idx_race_scores_user_id ON race_scores(user_id);

@@ -14,6 +14,23 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: dhleague_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dhleague_test
 
     steps:
       - name: Check out repository
@@ -30,6 +47,12 @@ jobs:
 
       - name: Lint data layer for unused code
         run: npm run lint:data
+
+      - name: Ensure test database schema
+        run: npx tsx server/scripts/ensure-db.ts
+
+      - name: Run tests
+        run: npm test
 
       - name: Build client and server bundles
         run: npm run build

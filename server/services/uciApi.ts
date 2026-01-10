@@ -194,6 +194,7 @@ export class UCIApiService {
         country: race.country || "TBD",
         startDate: race.startDate,
         endDate: race.endDate,
+        discipline: "DHI",
       }));
     } catch (error) {
       console.error("Error fetching UCI MTB calendar upcoming races:", error);
@@ -308,23 +309,6 @@ export class UCIApiService {
    */
   mapRaceData(uciRaces: UCIRaceEvent[]): InsertRace[] {
     return uciRaces.map((race: UCIRaceEvent) => {
-      // Determine race status
-      let status = "upcoming";
-      const now = new Date();
-      const startDate = new Date(race.startDate);
-      const endDate = new Date(race.endDate);
-
-      if (now > endDate) {
-        status = "completed";
-      } else if (now >= startDate && now <= endDate) {
-        status = "ongoing";
-      } else if (
-        startDate.getTime() ===
-        Math.min(...uciRaces.map((r) => new Date(r.startDate).getTime()))
-      ) {
-        status = "next";
-      }
-
       // Format the race data according to our schema
       return {
         name: race.name,
@@ -332,7 +316,7 @@ export class UCIApiService {
         country: race.location.country.name,
         startDate: new Date(race.startDate),
         endDate: new Date(race.endDate),
-        status,
+        discipline: "DHI",
         imageUrl: `https://flagcdn.com/w320/${race.location.country.code.toLowerCase()}.png`, // Use flag as fallback image
       };
     });

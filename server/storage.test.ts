@@ -1,6 +1,6 @@
 import assert from "node:assert";
 import { afterEach, beforeEach, describe, it, mock } from "node:test";
-import type { Rider, Result } from "@shared/schema";
+import type { Rider, RaceResult } from "@shared/schema";
 
 const raceId = 101;
 
@@ -32,18 +32,21 @@ function createJoinedRow(overrides?: Partial<Rider>) {
     ...overrides,
   };
 
-  const result: Result = {
+  const result: RaceResult = {
     id: 11,
     raceId,
-    riderId: rider.id,
+    uciId: rider.uciId,
+    status: "FIN",
     position: 2,
-    points: 40,
+    qualificationPosition: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   };
 
   return { result, rider };
 }
 
-async function mockDbSelect(rows: Array<{ result: Result; rider: Rider | null }>) {
+async function mockDbSelect(rows: Array<{ result: RaceResult; rider: Rider | null }>) {
   process.env.DATABASE_URL ||= "postgresql://user:pass@localhost:5432/testdb";
   const { db } = await import("./db");
 
@@ -56,7 +59,7 @@ async function mockDbSelect(rows: Array<{ result: Result; rider: Rider | null }>
   }));
 }
 
-describe("DatabaseStorage.getResults", () => {
+describe("DatabaseStorage.getRaceResults", () => {
   beforeEach(() => {
     process.env.DATABASE_URL ||= "postgresql://user:pass@localhost:5432/testdb";
   });
@@ -75,12 +78,13 @@ describe("DatabaseStorage.getResults", () => {
       throw new Error("getRider should not be called for joined result retrieval");
     });
 
-    const results = await storage.getResults(raceId);
+    const results = await storage.getRaceResults(raceId);
 
     assert.deepStrictEqual(results, [
       {
         ...joinedRow.result,
         rider: joinedRow.rider,
+        points: 80,
       },
     ]);
     assert.equal(getRiderMock.mock.callCount(), 0);
@@ -89,7 +93,7 @@ describe("DatabaseStorage.getResults", () => {
   it("logs and filters out results with missing rider records", async () => {
     const presentRow = createJoinedRow({ id: 9, riderId: "rider-9" });
     const missingRow = {
-      result: { ...presentRow.result, id: 15, riderId: 1234 },
+      result: { ...presentRow.result, id: 15, uciId: "missing-uci" },
       rider: null,
     };
     await mockDbSelect([missingRow, presentRow]);
@@ -98,19 +102,20 @@ describe("DatabaseStorage.getResults", () => {
     const { DatabaseStorage } = await import("./storage");
     const storage = new DatabaseStorage();
 
-    const results = await storage.getResults(raceId);
+    const results = await storage.getRaceResults(raceId);
 
     assert.deepStrictEqual(results, [
       {
         ...presentRow.result,
         rider: presentRow.rider,
+        points: 80,
       },
     ]);
     assert.equal(warnMock.mock.callCount(), 1);
     const warningArgs = warnMock.mock.calls[0]?.arguments ?? [];
     assert.ok(
-      warningArgs.some((arg) => typeof arg === "string" && arg.includes(`${missingRow.result.riderId}`)),
-      "expected warning to mention missing rider id",
+      warningArgs.some((arg) => typeof arg === "string" && arg.includes(`${missingRow.result.uciId}`)),
+      "expected warning to mention missing rider uci id",
     );
   });
 });

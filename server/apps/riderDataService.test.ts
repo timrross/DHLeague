@@ -1,6 +1,6 @@
 import assert from "node:assert";
 import { afterEach, before, describe, it, mock } from "node:test";
-import { Race, RaceWithResults, Rider, Result } from "@shared/schema";
+import type { Race, RaceResult, RaceWithResults, Rider } from "@shared/schema";
 import request from "../test-utils/supertest";
 
 const now = new Date();
@@ -14,20 +14,20 @@ const riders: Rider[] = [
     name: "Ava Lopez",
     firstName: "Ava",
     lastName: "Lopez",
-  team: "Gravity Co.",
-  country: "USA",
-  cost: 420000,
-  points: 180,
-  gender: "female",
-  image: "https://example.com/ava.jpg",
-  imageSource: "manual_url",
-  imageOriginalUrl: "https://example.com/ava.jpg",
-  imageUpdatedAt: null,
-  imageContentHash: null,
-  imageMimeType: "image/jpeg",
-  lastYearStanding: 0,
-  form: "[]",
-  injured: false,
+    team: "Gravity Co.",
+    country: "USA",
+    cost: 420000,
+    points: 180,
+    gender: "female",
+    image: "https://example.com/ava.jpg",
+    imageSource: "manual_url",
+    imageOriginalUrl: "https://example.com/ava.jpg",
+    imageUpdatedAt: null,
+    imageContentHash: null,
+    imageMimeType: "image/jpeg",
+    lastYearStanding: 0,
+    form: "[]",
+    injured: false,
     datarideObjectId: null,
     datarideTeamCode: null,
   },
@@ -36,21 +36,31 @@ const riders: Rider[] = [
 const races: Race[] = [
   {
     id: 10,
+    seasonId: 1,
     name: "Fort William",
     location: "Scotland",
     country: "UK",
     startDate: new Date(now.getTime() - 5 * day),
     endDate: new Date(now.getTime() - 4 * day),
     imageUrl: "https://example.com/fort-william.jpg",
+    discipline: "DHI",
+    lockAt: new Date(now.getTime() - 6 * day),
+    gameStatus: "scheduled",
+    needsResettle: false,
   },
   {
     id: 11,
+    seasonId: 1,
     name: "Val di Sole",
     location: "Trentino",
     country: "Italy",
     startDate: new Date(now.getTime() + 4 * day),
     endDate: new Date(now.getTime() + 5 * day),
     imageUrl: "https://example.com/val-di-sole.jpg",
+    discipline: "DHI",
+    lockAt: new Date(now.getTime() + 3 * day),
+    gameStatus: "scheduled",
+    needsResettle: false,
   },
 ];
 
@@ -60,11 +70,15 @@ const raceResults: RaceWithResults = {
     {
       id: 100,
       raceId: races[1].id,
-      riderId: riders[0].id,
+      uciId: riders[0].uciId,
+      status: "FIN",
       position: 1,
-      points: 250,
+      qualificationPosition: null,
+      createdAt: now,
+      updatedAt: now,
+      points: 100,
       rider: riders[0],
-    } as Result & { rider: Rider },
+    } as RaceResult & { rider: Rider; points: number },
   ],
 };
 
@@ -150,7 +164,7 @@ describe("rider data contract", () => {
     );
 
     const app = createService();
-    const response = await request(app).get<(Result & { rider: Rider })[]>(
+    const response = await request(app).get<(RaceResult & { rider: Rider; points: number })[]>(
       `/races/${raceResults.id}/results`,
     );
 
