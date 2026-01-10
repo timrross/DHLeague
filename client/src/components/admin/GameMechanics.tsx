@@ -426,7 +426,7 @@ export default function GameMechanics() {
                   <SelectContent>
                     {races.map((race) => (
                       <SelectItem key={race.id} value={String(race.id)}>
-                        #{race.id} {race.name}
+                        #{race.id} {race.location}, {race.country} — {race.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
