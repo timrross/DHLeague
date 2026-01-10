@@ -3,6 +3,10 @@ import { upsertRaceResults } from "../services/game/races";
 import { lockRace } from "../services/game/lockRace";
 import { settleRace } from "../services/game/settleRace";
 import { getRaceLeaderboard as fetchRaceLeaderboard } from "../services/game/standings";
+import { runGameTick } from "../services/game/tick";
+
+const parseFlag = (value: unknown) =>
+  value === true || value === "true" || value === "1" || value === 1;
 
 export async function lockRaceAdmin(req: Request, res: Response) {
   try {
@@ -11,8 +15,6 @@ export async function lockRaceAdmin(req: Request, res: Response) {
       return res.status(400).json({ message: "Invalid race ID" });
     }
 
-    const parseFlag = (value: unknown) =>
-      value === true || value === "true" || value === "1" || value === 1;
     const force = parseFlag(req.body?.force ?? req.query?.force);
     const result = await lockRace(raceId, { force });
     res.status(200).json(result);
@@ -35,8 +37,6 @@ export async function upsertRaceResultsAdmin(req: Request, res: Response) {
       return res.status(400).json({ message: "results must be an array" });
     }
 
-    const parseFlag = (value: unknown) =>
-      value === true || value === "true" || value === "1" || value === 1;
     const isFinal = parseFlag(payload.isFinal);
     const outcome = await upsertRaceResults({ raceId, results, isFinal });
 
@@ -54,8 +54,6 @@ export async function settleRaceAdmin(req: Request, res: Response) {
       return res.status(400).json({ message: "Invalid race ID" });
     }
 
-    const parseFlag = (value: unknown) =>
-      value === true || value === "true" || value === "1" || value === 1;
     const force = parseFlag(req.body?.force ?? req.query?.force);
     const allowProvisional = parseFlag(req.body?.allowProvisional ?? req.query?.allowProvisional);
 
@@ -79,5 +77,25 @@ export async function getRaceLeaderboard(req: Request, res: Response) {
   } catch (error) {
     console.error("Error fetching race leaderboard:", error);
     res.status(500).json({ message: "Failed to fetch race leaderboard" });
+  }
+}
+
+export async function runGameTickAdmin(req: Request, res: Response) {
+  try {
+    const allowProvisional = parseFlag(
+      req.body?.allowProvisional ?? req.query?.allowProvisional,
+    );
+    const forceLock = parseFlag(req.body?.forceLock ?? req.query?.forceLock);
+    const forceSettle = parseFlag(req.body?.forceSettle ?? req.query?.forceSettle);
+
+    const result = await runGameTick({
+      allowProvisional,
+      forceLock,
+      forceSettle,
+    });
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Error running game tick:", error);
+    res.status(500).json({ message: "Failed to run game tick" });
   }
 }

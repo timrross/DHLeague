@@ -8,6 +8,7 @@ Use either the admin API endpoints or the CLI scripts:
   - `POST /api/admin/races/:raceId/lock`
   - `POST /api/admin/races/:raceId/settle`
   - `POST /api/admin/races/:raceId/results`
+  - `POST /api/admin/game/tick` (locks due races and settles eligible races)
 - CLI:
   - `tsx server/scripts/lock-race.ts --raceId=123 [--force]`
   - `tsx server/scripts/settle-race.ts --raceId=123 [--force]`
