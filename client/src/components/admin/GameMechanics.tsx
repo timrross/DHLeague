@@ -332,7 +332,14 @@ export default function GameMechanics() {
                   {races.map((race) => (
                     <TableRow key={race.id}>
                       <TableCell>{race.id}</TableCell>
-                      <TableCell>{race.name}</TableCell>
+                      <TableCell>
+                        <div className="font-medium">
+                          {race.location}, {race.country}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {race.name}
+                        </div>
+                      </TableCell>
                       <TableCell className="uppercase">
                         {race.discipline}
                       </TableCell>
