@@ -1,3 +1,4 @@
+import "./env";
 import expressOpenIdConnect from "express-openid-connect";
 import type { ConfigParams } from "express-openid-connect";
 const { auth, requiresAuth } = expressOpenIdConnect;
