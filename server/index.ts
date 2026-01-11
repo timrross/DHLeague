@@ -80,20 +80,17 @@ app.use("/assets/flags", express.static(flagsDir, cacheStatic));
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = 5000;
-  server.listen(
-    {
-      port,
-      host: "0.0.0.0",
-      reusePort: true,
-    },
-    () => {
-      log(`serving on port ${port}`);
-    },
-  );
+  // Default to port 5000 (serves both API and client).
+  const port = Number(process.env.PORT ?? 5000);
+  const host =
+    process.env.HOST ?? (isDevEnv ? "127.0.0.1" : "0.0.0.0");
+  const listenOptions = isDevEnv
+    ? { port, host }
+    : { port, host, reusePort: true };
+
+  server.listen(listenOptions, () => {
+    log(`serving on port ${port}`);
+  });
 })().catch((error: unknown) => {
   const message =
     typeof error === "object" && error !== null && "message" in error
