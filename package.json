@@ -5,6 +5,8 @@
   "license": "MIT",
   "scripts": {
     "dev": "NODE_ENV=development tsx watch --exclude \"**/*.timestamp-*\" server/index.ts",
+    "dev:db": "docker compose up -d db",
+    "dev:db:down": "docker compose down",
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc",

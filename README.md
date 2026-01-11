@@ -76,6 +76,25 @@ docker compose up --build
 
 This uses `docker-compose.yml` to build the `dev` stage, expose port `5001` (mapped to the app's `5000`), and start a `postgres:16-alpine` container with credentials `postgres/postgres`. The app service binds the repository into the container, installs dependencies into an isolated `app_node_modules` volume, and runs `npm run dev`, enabling Vite/Express hot reload whenever you edit files locally. The app receives a `DATABASE_URL` pointing at the companion database; override any values by setting them in your `.env` file or by passing `--env` flags to `docker compose`.
 
+### App on host + Postgres container (recommended for local dev)
+
+Run the Node server locally for the fastest hot reload, and keep Postgres in Docker:
+
+```bash
+npm run dev:db
+# or: docker compose up -d db
+```
+
+Then start the app on your machine:
+
+```bash
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres npm run dev
+```
+
+The dev server reads `.env` automatically, so you can omit inline env vars if they exist in your local `.env` file.
+
+This keeps production unchanged while giving you local hot reload without a JS container. You can still run the full app container locally via `docker compose up --build` when needed.
+
 ### Initialize the database schema
 
 The server automatically creates any missing tables (users, riders, races, sessions, etc.) during startup so containers and new environments can begin serving requests immediately. For local development you can still prime the database manually (useful when you want to verify schema diffs or reset state):
