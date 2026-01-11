@@ -58,6 +58,7 @@ export default function GameMechanics() {
   const [selectedSeasonId, setSelectedSeasonId] = useState<string>("");
   const [selectedRaceId, setSelectedRaceId] = useState<string>("");
   const [lockForce, setLockForce] = useState(false);
+  const [unlockForce, setUnlockForce] = useState(false);
   const [settleForce, setSettleForce] = useState(false);
   const [allowProvisional, setAllowProvisional] = useState(false);
   const [resultsIsFinal, setResultsIsFinal] = useState(false);
@@ -122,6 +123,29 @@ export default function GameMechanics() {
       toast({
         title: "Error",
         description: `Failed to lock race: ${error.message || "Unknown error"}`,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const unlockRaceMutation = useMutation({
+    mutationFn: async (payload: { raceId: number; force: boolean }) => {
+      return apiRequest(`/api/admin/races/${payload.raceId}/unlock`, {
+        method: "POST",
+        body: JSON.stringify({ force: payload.force }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [racesUrl] });
+      toast({
+        title: "Race unlocked",
+        description: "Snapshots cleared; teams can be edited again.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: `Failed to unlock race: ${error.message || "Unknown error"}`,
         variant: "destructive",
       });
     },
@@ -284,6 +308,16 @@ export default function GameMechanics() {
               </div>
               <div className="flex items-center gap-2">
                 <Checkbox
+                  id="force-unlock"
+                  checked={unlockForce}
+                  onCheckedChange={(checked) =>
+                    setUnlockForce(checked === true)
+                  }
+                />
+                <Label htmlFor="force-unlock">Force unlock</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
                   id="force-settle"
                   checked={settleForce}
                   onCheckedChange={(checked) =>
@@ -365,6 +399,23 @@ export default function GameMechanics() {
                             <Loader2 className="h-3 w-3 animate-spin" />
                           ) : (
                             "Lock"
+                          )}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={unlockRaceMutation.isPending}
+                          onClick={() =>
+                            unlockRaceMutation.mutate({
+                              raceId: race.id,
+                              force: unlockForce,
+                            })
+                          }
+                        >
+                          {unlockRaceMutation.isPending ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            "Unlock"
                           )}
                         </Button>
                         <Button

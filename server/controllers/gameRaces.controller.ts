@@ -4,6 +4,7 @@ import { lockRace } from "../services/game/lockRace";
 import { settleRace } from "../services/game/settleRace";
 import { getRaceLeaderboard as fetchRaceLeaderboard } from "../services/game/standings";
 import { runGameTick } from "../services/game/tick";
+import { unlockRace } from "../services/game/unlockRace";
 
 const parseFlag = (value: unknown) =>
   value === true || value === "true" || value === "1" || value === 1;
@@ -21,6 +22,22 @@ export async function lockRaceAdmin(req: Request, res: Response) {
   } catch (error) {
     console.error("Error locking race:", error);
     res.status(500).json({ message: "Failed to lock race" });
+  }
+}
+
+export async function unlockRaceAdmin(req: Request, res: Response) {
+  try {
+    const raceId = Number(req.params.raceId);
+    if (Number.isNaN(raceId)) {
+      return res.status(400).json({ message: "Invalid race ID" });
+    }
+
+    const force = parseFlag(req.body?.force ?? req.query?.force);
+    const result = await unlockRace(raceId, { force });
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Error unlocking race:", error);
+    res.status(500).json({ message: "Failed to unlock race" });
   }
 }
 
