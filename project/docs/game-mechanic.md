@@ -1,5 +1,5 @@
 # DHLeague Game Mechanics
-**File:** `game-mechanic.md`  
+**File:** `project/docs/game-mechanic.md`  
 **Status:** Authoritative Source of Truth  
 **Audience:** AI / coding agents implementing scoring, locking, settlement, and standings  
 **Scope:** Exact rules for team structure, race lifecycle, and per-race point allocation

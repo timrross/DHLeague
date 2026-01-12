@@ -25,5 +25,5 @@
 - When touching authentication, verify flows against the configured `AUTH_*` environment variables and callback paths.
 
 ## Documentation and communication
-- Update relevant docs when behaviors change (`README.md`, `architecture.md`, `conventions.md`, or feature-specific notes). Keep environment variable requirements accurate.
+- Update relevant docs when behaviors change (`project/README.md`, `project/architecture.md`, `project/conventions.md`, or feature-specific notes). Keep environment variable requirements accurate.
 - Summaries and PRs should list modified areas (client/server/shared), user-visible impacts, and test coverage. Include repro steps for functional changes (port 5001, env vars, seed commands).

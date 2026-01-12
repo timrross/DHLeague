@@ -3,7 +3,7 @@
 Welcome! This repository powers the DHLeague fantasy MTB experience. Use this guide to stay consistent across the codebase.
 
 ## Ground rules
-- Read `architecture.md` and `conventions.md` before making changes so you understand how the client, server, and shared packages fit together.
+- Read `project/architecture.md` and `project/conventions.md` before making changes so you understand how the client, server, and shared packages fit together.
 - Prefer `rg` for search and keep commands and paths reproducible in your notes and PRs.
 - Follow the developer instructions to **commit every change** and create a PR message via the provided tooling when work is complete.
 - Keep documentation current: if you change behaviors, update the relevant docs alongside code.

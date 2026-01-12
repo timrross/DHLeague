@@ -4,7 +4,9 @@
 - **client/** – Vite + React front end (TypeScript). Uses Wouter for routing, React Query for data, and Tailwind-based UI components. Entry point: `client/src/main.tsx`; routes defined in `client/src/App.tsx`.
 - **server/** – Express server that hosts two logical services: the fantasy league app and the rider data service. Startup is orchestrated from `server/index.ts`, which ensures the database schema, wires authentication, registers services, and conditionally mounts the Vite dev server or static assets.
 - **shared/** – Cross-cutting schema and helpers (e.g., Drizzle schema) used by both client and server.
-- **docs/, tools/, scripts/** – Reference material and automation helpers (e.g., seeding, UCI ingestion utilities under `server/scripts` and `src/scripts`).
+- **project/** – Repository documentation and reference material (see `project/docs`).
+- **docs/** – Captured API fixtures used by ingestion and verification scripts.
+- **tools/, scripts/** – Automation helpers (e.g., seeding, UCI ingestion utilities under `server/scripts` and `src/scripts`).
 
 ## Runtime composition
 1. `server/index.ts` bootstraps Express, verifies schema via `ensureDatabaseSchema`, initializes auth, and mounts the two sub-apps under an HTTP server.
