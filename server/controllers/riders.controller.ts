@@ -63,11 +63,16 @@ export async function getRiders(req: Request, res: Response) {
 
     const sortDir: RiderSortDirection = req.query.sortDir === "desc" ? "desc" : "asc";
 
+    const includeLastRoundPoints =
+      req.query.includeLastRoundPoints === "true" ||
+      req.query.includeLastRoundPoints === "1";
+
     const { riders, total } = await storage.getRidersFiltered(filters, {
       limit,
       offset,
       sortBy,
-      sortDir
+      sortDir,
+      includeLastRoundPoints
     });
 
     res.json({

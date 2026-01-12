@@ -54,12 +54,14 @@ export default function RiderManagement() {
   const [searchQuery, setSearchQuery] = useState("");
 
   // Fetch riders
+  const ridersQueryKey = ["/api/riders", "admin"];
   const {
     data: ridersData,
     isLoading: isLoadingRiders,
     error: ridersError,
   } = useQuery({
-    queryKey: ["/api/riders"],
+    queryKey: ridersQueryKey,
+    queryFn: () => apiRequest("/api/riders?includeLastRoundPoints=true"),
   });
 
   const riderList = useMemo(() => {
@@ -359,7 +361,8 @@ export default function RiderManagement() {
                   <TableHead>Gender</TableHead>
                   <TableHead>Cost</TableHead>
                   <TableHead>Last Year Standing</TableHead>
-                  <TableHead>Points</TableHead>
+                  <TableHead>Last Round</TableHead>
+                  <TableHead>Overall Points</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -372,7 +375,7 @@ export default function RiderManagement() {
                     <React.Fragment key={rider.id}>
                       {inlineEditRiderId === rider.id ? (
                         <TableRow>
-                          <TableCell colSpan={9}>
+                          <TableCell colSpan={10}>
                             <SimpleRiderForm
                               initialData={{
                                 id: rider.id,
@@ -407,6 +410,7 @@ export default function RiderManagement() {
                           </TableCell>
                           <TableCell>${rider.cost.toLocaleString()}</TableCell>
                           <TableCell>{rider.lastYearStanding}</TableCell>
+                          <TableCell>{rider.lastRoundPoints ?? 0}</TableCell>
                           <TableCell>{rider.points}</TableCell>
                           <TableCell>
                             {rider.injured ? (

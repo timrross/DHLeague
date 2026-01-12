@@ -20,11 +20,14 @@ import {
   type InsertUser
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, asc, desc, sql, gte, lte, ilike, or } from "drizzle-orm";
+import { eq, and, asc, desc, sql, gte, lte, ilike, or, inArray } from "drizzle-orm";
 import { getActiveSeasonId, getSeasonIdForDate } from "./services/game/seasons";
 import { scoreRiderResult } from "./services/game/scoring/scoreTeamSnapshot";
 import type { ResultStatus } from "./services/game/config";
 
+export type RiderWithLastRoundPoints = Rider & {
+  lastRoundPoints?: number;
+};
 
 export type RiderFilters = {
   gender?: string;
@@ -84,8 +87,9 @@ export interface IStorage {
       offset?: number;
       sortBy?: RiderSortField;
       sortDir?: RiderSortDirection;
+      includeLastRoundPoints?: boolean;
     }
-  ): Promise<{ riders: Rider[]; total: number }>;
+  ): Promise<{ riders: RiderWithLastRoundPoints[]; total: number }>;
   getRider(id: number): Promise<Rider | undefined>;
   getRiderByRiderId(riderId: string): Promise<Rider | undefined>;
   getRiderByUciId(uciId: string): Promise<Rider | undefined>;
@@ -274,8 +278,9 @@ export class DatabaseStorage implements IStorage {
       offset?: number;
       sortBy?: RiderSortField;
       sortDir?: RiderSortDirection;
+      includeLastRoundPoints?: boolean;
     } = {}
-  ): Promise<{ riders: Rider[]; total: number }> {
+  ): Promise<{ riders: RiderWithLastRoundPoints[]; total: number }> {
     const whereClauses = [];
 
     if (filters.gender) {
@@ -314,7 +319,13 @@ export class DatabaseStorage implements IStorage {
     const whereStatement =
       whereClauses.length > 0 ? and(...whereClauses) : undefined;
 
-    const { limit = 50, offset = 0, sortBy = "name", sortDir = "asc" } = options;
+    const {
+      limit = 50,
+      offset = 0,
+      sortBy = "name",
+      sortDir = "asc",
+      includeLastRoundPoints = false,
+    } = options;
 
     const sortColumnMap: Record<RiderSortField, any> = {
       name: riders.name,
@@ -345,7 +356,57 @@ export class DatabaseStorage implements IStorage {
 
     const total = Number(totalResult[0]?.count ?? 0);
 
-    return { riders: ridersResult, total };
+    if (!includeLastRoundPoints || ridersResult.length === 0) {
+      return { riders: ridersResult, total };
+    }
+
+    const latestRaceRows = await db
+      .select({ raceId: raceResults.raceId, startDate: races.startDate })
+      .from(raceResults)
+      .innerJoin(races, eq(raceResults.raceId, races.id))
+      .orderBy(desc(races.startDate))
+      .limit(1);
+
+    const latestRaceId = latestRaceRows[0]?.raceId;
+    if (!latestRaceId) {
+      return {
+        riders: ridersResult.map((rider) => ({
+          ...rider,
+          lastRoundPoints: 0,
+        })),
+        total,
+      };
+    }
+
+    const riderUciIds = ridersResult.map((rider) => rider.uciId);
+    const lastRoundResults = await db
+      .select()
+      .from(raceResults)
+      .where(
+        and(
+          eq(raceResults.raceId, latestRaceId),
+          inArray(raceResults.uciId, riderUciIds),
+        ),
+      );
+
+    const pointsByUciId = new Map<string, number>();
+    for (const result of lastRoundResults) {
+      const scored = scoreRiderResult({
+        uciId: result.uciId,
+        status: result.status as ResultStatus,
+        position: result.position ?? null,
+        qualificationPosition: result.qualificationPosition ?? null,
+      });
+      pointsByUciId.set(result.uciId, scored.finalPoints);
+    }
+
+    return {
+      riders: ridersResult.map((rider) => ({
+        ...rider,
+        lastRoundPoints: pointsByUciId.get(rider.uciId) ?? 0,
+      })),
+      total,
+    };
   }
 
   async getRider(id: number): Promise<Rider | undefined> {
