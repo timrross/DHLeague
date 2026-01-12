@@ -17,13 +17,15 @@ export type UpsertRaceResultsInput = {
 };
 
 export async function listRaces(seasonId?: number) {
-  let query = db.select().from(races);
+  const baseQuery = db.select().from(races);
 
   if (seasonId !== undefined) {
-    query = query.where(eq(races.seasonId, seasonId));
+    return await baseQuery
+      .where(eq(races.seasonId, seasonId))
+      .orderBy(asc(races.startDate));
   }
 
-  return await query.orderBy(asc(races.startDate));
+  return await baseQuery.orderBy(asc(races.startDate));
 }
 
 export async function upsertRaceResults(input: UpsertRaceResultsInput) {

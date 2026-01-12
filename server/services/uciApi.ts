@@ -1,6 +1,7 @@
 import axios from "axios";
-import { InsertRace, InsertRider } from "@shared/schema";
+import { InsertRider } from "@shared/schema";
 import { generateRiderId } from "@shared/utils";
+import type { RaceInput } from "../storage";
 
 // Types for UCI API responses
 interface UCIRaceEvent {
@@ -166,7 +167,7 @@ export class UCIApiService {
     raceType?: string;
     raceClass?: string;
     seasonId?: string | number;
-  }): Promise<InsertRace[]> {
+  }): Promise<RaceInput[]> {
     try {
       const seasonId =
         options?.seasonId ??
@@ -307,7 +308,7 @@ export class UCIApiService {
   /**
    * Map UCI race data to our race schema
    */
-  mapRaceData(uciRaces: UCIRaceEvent[]): InsertRace[] {
+  mapRaceData(uciRaces: UCIRaceEvent[]): RaceInput[] {
     return uciRaces.map((race: UCIRaceEvent) => {
       // Format the race data according to our schema
       return {

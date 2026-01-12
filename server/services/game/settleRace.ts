@@ -7,7 +7,7 @@ import {
   raceSnapshots,
   races,
 } from "@shared/schema";
-import { GAME_VERSION } from "./config";
+import { GAME_VERSION, type ResultStatus } from "./config";
 import { hashPayload } from "./hashing";
 import { scoreTeamSnapshot } from "./scoring/scoreTeamSnapshot";
 
@@ -20,7 +20,7 @@ const buildResultsPayload = (
   raceId: number,
   results: Array<{
     uciId: string;
-    status: string;
+    status: ResultStatus;
     position: number | null;
     qualificationPosition: number | null;
   }>,
@@ -61,7 +61,7 @@ export async function settleRace(
     const sortedResults = [...resultRows]
       .map((row) => ({
         uciId: row.uciId,
-        status: row.status,
+        status: row.status as ResultStatus,
         position: row.position ?? null,
         qualificationPosition: row.qualificationPosition ?? null,
       }))
@@ -90,7 +90,7 @@ export async function settleRace(
     const resultsByUciId = new Map(
       resultRows.map((row) => [row.uciId, {
         uciId: row.uciId,
-        status: row.status,
+        status: row.status as ResultStatus,
         position: row.position ?? null,
         qualificationPosition: row.qualificationPosition ?? null,
       }]),

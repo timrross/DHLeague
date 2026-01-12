@@ -1,7 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
-import { storage } from "../storage";
+import { storage, type RaceInput } from "../storage";
 import { generateRiderId } from "@shared/utils";
 import { type InsertRider, type InsertRace } from "@shared/schema";
 
@@ -109,7 +109,7 @@ export async function upsertRaces(races: RaceSeed[]) {
       throw new Error(`Race ${race.name} is missing start/end dates`);
     }
 
-    const payload: InsertRace = {
+    const payload: RaceInput = {
       name: race.name,
       location: race.location,
       country: race.country,

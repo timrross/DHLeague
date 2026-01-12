@@ -20,7 +20,7 @@ import {
   type InsertUser
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, asc, desc, sql, gte, lte, ilike, or, inArray } from "drizzle-orm";
+import { eq, and, asc, desc, sql, gte, lte, ilike, or } from "drizzle-orm";
 import { getActiveSeasonId, getSeasonIdForDate } from "./services/game/seasons";
 import { scoreRiderResult } from "./services/game/scoring/scoreTeamSnapshot";
 import type { ResultStatus } from "./services/game/config";
@@ -408,7 +408,7 @@ export class DatabaseStorage implements IStorage {
   
   async deleteAllRiders(): Promise<void> {
     // First, delete related results
-    await db.delete(results);
+    await db.delete(raceResults);
 
     // Then delete team-rider associations
     await db.delete(teamRiders);
@@ -428,7 +428,9 @@ export class DatabaseStorage implements IStorage {
         return false;
       }
 
-      await tx.delete(results).where(eq(results.riderId, id));
+      await tx
+        .delete(raceResults)
+        .where(eq(raceResults.uciId, existing[0].uciId));
       await tx.delete(teamRiders).where(eq(teamRiders.riderId, id));
       await tx
         .delete(teamSwaps)
@@ -572,7 +574,7 @@ export class DatabaseStorage implements IStorage {
 
     let benchRider: Rider | null = null;
     if (benchRiderId !== undefined && benchRiderId !== null) {
-      benchRider = await this.getRider(benchRiderId);
+      benchRider = (await this.getRider(benchRiderId)) ?? null;
       if (!benchRider) {
         throw new Error("Bench rider not found");
       }
@@ -706,7 +708,7 @@ export class DatabaseStorage implements IStorage {
       if (benchRiderId === undefined) {
         benchRider = await this.getBenchRiderForTeam(id);
       } else if (benchRiderId !== null) {
-        benchRider = await this.getRider(benchRiderId);
+        benchRider = (await this.getRider(benchRiderId)) ?? null;
         if (!benchRider) {
           throw new Error("Bench rider not found");
         }
@@ -900,7 +902,7 @@ export class DatabaseStorage implements IStorage {
 
   async createRace(race: RaceInput): Promise<Race> {
     // Process date strings for new races as well
-    const processedRace: InsertRace = { ...race };
+    const processedRace: RaceInput = { ...race };
     
     if (typeof processedRace.startDate === 'string') {
       processedRace.startDate = new Date(processedRace.startDate);

@@ -10,7 +10,7 @@ const normalizeCategory = (value: string): "elite" | "junior" | "both" => {
 
 export async function fetchRiderProfiles(
   uciIds: string[],
-  executor: any = db,
+  executor: { select: typeof db.select } = db,
 ): Promise<Map<string, RiderProfile>> {
   if (!uciIds.length) {
     return new Map();
