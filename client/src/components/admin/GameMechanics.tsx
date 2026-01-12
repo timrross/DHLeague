@@ -32,13 +32,6 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2 } from "lucide-react";
 
-type RaceResultPayload = {
-  uciId: string;
-  status: string;
-  position?: number | null;
-  qualificationPosition?: number | null;
-};
-
 type UciCategoryOption = {
   value: "men-elite" | "men-junior" | "women-elite" | "women-junior";
   label: string;
@@ -69,19 +62,6 @@ const UCI_DISCIPLINE_OPTIONS = [
   { value: "cross-country", label: "Cross-Country" },
 ];
 
-const resultsTemplate = JSON.stringify(
-  [
-    {
-      uciId: "uci:example",
-      status: "FIN",
-      position: 1,
-      qualificationPosition: 1,
-    },
-  ],
-  null,
-  2,
-);
-
 export default function GameMechanics() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -92,8 +72,6 @@ export default function GameMechanics() {
   const [unlockForce, setUnlockForce] = useState(false);
   const [settleForce, setSettleForce] = useState(false);
   const [allowProvisional, setAllowProvisional] = useState(false);
-  const [resultsIsFinal, setResultsIsFinal] = useState(false);
-  const [resultsPayload, setResultsPayload] = useState(resultsTemplate);
   const [uciResultsUrl, setUciResultsUrl] = useState("");
   const [uciCategory, setUciCategory] =
     useState<UciCategoryOption["value"]>("men-elite");
@@ -217,36 +195,6 @@ export default function GameMechanics() {
     },
   });
 
-  const upsertResultsMutation = useMutation({
-    mutationFn: async (payload: {
-      raceId: number;
-      results: RaceResultPayload[];
-      isFinal: boolean;
-    }) => {
-      return apiRequest(`/api/admin/races/${payload.raceId}/results`, {
-        method: "POST",
-        body: JSON.stringify({
-          results: payload.results,
-          isFinal: payload.isFinal,
-        }),
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [racesUrl] });
-      toast({
-        title: "Results updated",
-        description: "Race status updated based on finality.",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: `Failed to update results: ${error.message || "Unknown error"}`,
-        variant: "destructive",
-      });
-    },
-  });
-
   const importUciResultsMutation = useMutation({
     mutationFn: async (payload: {
       raceId: number;
@@ -338,46 +286,6 @@ export default function GameMechanics() {
       category: selectedUciCategory.category,
       discipline: uciDiscipline,
       isFinal: uciResultsIsFinal,
-    });
-  };
-
-  const handleUpsertResults = (event: React.FormEvent) => {
-    event.preventDefault();
-
-    if (!selectedRaceId) {
-      toast({
-        title: "Missing race",
-        description: "Select a race to update results.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    let parsed: RaceResultPayload[];
-    try {
-      parsed = JSON.parse(resultsPayload);
-    } catch (error) {
-      toast({
-        title: "Invalid JSON",
-        description: "Results payload must be valid JSON.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!Array.isArray(parsed)) {
-      toast({
-        title: "Invalid results",
-        description: "Results payload must be a JSON array.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    upsertResultsMutation.mutate({
-      raceId: Number(selectedRaceId),
-      results: parsed,
-      isFinal: resultsIsFinal,
     });
   };
 
@@ -581,7 +489,7 @@ export default function GameMechanics() {
         <CardHeader>
           <CardTitle>Update Results</CardTitle>
           <CardDescription>
-            Load results from a UCI endpoint or paste raw results JSON.
+            Load results from a UCI endpoint for the selected race.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -682,66 +590,6 @@ export default function GameMechanics() {
               sets for a race.
             </p>
           </form>
-
-          <div className="mt-6 border-t border-border pt-6">
-          <form onSubmit={handleUpsertResults} className="space-y-4">
-            <div className="grid gap-4 lg:grid-cols-3 lg:items-end">
-              <div className="space-y-2">
-                <Label>Race</Label>
-                <Select
-                  value={selectedRaceId}
-                  onValueChange={(value) => setSelectedRaceId(value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select race" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {races.map((race) => (
-                      <SelectItem key={race.id} value={String(race.id)}>
-                        #{race.id} {race.location}, {race.country} — {race.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-center gap-2 pt-2">
-                <Checkbox
-                  id="results-final"
-                  checked={resultsIsFinal}
-                  onCheckedChange={(checked) =>
-                    setResultsIsFinal(checked === true)
-                  }
-                />
-                <Label htmlFor="results-final">Mark as final</Label>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="results-json">Results JSON</Label>
-              <textarea
-                id="results-json"
-                value={resultsPayload}
-                onChange={(event) => setResultsPayload(event.target.value)}
-                className="min-h-[200px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              />
-              <p className="text-xs text-muted-foreground">
-                Each row should include uciId, status (FIN/DNF/DNS/DSQ), and
-                optional position/qualificationPosition.
-              </p>
-            </div>
-
-            <Button type="submit" disabled={upsertResultsMutation.isPending}>
-              {upsertResultsMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Updating…
-                </>
-              ) : (
-                "Upsert results"
-              )}
-            </Button>
-          </form>
-          </div>
         </CardContent>
       </Card>
     </div>
