@@ -36,10 +36,20 @@ const getTabFromPath = (path: string): AdminTab => {
   return "users";
 };
 
+const getRaceIdFromPath = (path: string): number | null => {
+  const match = path.match(/^\/admin\/races\/(\d+)(?:[/?#]|$)/);
+  if (!match) {
+    return null;
+  }
+  const raceId = Number(match[1]);
+  return Number.isNaN(raceId) ? null : raceId;
+};
+
 export default function Admin() {
   const { user, isAuthenticated } = useAuth();
   const [location, setLocation] = useLocation();
   const activeTab = getTabFromPath(location);
+  const selectedRaceId = getRaceIdFromPath(location);
   
   if (!isAuthenticated || !user?.isAdmin) {
     return (
@@ -88,7 +98,12 @@ export default function Admin() {
         </TabsContent>
         
         <TabsContent value="races" className="space-y-6">
-          <RaceManagement />
+          <RaceManagement
+            selectedRaceId={selectedRaceId}
+            onSelectRace={(raceId) =>
+              setLocation(raceId ? `/admin/races/${raceId}` : "/admin/races")
+            }
+          />
         </TabsContent>
         
         <TabsContent value="riders" className="space-y-6">

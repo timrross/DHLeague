@@ -30,6 +30,7 @@ function App() {
               </Route>
               <Route path="/leaderboard" component={Leaderboard} />
               <Route path="/rules" component={Rules} />
+              <Route path="/admin/:tab/:id" component={Admin} />
               <Route path="/admin/:tab" component={Admin} />
               <Route path="/admin" component={Admin} />
               <Route path="/login" component={Login} />
