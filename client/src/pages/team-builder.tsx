@@ -40,6 +40,7 @@ export default function TeamBuilder() {
   const [benchMode, setBenchMode] = useState(false);
   const [teamName, setTeamName] = useState("My DH Team");
   const [draftInitialized, setDraftInitialized] = useState(false);
+  const [isEditingTeam, setIsEditingTeam] = useState(false);
   const [swapMode, setSwapMode] = useState(false);
   const [swapRiderData, setSwapRiderData] = useState<Rider | null>(null);
   const [showJokerDialog, setShowJokerDialog] = useState(false);
@@ -92,6 +93,7 @@ export default function TeamBuilder() {
         description: "Your fantasy team has been created.",
         variant: "default",
       });
+      setIsEditingTeam(false);
       invalidateUserTeams();
     },
     onError: (error: any) => {
@@ -118,6 +120,7 @@ export default function TeamBuilder() {
         description: "Your fantasy team has been updated.",
         variant: "default",
       });
+      setIsEditingTeam(false);
       invalidateUserTeams();
     },
     onError: (error: any) => {
@@ -173,6 +176,7 @@ export default function TeamBuilder() {
   const isTeamLocked = activeTeam?.isLocked || false;
   const swapsUsed = activeTeam?.swapsUsed || 0;
   const swapsRemaining = 2 - swapsUsed;
+  const showRiderPicker = isEditingTeam;
   
   const benchIsValid = !benchRider || !selectedRiders.some((rider) => rider.id === benchRider.id);
 
@@ -197,6 +201,14 @@ export default function TeamBuilder() {
       setJokerCardUsed(user.jokerCardUsed || false);
     }
   }, [user]);
+
+  useEffect(() => {
+    if (!isEditingTeam) {
+      setBenchMode(false);
+      setSwapMode(false);
+      setSwapRiderData(null);
+    }
+  }, [isEditingTeam]);
 
   // Filter riders based on search and tab
   const filteredRiders = safeRiders.filter((rider: Rider) => {
@@ -536,6 +548,14 @@ export default function TeamBuilder() {
     <div className="bg-gray-50 p-5 rounded-lg">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="font-heading font-bold text-xl text-secondary">YOUR TEAM</h3>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setIsEditingTeam((current) => !current)}
+          disabled={isTeamLocked && swapsRemaining <= 0}
+        >
+          {isEditingTeam ? "Done Editing" : isTeamLocked ? "Manage Swaps" : "Edit Team"}
+        </Button>
       </div>
       
       {/* Team lock countdown */}
@@ -566,7 +586,7 @@ export default function TeamBuilder() {
           value={teamName}
           onChange={(e) => setTeamName(e.target.value)}
           placeholder="Team Name"
-          disabled={isTeamLocked && !isCreatingTeam}
+          disabled={(!isEditingTeam && !isCreatingTeam) || (isTeamLocked && !isCreatingTeam)}
           className="font-heading font-bold"
         />
       </div>
@@ -574,11 +594,17 @@ export default function TeamBuilder() {
       {/* Team summary */}
       <TeamSummary
         selectedRiders={selectedRiders}
-        toggleRiderSelection={!isTeamLocked ? toggleRiderSelection : undefined}
+        toggleRiderSelection={
+          isEditingTeam && !isTeamLocked ? toggleRiderSelection : undefined
+        }
         benchRider={benchRider}
         benchMode={benchMode}
-        onSelectBench={!isTeamLocked ? startBenchSelection : undefined}
-        onRemoveBench={!isTeamLocked ? removeBenchRider : undefined}
+        onSelectBench={
+          isEditingTeam && !isTeamLocked ? startBenchSelection : undefined
+        }
+        onRemoveBench={
+          isEditingTeam && !isTeamLocked ? removeBenchRider : undefined
+        }
         totalBudget={totalBudget}
         usedBudget={usedBudget}
         remainingBudget={remainingBudget}
@@ -588,8 +614,8 @@ export default function TeamBuilder() {
         isTeamLocked={isTeamLocked}
         swapsRemaining={swapsRemaining}
         swapMode={swapMode}
-        initiateSwap={initiateSwap}
-        cancelSwap={cancelSwap}
+        initiateSwap={isEditingTeam ? initiateSwap : undefined}
+        cancelSwap={isEditingTeam ? cancelSwap : undefined}
         swapRider={swapRiderData}
       />
       
@@ -601,7 +627,12 @@ export default function TeamBuilder() {
             <Button
               className="w-full"
               onClick={handleSaveTeam}
-              disabled={!isTeamValid || createTeam.isPending || updateTeam.isPending}
+              disabled={
+                !isEditingTeam ||
+                !isTeamValid ||
+                createTeam.isPending ||
+                updateTeam.isPending
+              }
             >
               {activeTeam && !isCreatingTeam ? 'Update Team' : 'Save Team'}
             </Button>
@@ -776,28 +807,21 @@ export default function TeamBuilder() {
           </div>
           
           {/* Rider selection for mobile */}
-          <div>
-            <Card>
-              <CardContent className="p-6">
-                {renderRiderSearch()}
-              </CardContent>
-            </Card>
-          </div>
+          {showRiderPicker && (
+            <div>
+              <Card>
+                <CardContent className="p-6">
+                  {renderRiderSearch()}
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
         
         {/* Desktop view - riders and team side by side */}
         <div className="hidden lg:grid lg:grid-cols-12 lg:gap-6">
-          {/* Rider selection for desktop - left side */}
-          <div className="lg:col-span-7">
-            <Card>
-              <CardContent className="p-6">
-                {renderRiderSearch()}
-              </CardContent>
-            </Card>
-          </div>
-          
-          {/* Team section for desktop - right side */}
-          <div className="lg:col-span-5">
+          {/* Team section for desktop - primary */}
+          <div className={showRiderPicker ? "lg:col-span-7" : "lg:col-span-12"}>
             {teamLoading && isAuthenticated ? (
               <div className="flex justify-center items-center py-10">
                 <RefreshCw className="w-6 h-6 animate-spin text-primary" />
@@ -807,6 +831,17 @@ export default function TeamBuilder() {
               renderTeamSection()
             )}
           </div>
+
+          {/* Rider selection for desktop - right side */}
+          {showRiderPicker && (
+            <div className="lg:col-span-5">
+              <Card>
+                <CardContent className="p-6">
+                  {renderRiderSearch()}
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
         
         {/* Swap mode info - show on both mobile and desktop */}
