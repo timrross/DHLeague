@@ -16,8 +16,10 @@ type RidersResponse = Rider[] | { data?: Rider[] };
 
 export type RiderQueryParams = {
   category?: string;
+  gender?: string;
   page?: number;
   pageSize?: number;
+  search?: string;
 };
 
 type QueryOptions<T> = Omit<UseQueryOptions<T>, "queryKey" | "queryFn">;
@@ -25,8 +27,10 @@ type QueryOptions<T> = Omit<UseQueryOptions<T>, "queryKey" | "queryFn">;
 function buildRidersUrl(params?: RiderQueryParams) {
   const searchParams = new URLSearchParams();
   if (params?.category) searchParams.set("category", params.category);
+  if (params?.gender) searchParams.set("gender", params.gender);
   if (params?.page) searchParams.set("page", String(params.page));
   if (params?.pageSize) searchParams.set("pageSize", String(params.pageSize));
+  if (params?.search) searchParams.set("search", params.search);
   const queryString = searchParams.toString();
   return queryString ? `${riderDataEndpoints.riders}?${queryString}` : riderDataEndpoints.riders;
 }

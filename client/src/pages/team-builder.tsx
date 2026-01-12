@@ -57,9 +57,15 @@ export default function TeamBuilder() {
   const lockDate = nextRace ? new Date(new Date(nextRace.startDate).getTime() - 24 * 60 * 60 * 1000) : new Date();
   
   // Fetch riders
+  const normalizedSearch = searchTerm.trim();
+  const normalizedGender =
+    selectedTab === "all" ? undefined : selectedTab;
+
   const { data: riders, isLoading: ridersLoading } = useRidersQueryWithParams({
     category: "elite",
+    gender: normalizedGender,
     pageSize: 200,
+    search: normalizedSearch ? normalizedSearch : undefined,
   });
   const safeRiders = Array.isArray(riders) ? (riders as Rider[]) : [];
 
@@ -212,8 +218,19 @@ export default function TeamBuilder() {
 
   // Filter riders based on search and tab
   const filteredRiders = safeRiders.filter((rider: Rider) => {
-    const matchesSearch = rider.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         rider.team.toLowerCase().includes(searchTerm.toLowerCase());
+    const searchValue = normalizedSearch.toLowerCase();
+    const matchesSearch = !searchValue
+      ? true
+      : [
+          rider.name,
+          rider.firstName,
+          rider.lastName,
+          rider.team,
+        ]
+          .filter(Boolean)
+          .some((value) =>
+            String(value).toLowerCase().includes(searchValue),
+          );
     const matchesTab = selectedTab === "all" || rider.gender === selectedTab;
     return matchesSearch && matchesTab;
   });
