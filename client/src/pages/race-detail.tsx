@@ -3,7 +3,11 @@ import { useLocation } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Race } from "@shared/schema";
-import { useRaceQuery, useRaceResultsQuery } from "@/services/riderDataApi";
+import {
+  useRaceQuery,
+  useRaceResultsQuery,
+  type RaceResultRow,
+} from "@/services/riderDataApi";
 import { formatRiderDisplayName } from "@shared/utils";
 import RaceLabel from "@/components/race-label";
 
@@ -36,6 +40,64 @@ function StatusBadge({ status }: { status?: Race["status"] }) {
   );
 }
 
+const DISCIPLINE_LABELS: Record<string, string> = {
+  DHI: "Downhill",
+  XCO: "Cross-Country",
+};
+
+const STATUS_SORT_ORDER: Record<string, number> = {
+  FIN: 0,
+  DNF: 1,
+  DNS: 2,
+  DSQ: 3,
+};
+
+const GROUP_ORDER = [
+  "male-elite",
+  "female-elite",
+  "male-junior",
+  "female-junior",
+];
+
+function normalizeStatus(status?: string | null) {
+  return String(status ?? "").toUpperCase();
+}
+
+function formatDisciplineLabel(discipline?: string | null) {
+  if (!discipline) return null;
+  const normalized = discipline.toUpperCase();
+  return DISCIPLINE_LABELS[normalized] ?? discipline;
+}
+
+function formatCategoryLabel(gender?: string | null, category?: string | null) {
+  const genderLabel = gender === "female" ? "Women" : "Men";
+  const categoryLabel = category === "junior" ? "Junior" : "Elite";
+  return `${genderLabel} ${categoryLabel}`;
+}
+
+function isFinishedResult(result: RaceResultRow) {
+  return normalizeStatus(result.status) === "FIN" && result.position != null;
+}
+
+function sortResults(a: RaceResultRow, b: RaceResultRow) {
+  const statusA = STATUS_SORT_ORDER[normalizeStatus(a.status)] ?? 99;
+  const statusB = STATUS_SORT_ORDER[normalizeStatus(b.status)] ?? 99;
+  if (statusA !== statusB) return statusA - statusB;
+
+  const posA = a.position ?? Number.POSITIVE_INFINITY;
+  const posB = b.position ?? Number.POSITIVE_INFINITY;
+  if (posA !== posB) return posA - posB;
+
+  return a.rider.name.localeCompare(b.rider.name);
+}
+
+type ResultsGroup = {
+  key: string;
+  label: string;
+  results: RaceResultRow[];
+  podium: RaceResultRow[];
+};
+
 export default function RaceDetail({ id }: RaceDetailProps) {
   const [, navigate] = useLocation();
 
@@ -49,11 +111,54 @@ export default function RaceDetail({ id }: RaceDetailProps) {
     enabled: !!race,
   });
 
-  const podium = useMemo(() => {
-    if (!results || results.length === 0) return null;
-    const sorted = [...results].sort((a, b) => a.position - b.position);
-    return sorted.slice(0, 3);
-  }, [results]);
+  const groupedResults = useMemo<ResultsGroup[]>(() => {
+    if (!results || results.length === 0) return [];
+
+    const disciplineLabel = formatDisciplineLabel(race?.discipline ?? null);
+    const groups = new Map<string, ResultsGroup>();
+
+    for (const result of results) {
+      const gender = result.rider.gender ?? "male";
+      const category = result.rider.category ?? "elite";
+      const key = `${gender}-${category}`;
+
+      if (!groups.has(key)) {
+        const baseLabel = formatCategoryLabel(gender, category);
+        const label = disciplineLabel ? `${baseLabel} • ${disciplineLabel}` : baseLabel;
+        groups.set(key, {
+          key,
+          label,
+          results: [],
+          podium: [],
+        });
+      }
+
+      groups.get(key)?.results.push(result);
+    }
+
+    const output = Array.from(groups.values());
+    for (const group of output) {
+      group.results.sort(sortResults);
+      group.podium = group.results
+        .filter(isFinishedResult)
+        .slice()
+        .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+        .slice(0, 3);
+    }
+
+    output.sort((a, b) => {
+      const indexA = GROUP_ORDER.indexOf(a.key);
+      const indexB = GROUP_ORDER.indexOf(b.key);
+      if (indexA === -1 && indexB === -1) {
+        return a.label.localeCompare(b.label);
+      }
+      if (indexA === -1) return 1;
+      if (indexB === -1) return -1;
+      return indexA - indexB;
+    });
+
+    return output;
+  }, [results, race?.discipline]);
 
   if (isError) {
     return (
@@ -136,16 +241,44 @@ export default function RaceDetail({ id }: RaceDetailProps) {
                       <div className="flex justify-center items-center h-24">
                         <div className="w-6 h-6 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
                       </div>
-                    ) : podium ? (
-                      podium.map((result) => (
-                        <div key={result.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-md">
-                          <div>
-                            <p className="font-semibold text-secondary">
-                              {formatRiderDisplayName(result.rider) || result.rider.name}
+                    ) : groupedResults.length > 0 ? (
+                      groupedResults.map((group, groupIndex) => (
+                        <div
+                          key={group.key}
+                          className={
+                            groupIndex === 0
+                              ? "space-y-2"
+                              : "space-y-2 pt-3 border-t border-gray-100"
+                          }
+                        >
+                          <p className="text-sm font-semibold text-secondary">
+                            {group.label}
+                          </p>
+                          {group.podium.length > 0 ? (
+                            group.podium.map((result) => (
+                              <div
+                                key={result.id}
+                                className="flex items-center justify-between bg-gray-50 p-3 rounded-md"
+                              >
+                                <div>
+                                  <p className="font-semibold text-secondary">
+                                    {formatRiderDisplayName(result.rider) ||
+                                      result.rider.name}
+                                  </p>
+                                  <p className="text-xs text-gray-500">
+                                    Position #{result.position}
+                                  </p>
+                                </div>
+                                <Badge className="bg-primary text-white">
+                                  {result.points} pts
+                                </Badge>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-sm text-gray-600">
+                              No finished results yet.
                             </p>
-                            <p className="text-xs text-gray-500">Position #{result.position}</p>
-                          </div>
-                          <Badge className="bg-primary text-white">{result.points} pts</Badge>
+                          )}
                         </div>
                       ))
                     ) : (
@@ -164,35 +297,52 @@ export default function RaceDetail({ id }: RaceDetailProps) {
                     <div className="flex justify-center items-center h-48">
                       <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
                     </div>
-                  ) : results && results.length > 0 ? (
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full text-left">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th className="py-3 px-4 text-xs text-gray-500 uppercase">Pos</th>
-                            <th className="py-3 px-4 text-xs text-gray-500 uppercase">Rider</th>
-                            <th className="py-3 px-4 text-xs text-gray-500 uppercase">Country</th>
-                            <th className="py-3 px-4 text-xs text-gray-500 uppercase">Points</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {results
-                            .slice()
-                            .sort((a, b) => a.position - b.position)
-                            .map((result) => (
-                              <tr key={result.id} className="border-b border-gray-100">
-                                <td className="py-3 px-4 font-semibold">{result.position}</td>
-                                <td className="py-3 px-4">
-                                  <p className="font-semibold text-secondary">
-                                    {formatRiderDisplayName(result.rider) || result.rider.name}
-                                  </p>
-                                </td>
-                                <td className="py-3 px-4 text-gray-600">{result.rider.country}</td>
-                                <td className="py-3 px-4 font-semibold text-secondary">{result.points}</td>
-                              </tr>
-                            ))}
-                        </tbody>
-                      </table>
+                  ) : groupedResults.length > 0 ? (
+                    <div className="space-y-8">
+                      {groupedResults.map((group) => (
+                        <div key={group.key} className="space-y-3">
+                          <div className="text-sm font-semibold text-secondary">
+                            {group.label}
+                          </div>
+                          <div className="overflow-x-auto">
+                            <table className="min-w-full text-left">
+                              <thead className="bg-gray-50">
+                                <tr>
+                                  <th className="py-3 px-4 text-xs text-gray-500 uppercase">Pos</th>
+                                  <th className="py-3 px-4 text-xs text-gray-500 uppercase">Rider</th>
+                                  <th className="py-3 px-4 text-xs text-gray-500 uppercase">Country</th>
+                                  <th className="py-3 px-4 text-xs text-gray-500 uppercase">Status</th>
+                                  <th className="py-3 px-4 text-xs text-gray-500 uppercase">Points</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {group.results.map((result) => (
+                                  <tr key={result.id} className="border-b border-gray-100">
+                                    <td className="py-3 px-4 font-semibold">
+                                      {result.position ?? "—"}
+                                    </td>
+                                    <td className="py-3 px-4">
+                                      <p className="font-semibold text-secondary">
+                                        {formatRiderDisplayName(result.rider) ||
+                                          result.rider.name}
+                                      </p>
+                                    </td>
+                                    <td className="py-3 px-4 text-gray-600">
+                                      {result.rider.country}
+                                    </td>
+                                    <td className="py-3 px-4 text-gray-600">
+                                      {normalizeStatus(result.status) || "—"}
+                                    </td>
+                                    <td className="py-3 px-4 font-semibold text-secondary">
+                                      {result.points}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   ) : (
                     <p className="text-gray-700">No results have been posted for this race yet.</p>
