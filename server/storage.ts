@@ -964,7 +964,7 @@ export class DatabaseStorage implements IStorage {
   async getRaceResults(
     raceId: number
   ): Promise<(RaceResult & { rider: Rider; points: number })[]> {
-    const raceResults = await db
+    const raceResultRows = await db
       .select({
         result: raceResults,
         rider: riders
@@ -973,13 +973,13 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(riders, eq(raceResults.uciId, riders.uciId))
       .where(eq(raceResults.raceId, raceId));
 
-    const missingRiders = raceResults.filter(({ rider }) => !rider);
+    const missingRiders = raceResultRows.filter(({ rider }) => !rider);
     if (missingRiders.length > 0) {
       const missingUciIds = missingRiders.map(({ result }) => result.uciId).join(", ");
       console.warn(`Missing rider records for race ${raceId}: [${missingUciIds}]`);
     }
 
-    return raceResults
+    return raceResultRows
       .filter(({ rider }) => rider)
       .map(({ result, rider }) => {
         const scored = scoreRiderResult({

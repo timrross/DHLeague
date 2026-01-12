@@ -241,4 +241,5 @@ if (hasDb) {
       .where(eq(raceScores.raceId, raceId));
     assert.equal(scoresAfterResettle[0].totalPoints > scoresAfterFirst[0].totalPoints, true);
   });
+  });
 }
