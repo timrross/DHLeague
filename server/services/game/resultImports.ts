@@ -2,15 +2,13 @@ import type { RaceResultImport } from "@shared/schema";
 
 export type ResultSetDefinition = {
   gender: "male" | "female";
-  category: "elite" | "junior";
+  category: "elite";
   label: string;
 };
 
 export const REQUIRED_RESULT_SETS: ResultSetDefinition[] = [
   { gender: "male", category: "elite", label: "Men Elite" },
-  { gender: "male", category: "junior", label: "Men Junior" },
   { gender: "female", category: "elite", label: "Women Elite" },
-  { gender: "female", category: "junior", label: "Women Junior" },
 ];
 
 const buildKey = (gender: string, category: string) =>

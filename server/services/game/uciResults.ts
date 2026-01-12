@@ -26,7 +26,7 @@ export type ImportUciRaceResultsInput = {
   raceId: number;
   sourceUrl: string;
   gender: Gender;
-  category: "elite" | "junior";
+  category: "elite";
   discipline?: string;
   isFinal?: boolean;
 };

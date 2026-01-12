@@ -33,10 +33,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2 } from "lucide-react";
 
 type UciCategoryOption = {
-  value: "men-elite" | "men-junior" | "women-elite" | "women-junior";
+  value: "men-elite" | "women-elite";
   label: string;
   gender: "male" | "female";
-  category: "elite" | "junior";
+  category: "elite";
 };
 
 type UciImportResponse = {
@@ -61,9 +61,7 @@ type LockRaceResponse = {
 
 const UCI_CATEGORY_OPTIONS: UciCategoryOption[] = [
   { value: "men-elite", label: "Men Elite", gender: "male", category: "elite" },
-  { value: "men-junior", label: "Men Junior", gender: "male", category: "junior" },
   { value: "women-elite", label: "Women Elite", gender: "female", category: "elite" },
-  { value: "women-junior", label: "Women Junior", gender: "female", category: "junior" },
 ];
 
 const UCI_DISCIPLINE_OPTIONS = [
@@ -247,7 +245,7 @@ export default function GameMechanics() {
       raceId: number;
       sourceUrl: string;
       gender: "male" | "female";
-      category: "elite" | "junior";
+      category: "elite";
       discipline: string;
       isFinal: boolean;
     }) => {
@@ -633,9 +631,9 @@ export default function GameMechanics() {
               )}
             </Button>
             <p className="text-xs text-muted-foreground">
-              Lock the race first, then paste each category's UCI endpoint URL
-              to load all four result sets. Settling requires all four sets to
-              be marked final.
+              Lock the race first, then paste the Men Elite and Women Elite UCI
+              endpoints to load both result sets. Settling requires both sets
+              to be marked final.
             </p>
           </form>
         </CardContent>

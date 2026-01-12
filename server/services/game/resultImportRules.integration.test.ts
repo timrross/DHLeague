@@ -108,7 +108,7 @@ if (hasDb) {
       assert.equal(result.updated, 1);
     });
 
-    it("requires all four result sets to be final before settling", async () => {
+    it("requires elite result sets to be final before settling", async () => {
       await db
         .update(races)
         .set({ gameStatus: "final" })
@@ -137,28 +137,10 @@ if (hasDb) {
         },
         {
           raceId,
-          gender: "male",
-          category: "junior",
-          discipline: "DHI",
-          sourceUrl: "test://men-junior",
-          isFinal: true,
-          updatedAt: now,
-        },
-        {
-          raceId,
           gender: "female",
           category: "elite",
           discipline: "DHI",
           sourceUrl: "test://women-elite",
-          isFinal: true,
-          updatedAt: now,
-        },
-        {
-          raceId,
-          gender: "female",
-          category: "junior",
-          discipline: "DHI",
-          sourceUrl: "test://women-junior",
           isFinal: true,
           updatedAt: now,
         },

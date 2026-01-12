@@ -72,8 +72,8 @@ export async function importUciRaceResultsAdmin(req: Request, res: Response) {
     }
 
     const category = payload.category;
-    if (category !== "elite" && category !== "junior") {
-      return res.status(400).json({ message: "category must be elite or junior" });
+    if (category !== "elite") {
+      return res.status(400).json({ message: "category must be elite" });
     }
 
     const isFinal = parseFlag(payload.isFinal);
