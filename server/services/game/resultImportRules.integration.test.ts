@@ -149,5 +149,93 @@ if (hasDb) {
       const result = await settleRace(raceId);
       assert.equal(result.raceId, raceId);
     });
+
+    it("requires results to be loaded before settling", async () => {
+      await db
+        .update(races)
+        .set({ gameStatus: "final" })
+        .where(eq(races.id, raceId));
+
+      await db.insert(raceResultImports).values([
+        {
+          raceId,
+          gender: "male",
+          category: "elite",
+          discipline: "DHI",
+          sourceUrl: "test://men-elite",
+          isFinal: true,
+          updatedAt: now,
+        },
+        {
+          raceId,
+          gender: "female",
+          category: "elite",
+          discipline: "DHI",
+          sourceUrl: "test://women-elite",
+          isFinal: true,
+          updatedAt: now,
+        },
+      ]);
+
+      await assert.rejects(
+        () => settleRace(raceId),
+        (error: unknown) => {
+          assert.match(
+            (error as Error).message,
+            /no results loaded/i,
+          );
+          return true;
+        },
+      );
+    });
+
+    it("requires team snapshots to be present before settling", async () => {
+      await db
+        .update(races)
+        .set({ gameStatus: "final" })
+        .where(eq(races.id, raceId));
+
+      await db.insert(raceResultImports).values([
+        {
+          raceId,
+          gender: "male",
+          category: "elite",
+          discipline: "DHI",
+          sourceUrl: "test://men-elite",
+          isFinal: true,
+          updatedAt: now,
+        },
+        {
+          raceId,
+          gender: "female",
+          category: "elite",
+          discipline: "DHI",
+          sourceUrl: "test://women-elite",
+          isFinal: true,
+          updatedAt: now,
+        },
+      ]);
+
+      await db.insert(raceResults).values({
+        raceId,
+        uciId: "uci-1",
+        status: "FIN",
+        position: 1,
+        qualificationPosition: null,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      await assert.rejects(
+        () => settleRace(raceId),
+        (error: unknown) => {
+          assert.match(
+            (error as Error).message,
+            /no team snapshots/i,
+          );
+          return true;
+        },
+      );
+    });
   });
 }

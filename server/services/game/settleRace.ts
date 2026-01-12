@@ -80,6 +80,12 @@ export async function settleRace(
       .select()
       .from(raceResults)
       .where(eq(raceResults.raceId, raceId));
+    if (resultRows.length === 0) {
+      throw new UserFacingError(
+        `Race ${raceId} has no results loaded. Import results before settling.`,
+        400,
+      );
+    }
 
     const sortedResults = [...resultRows]
       .map((row) => ({
@@ -123,6 +129,12 @@ export async function settleRace(
       .select()
       .from(raceSnapshots)
       .where(eq(raceSnapshots.raceId, raceId));
+    if (snapshots.length === 0) {
+      throw new UserFacingError(
+        `Race ${raceId} has no team snapshots. Lock the race before settling.`,
+        400,
+      );
+    }
 
     const existingScores = await tx
       .select()
