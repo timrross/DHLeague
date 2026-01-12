@@ -50,8 +50,18 @@ export async function lockRace(raceId: number, options: LockRaceOptions = {}) {
     const now = new Date();
     const lockAt = getLockAt(new Date(race.startDate), race.lockAt ?? null);
 
+    let didLock = false;
+
     if (!force && now < lockAt) {
-      return { raceId, lockedTeams: 0, skippedTeams: 0, lockAt };
+      const status = race.gameStatus ?? "scheduled";
+      return {
+        raceId,
+        lockedTeams: 0,
+        skippedTeams: 0,
+        lockAt,
+        status,
+        locked: status === "locked",
+      };
     }
 
     if (race.gameStatus === "scheduled") {
@@ -59,6 +69,7 @@ export async function lockRace(raceId: number, options: LockRaceOptions = {}) {
         .update(races)
         .set({ gameStatus: "locked" })
         .where(eq(races.id, raceId));
+      didLock = true;
     }
 
     let lockedTeams = 0;
@@ -215,6 +226,14 @@ export async function lockRace(raceId: number, options: LockRaceOptions = {}) {
       }
     }
 
-    return { raceId, lockedTeams, skippedTeams, lockAt };
+    const status = didLock ? "locked" : race.gameStatus ?? "scheduled";
+    return {
+      raceId,
+      lockedTeams,
+      skippedTeams,
+      lockAt,
+      status,
+      locked: status === "locked",
+    };
   });
 }

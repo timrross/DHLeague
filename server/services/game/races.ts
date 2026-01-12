@@ -2,6 +2,7 @@ import { asc, eq } from "drizzle-orm";
 import { db } from "../../db";
 import { raceResults, races } from "@shared/schema";
 import type { ResultStatus } from "./config";
+import { assertRaceReadyForResults } from "./raceResultsValidation";
 
 export type RaceResultInput = {
   uciId: string;
@@ -40,6 +41,7 @@ export async function upsertRaceResults(input: UpsertRaceResultsInput) {
     if (!race) {
       throw new Error(`Race ${input.raceId} not found`);
     }
+    assertRaceReadyForResults(race);
 
     for (const result of input.results) {
       const rawStatus = String(result.status ?? "").toUpperCase();

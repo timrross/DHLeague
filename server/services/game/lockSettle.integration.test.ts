@@ -5,6 +5,7 @@ import {
   riders,
   races,
   raceResults,
+  raceResultImports,
   raceResultSets,
   raceScores,
   raceSnapshots,
@@ -181,6 +182,7 @@ if (hasDb) {
     await db.delete(raceScores).where(eq(raceScores.raceId, raceId));
     await db.delete(raceResultSets).where(eq(raceResultSets.raceId, raceId));
     await db.delete(raceResults).where(eq(raceResults.raceId, raceId));
+    await db.delete(raceResultImports).where(eq(raceResultImports.raceId, raceId));
     await db.delete(raceSnapshots).where(eq(raceSnapshots.raceId, raceId));
     await db.delete(teamMembers).where(eq(teamMembers.teamId, teamId));
     await db.delete(teams).where(eq(teams.id, teamId));
@@ -210,6 +212,45 @@ if (hasDb) {
         { uciId: uciIds[6], status: "FIN", position: 8 },
       ],
     });
+
+    await db.insert(raceResultImports).values([
+      {
+        raceId,
+        gender: "male",
+        category: "elite",
+        discipline: "DHI",
+        sourceUrl: "test://men-elite",
+        isFinal: true,
+        updatedAt: now,
+      },
+      {
+        raceId,
+        gender: "male",
+        category: "junior",
+        discipline: "DHI",
+        sourceUrl: "test://men-junior",
+        isFinal: true,
+        updatedAt: now,
+      },
+      {
+        raceId,
+        gender: "female",
+        category: "elite",
+        discipline: "DHI",
+        sourceUrl: "test://women-elite",
+        isFinal: true,
+        updatedAt: now,
+      },
+      {
+        raceId,
+        gender: "female",
+        category: "junior",
+        discipline: "DHI",
+        sourceUrl: "test://women-junior",
+        isFinal: true,
+        updatedAt: now,
+      },
+    ]);
 
     const firstSettle = await settleRace(raceId);
     assert.equal(firstSettle.updatedScores, 1);

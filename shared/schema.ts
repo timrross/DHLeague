@@ -166,6 +166,21 @@ export const raceResults = pgTable("race_results", {
 export type RaceResult = typeof raceResults.$inferSelect;
 export type InsertRaceResult = typeof raceResults.$inferInsert;
 
+// Race result import tracking (per category/gender)
+export const raceResultImports = pgTable("race_result_imports", {
+  id: serial("id").primaryKey(),
+  raceId: integer("race_id").notNull().references(() => races.id),
+  gender: text("gender").notNull(),
+  category: text("category").notNull(),
+  discipline: text("discipline").notNull().default("DHI"),
+  sourceUrl: text("source_url"),
+  isFinal: boolean("is_final").notNull().default(false),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type RaceResultImport = typeof raceResultImports.$inferSelect;
+export type InsertRaceResultImport = typeof raceResultImports.$inferInsert;
+
 // Race result set hash + metadata
 export const raceResultSets = pgTable("race_result_sets", {
   raceId: integer("race_id").primaryKey().references(() => races.id),

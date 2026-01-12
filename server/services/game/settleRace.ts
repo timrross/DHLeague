@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "../../db";
 import {
   raceResultSets,
+  raceResultImports,
   raceResults,
   raceScores,
   raceSnapshots,
@@ -10,6 +11,8 @@ import {
 import { GAME_VERSION, type ResultStatus } from "./config";
 import { hashPayload } from "./hashing";
 import { scoreTeamSnapshot } from "./scoring/scoreTeamSnapshot";
+import { UserFacingError } from "./errors";
+import { getMissingFinalResultSets, resolveDisciplineCode } from "./resultImports";
 
 export type SettleRaceOptions = {
   force?: boolean;
@@ -41,6 +44,26 @@ export async function settleRace(
 
     if (!race) {
       throw new Error(`Race ${raceId} not found`);
+    }
+
+    const discipline = resolveDisciplineCode(race.discipline, "DHI");
+    const importRows = await tx
+      .select()
+      .from(raceResultImports)
+      .where(
+        and(
+          eq(raceResultImports.raceId, raceId),
+          eq(raceResultImports.discipline, discipline),
+        ),
+      );
+    const missingFinalSets = getMissingFinalResultSets(importRows);
+    if (missingFinalSets.length > 0) {
+      throw new UserFacingError(
+        `Race ${raceId} is missing final results for: ${missingFinalSets
+          .map((set) => set.label)
+          .join(", ")}`,
+        400,
+      );
     }
 
     const status = race.gameStatus;

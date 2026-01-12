@@ -50,6 +50,15 @@ type UciImportResponse = {
   sourceUrl: string;
 };
 
+type LockRaceResponse = {
+  raceId: number;
+  lockedTeams: number;
+  skippedTeams: number;
+  lockAt?: string;
+  status?: string;
+  locked?: boolean;
+};
+
 const UCI_CATEGORY_OPTIONS: UciCategoryOption[] = [
   { value: "men-elite", label: "Men Elite", gender: "male", category: "elite" },
   { value: "men-junior", label: "Men Junior", gender: "male", category: "junior" },
@@ -61,6 +70,25 @@ const UCI_DISCIPLINE_OPTIONS = [
   { value: "downhill", label: "Downhill" },
   { value: "cross-country", label: "Cross-Country" },
 ];
+
+const getErrorMessage = (error: unknown) => {
+  if (error instanceof Error) {
+    const message = error.message || "Unknown error";
+    const jsonMatch = message.match(/:\s*(\{.*\})$/);
+    if (jsonMatch) {
+      try {
+        const parsed = JSON.parse(jsonMatch[1]);
+        if (parsed?.message) {
+          return parsed.message as string;
+        }
+      } catch {
+        return message;
+      }
+    }
+    return message;
+  }
+  return "Unknown error";
+};
 
 export default function GameMechanics() {
   const { toast } = useToast();
@@ -121,22 +149,41 @@ export default function GameMechanics() {
 
   const lockRaceMutation = useMutation({
     mutationFn: async (payload: { raceId: number; force: boolean }) => {
-      return apiRequest(`/api/admin/races/${payload.raceId}/lock`, {
+      return apiRequest<LockRaceResponse>(`/api/admin/races/${payload.raceId}/lock`, {
         method: "POST",
         body: JSON.stringify({ force: payload.force }),
       });
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: [racesUrl] });
+      const lockAt = data.lockAt ? new Date(data.lockAt) : null;
+      const now = new Date();
+
+      if (!data.locked && lockAt && lockAt > now && !lockForce) {
+        toast({
+          title: "Race not locked yet",
+          description: `Lock time is ${lockAt.toLocaleString()}. Use force to lock early.`,
+        });
+        return;
+      }
+
+      const details = [
+        data.lockedTeams ? `${data.lockedTeams} team(s) locked` : null,
+        data.skippedTeams ? `${data.skippedTeams} skipped` : null,
+      ].filter(Boolean);
+
       toast({
         title: "Race locked",
-        description: "Snapshots created for eligible teams.",
+        description:
+          details.length > 0
+            ? details.join(", ")
+            : "No eligible teams were available to snapshot.",
       });
     },
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: `Failed to lock race: ${error.message || "Unknown error"}`,
+        description: `Failed to lock race: ${getErrorMessage(error)}`,
         variant: "destructive",
       });
     },
@@ -159,7 +206,7 @@ export default function GameMechanics() {
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: `Failed to unlock race: ${error.message || "Unknown error"}`,
+        description: `Failed to unlock race: ${getErrorMessage(error)}`,
         variant: "destructive",
       });
     },
@@ -189,7 +236,7 @@ export default function GameMechanics() {
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: `Failed to settle race: ${error.message || "Unknown error"}`,
+        description: `Failed to settle race: ${getErrorMessage(error)}`,
         variant: "destructive",
       });
     },
@@ -233,7 +280,7 @@ export default function GameMechanics() {
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: `Failed to load UCI results: ${error.message || "Unknown error"}`,
+        description: `Failed to load UCI results: ${getErrorMessage(error)}`,
         variant: "destructive",
       });
     },
@@ -586,8 +633,9 @@ export default function GameMechanics() {
               )}
             </Button>
             <p className="text-xs text-muted-foreground">
-              Paste each category's UCI endpoint URL to load all four result
-              sets for a race.
+              Lock the race first, then paste each category's UCI endpoint URL
+              to load all four result sets. Settling requires all four sets to
+              be marked final.
             </p>
           </form>
         </CardContent>

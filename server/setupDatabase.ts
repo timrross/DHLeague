@@ -179,6 +179,18 @@ const schemaStatements = [
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE (race_id, uci_id)
   )`,
+  `CREATE TABLE IF NOT EXISTS race_result_imports (
+    id SERIAL PRIMARY KEY,
+    race_id INTEGER NOT NULL REFERENCES races(id) ON DELETE CASCADE,
+    gender TEXT NOT NULL,
+    category TEXT NOT NULL,
+    discipline TEXT NOT NULL DEFAULT 'DHI',
+    source_url TEXT,
+    is_final BOOLEAN NOT NULL DEFAULT FALSE,
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE (race_id, gender, category, discipline)
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_race_result_imports_race_id ON race_result_imports(race_id)`,
   `CREATE TABLE IF NOT EXISTS race_result_sets (
     race_id INTEGER PRIMARY KEY REFERENCES races(id) ON DELETE CASCADE,
     results_hash TEXT NOT NULL,

@@ -1,13 +1,16 @@
 import axios from "axios";
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "../../db";
-import { raceResults, races, riders } from "@shared/schema";
+import { raceResultImports, raceResults, races, riders } from "@shared/schema";
 import type { Gender, ResultStatus } from "./config";
 import {
   matchUciResultsToRiders,
   type ParsedUciResult,
   type RiderIdentityRow,
 } from "./uciResultsMatch";
+import { UserFacingError } from "./errors";
+import { assertRaceReadyForResults } from "./raceResultsValidation";
+import { getMissingFinalResultSets, resolveDisciplineCode } from "./resultImports";
 
 type UciResultEntry = {
   headerType?: string;
@@ -93,11 +96,19 @@ const extractRiderEntries = (data: unknown) => {
   );
 };
 
+
 export async function importUciRaceResults(
   input: ImportUciRaceResultsInput,
 ): Promise<ImportUciRaceResultsResult> {
   const { raceId, sourceUrl, gender, category, isFinal = false } = input;
   const parsedUrl = ensureAllowedUrl(sourceUrl);
+
+  const [race] = await db.select().from(races).where(eq(races.id, raceId));
+  if (!race) {
+    throw new UserFacingError(`Race ${raceId} not found`, 404);
+  }
+  assertRaceReadyForResults(race);
+  const discipline = resolveDisciplineCode(input.discipline, race.discipline);
 
   const response = await axios.get(parsedUrl.toString(), {
     headers: { Accept: "application/json" },
@@ -143,11 +154,6 @@ export async function importUciRaceResults(
   );
 
   return await db.transaction(async (tx) => {
-    const [race] = await tx.select().from(races).where(eq(races.id, raceId));
-    if (!race) {
-      throw new Error(`Race ${raceId} not found`);
-    }
-
     if (riderRows.length > 0) {
       await tx
         .delete(raceResults)
@@ -186,7 +192,43 @@ export async function importUciRaceResults(
         });
     }
 
-    const nextStatus = isFinal ? "final" : "provisional";
+    await tx
+      .insert(raceResultImports)
+      .values({
+        raceId,
+        gender,
+        category,
+        discipline,
+        sourceUrl,
+        isFinal,
+        updatedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: [
+          raceResultImports.raceId,
+          raceResultImports.gender,
+          raceResultImports.category,
+          raceResultImports.discipline,
+        ],
+        set: {
+          sourceUrl,
+          isFinal,
+          updatedAt: now,
+        },
+      });
+
+    const importRows = await tx
+      .select()
+      .from(raceResultImports)
+      .where(
+        and(
+          eq(raceResultImports.raceId, raceId),
+          eq(raceResultImports.discipline, discipline),
+        ),
+      );
+
+    const missingFinalSets = getMissingFinalResultSets(importRows);
+    const nextStatus = missingFinalSets.length === 0 ? "final" : "provisional";
     await tx
       .update(races)
       .set({
