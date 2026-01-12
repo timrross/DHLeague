@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLocation } from "wouter";
 import { useAuth } from '@/hooks/useAuth';
 
 import {
@@ -15,8 +16,30 @@ import RiderManagement from '@/components/admin/RiderManagement';
 import RiderImages from '@/components/admin/RiderImages';
 import GameMechanics from '@/components/admin/GameMechanics';
 
+const ADMIN_TABS = [
+  "users",
+  "import",
+  "races",
+  "riders",
+  "images",
+  "game",
+] as const;
+
+type AdminTab = (typeof ADMIN_TABS)[number];
+
+const getTabFromPath = (path: string): AdminTab => {
+  const match = path.match(/^\/admin(?:\/([^/?#]+))?/);
+  const tab = match?.[1];
+  if (tab && ADMIN_TABS.includes(tab as AdminTab)) {
+    return tab as AdminTab;
+  }
+  return "users";
+};
+
 export default function Admin() {
   const { user, isAuthenticated } = useAuth();
+  const [location, setLocation] = useLocation();
+  const activeTab = getTabFromPath(location);
   
   if (!isAuthenticated || !user?.isAdmin) {
     return (
@@ -38,7 +61,15 @@ export default function Admin() {
     <div className="container mx-auto py-8 px-4">
       <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
       
-      <Tabs defaultValue="users" className="space-y-6">
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => {
+          if (ADMIN_TABS.includes(value as AdminTab)) {
+            setLocation(`/admin/${value}`);
+          }
+        }}
+        className="space-y-6"
+      >
         <TabsList className="grid grid-cols-2 md:grid-cols-6 w-full">
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="import">Import</TabsTrigger>

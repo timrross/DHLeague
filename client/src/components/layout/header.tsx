@@ -26,6 +26,7 @@ export default function Header() {
   const { user, isAuthenticated } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const isAdminUser = !!user?.isAdmin;
+  const isAdminRoute = location === "/admin" || location.startsWith("/admin/");
 
   const getInitials = (name: string) => {
     if (!name) return "U";
@@ -115,7 +116,7 @@ export default function Header() {
                       <Link href="/admin">
                         <div
                           className={`text-white hover:text-primary font-body font-semibold transition px-2 py-2 cursor-pointer ${
-                            location === "/admin" ? "bg-gray-800 text-primary" : ""
+                            isAdminRoute ? "bg-gray-800 text-primary" : ""
                           }`}
                           onClick={() => setMenuOpen(false)}
                         >
