@@ -1,0 +1,433 @@
+{
+    "results": [
+        {
+            "headerType": "rider",
+            "values": {
+                "team": "SANTA CRUZ SYNDICATE",
+                "result": "00:03:30.096",
+                "points": "250",
+                "rank": "1",
+                "firstname": "Jackson",
+                "lastname": "GOLDSTONE",
+                "age": 21,
+                "nationality": "CAN"
+            }
+        },
+        {
+            "headerType": "rider",
+            "values": {
+                "team": "CANYON CLLCTV FACTORY TEAM",
+                "result": "00:03:32.340",
+                "points": "200",
+                "rank": "2",
+                "firstname": "Luca",
+                "lastname": "SHAW",
+                "age": 29,
+                "nationality": "USA"
+            }
+        },
+        {
+            "headerType": "rider",
+            "values": {
+                "team": "YT MOB",
+                "result": "00:03:32.341",
+                "points": "170",
+                "rank": "3",
+                "firstname": "Andreas",
+                "lastname": "KOLB",
+                "age": 29,
+                "nationality": "AUT"
+            }
+        },
+        {
+            "headerType": "rider",
+            "values": {
+                "team": "MONDRAKER FACTORY RACING DH",
+                "result": "00:03:32.646",
+                "points": "150",
+                "rank": "4",
+                "firstname": "Dakotah",
+                "lastname": "NORTON",
+                "age": 33,
+                "nationality": "USA"
+            }
+        },
+        {
+            "headerType": "rider",
+            "values": {
+                "team": "MONDRAKER FACTORY RACING DH",
+                "result": "00:03:33.052",
+                "points": "132",
+                "rank": "5",
+                "firstname": "Kenneth",
+                "lastname": "PINKERTON",
+                "age": 20,
+                "nationality": "USA"
+            }
+        },
+        {
+            "headerType": "rider",
+            "values": {
+                "team": "CANYON CLLCTV FACTORY TEAM",
+                "result": "00:03:33.176",
+                "points": "115",
+                "rank": "6",
+                "firstname": "Troy",
+                "lastname": "BROSNAN",
+                "age": 32,
+                "nationality": "AUS"
+            }
+        },
+        {
+            "headerType": "rider",
+            "values": {
+                "team": "COMMENCAL/MUC-OFF BY RIDING ADDICTION",
+                "result": "00:03:33.193",
+                "points": "108",
+                "rank": "7",
+                "firstname": "Amaury",
+                "lastname": "PIERRON",
+                "age": 29,
+                "nationality": "FRA"
+            }
+        },
+        {
+            "headerType": "rider",
+            "values": {
+                "team": "GIANT FACTORY OFF-ROAD TEAM - DH",
+                "result": "00:03:33.971",
+                "points": "102",
+                "rank": "8",
+                "firstname": "Luke",
+                "lastname": "MEIER-SMITH",
+                "age": 23,
+                "nationality": "AUS"
+            }
+        },
+        {
+            "headerType": "rider",
+            "values": {
+                "team": "COMMENCAL/MUC-OFF BY RIDING ADDICTION",
+                "result": "00:03:35.332",
+                "points": "96",
+                "rank": "9",
+                "firstname": "Loris",
+                "lastname": "VERGIER",
+                "age": 29,
+                "nationality": "FRA"
+            }
+        },
+        {
+            "headerType": "rider",
+            "values": {
+                "team": "COMMENCAL/MUC-OFF BY RIDING ADDICTION",
+                "result": "00:03:35.388",
+                "points": "90",
+                "rank": "10",
+                "firstname": "Dylan",
+                "lastname": "MAPLES",
+                "age": 22,
+                "nationality": "USA"
+            }
+        },
+        {
+            "headerType": "rider",
+            "values": {
+                "team": "CONTINENTAL ATHERTON ",
+                "result": "00:03:35.568",
+                "points": "84",
+                "rank": "11",
+                "firstname": "Luke",
+                "lastname": "WAYMAN",
+                "age": 19,
+                "nationality": "NZL"
+            }
+        },
+        {
+            "headerType": "rider",
+            "values": {
+                "result": "00:03:36.640",
+                "points": "78",
+                "rank": "12",
+                "firstname": "Evan",
+                "lastname": "MEDCALF",
+                "age": 20,
+                "nationality": "USA"
+            }
+        },
+        {
+            "headerType": "rider",
+            "values": {
+                "team": "SPECIALIZED GRAVITY",
+                "result": "00:03:36.657",
+                "points": "72",
+                "rank": "13",
+                "firstname": "Finnley",
+                "lastname": "ILES",
+                "age": 26,
+                "nationality": "CAN"
+            }
+        },
+        {
+            "headerType": "rider",
+            "values": {
+                "team": "TREK FACTORY RACING DH",
+                "result": "00:03:36.790",
+                "points": "66",
+                "rank": "14",
+                "firstname": "Oliver",
+                "lastname": "DAVIS",
+                "age": 21,
+                "nationality": "AUS"
+            }
+        },
+        {
+            "headerType": "rider",
+            "values": {
+                "team": "SCOTT DOWNHILL FACTORY",
+                "result": "00:03:37.254",
+                "points": "60",
+                "rank": "15",
+                "firstname": "Benoit",
+                "lastname": "COULANGES",
+                "age": 31,
+                "nationality": "FRA"
+            }
+        },
+        {
+            "headerType": "rider",
+            "values": {
+                "team": "CONTINENTAL ATHERTON ",
+                "result": "00:03:37.471",
+                "points": "54",
+                "rank": "16",
+                "firstname": "Charlie",
+                "lastname": "HATTON",
+                "age": 27,
+                "nationality": "GBR"
+            }
+        },
+        {
+            "headerType": "rider",
+            "values": {
+                "team": "GWIN RACING",
+                "result": "00:03:38.089",
+                "points": "52",
+                "rank": "17",
+                "firstname": "Aaron",
+                "lastname": "GWIN",
+                "age": 38,
+                "nationality": "USA"
+            }
+        },
+        {
+            "headerType": "rider",
+            "values": {
+                "team": "AON RACING - TOURNE CAMPERVANS",
+                "result": "00:03:38.367",
+                "points": "50",
+                "rank": "18",
+                "firstname": "Henry",
+                "lastname": "KERR",
+                "age": 25,
+                "nationality": "IRL"
+            }
+        },
+        {
+            "headerType": "rider",
+            "values": {
+                "team": "PIVOT FACTORY RACING ",
+                "result": "00:03:38.370",
+                "points": "48",
+                "rank": "19",
+                "firstname": "Bernard",
+                "lastname": "KERR",
+                "age": 34,
+                "nationality": "GBR"
+            }
+        },
+        {
+            "headerType": "rider",
+            "values": {
+                "team": "SPECIALIZED GRAVITY",
+                "result": "00:03:39.324",
+                "points": "46",
+                "rank": "20",
+                "firstname": "Jordan",
+                "lastname": "WILLIAMS",
+                "age": 21,
+                "nationality": "GBR"
+            }
+        },
+        {
+            "headerType": "rider",
+            "values": {
+                "team": "KENDA NS BIKES UR TEAM",
+                "result": "00:03:39.354",
+                "points": "40",
+                "rank": "21",
+                "firstname": "Kye",
+                "lastname": "A'HERN",
+                "age": 24,
+                "nationality": "AUS"
+            }
+        },
+        {
+            "headerType": "rider",
+            "values": {
+                "result": "00:03:39.413",
+                "points": "39",
+                "rank": "22",
+                "firstname": "Loris",
+                "lastname": "REVELLI",
+                "age": 28,
+                "nationality": "ITA"
+            }
+        },
+        {
+            "headerType": "rider",
+            "values": {
+                "team": "GIANT FACTORY OFF-ROAD TEAM - DH",
+                "result": "00:03:40.789",
+                "points": "38",
+                "rank": "23",
+                "firstname": "Rémi",
+                "lastname": "THIRION",
+                "age": 35,
+                "nationality": "FRA"
+            }
+        },
+        {
+            "headerType": "rider",
+            "values": {
+                "team": "MS-RACING",
+                "result": "00:03:41.935",
+                "points": "37",
+                "rank": "24",
+                "firstname": "Tuhoto-Ariki",
+                "lastname": "PENE",
+                "age": 24,
+                "nationality": "NZL"
+            }
+        },
+        {
+            "headerType": "rider",
+            "values": {
+                "team": "MONDRAKER FACTORY RACING DH",
+                "result": "00:03:55.702",
+                "points": "36",
+                "rank": "25",
+                "firstname": "Ronan",
+                "lastname": "DUNNE",
+                "age": 23,
+                "nationality": "IRL"
+            }
+        },
+        {
+            "headerType": "rider",
+            "values": {
+                "team": "ORBEA / FMD RACING",
+                "result": "00:03:57.317",
+                "points": "35",
+                "rank": "26",
+                "firstname": "Martin",
+                "lastname": "MAES",
+                "age": 28,
+                "nationality": "BEL"
+            }
+        },
+        {
+            "headerType": "rider",
+            "values": {
+                "team": "ROGUE RACING - SR SUNTOUR ",
+                "result": "00:04:06.866",
+                "points": "34",
+                "rank": "27",
+                "firstname": "Davide",
+                "lastname": "PALAZZARI",
+                "age": 30,
+                "nationality": "ITA"
+            }
+        },
+        {
+            "headerType": "rider",
+            "values": {
+                "team": "TREK FACTORY RACING DH",
+                "result": "00:04:34.071",
+                "points": "33",
+                "rank": "28",
+                "firstname": "Lachlan",
+                "lastname": "STEVENS-MCNAB",
+                "age": 21,
+                "nationality": "NZL"
+            }
+        },
+        {
+            "headerType": "rider",
+            "values": {
+                "team": "ROGUE RACING - SR SUNTOUR ",
+                "result": "DNF",
+                "firstname": "Thibaut",
+                "lastname": "DAPRELA",
+                "age": 24,
+                "nationality": "FRA"
+            }
+        },
+        {
+            "headerType": "rider",
+            "values": {
+                "team": "SPECIALIZED GRAVITY",
+                "result": "DNS",
+                "firstname": "Loic",
+                "lastname": "BRUNI",
+                "age": 31,
+                "nationality": "FRA"
+            }
+        }
+    ],
+    "podium": {
+        "podium": [
+            {
+                "firstname": "Jackson",
+                "lastname": "GOLDSTONE",
+                "team": "SANTA CRUZ SYNDICATE",
+                "time": "00:03:30.096"
+            },
+            {
+                "firstname": "Luca",
+                "lastname": "SHAW",
+                "team": "CANYON CLLCTV FACTORY TEAM",
+                "time": "00:03:32.340"
+            },
+            {
+                "firstname": "Andreas",
+                "lastname": "KOLB",
+                "team": "YT MOB",
+                "time": "00:03:32.341"
+            }
+        ],
+        "discipline": "mountain-bike"
+    },
+    "headers": [
+        {
+            "key": "age",
+            "label": "Age",
+            "alwaysVisible": false
+        },
+        {
+            "key": "nationality",
+            "label": "Nat",
+            "alwaysVisible": false
+        },
+        {
+            "key": "result",
+            "label": "Result",
+            "alwaysVisible": true
+        },
+        {
+            "key": "points",
+            "label": "Pts",
+            "alwaysVisible": false
+        }
+    ]
+}

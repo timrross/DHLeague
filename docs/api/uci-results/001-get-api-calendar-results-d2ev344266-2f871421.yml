@@ -1,0 +1,26 @@
+id: 001-get-api-calendar-results-d2ev344266-2f871421
+meta:
+  startedDateTime: 2026-01-12T07:41:00.261Z
+  timeMs: 519.107000029847
+  resourceType: xhr
+request:
+  method: GET
+  url: https://www.uci.org/api/calendar/results/D2EV344266?discipline=MTB&raceType=A&raceName=Men+Elite+-+Downhill
+  query:
+    discipline: MTB
+    raceType: A
+    raceName: Men Elite - Downhill
+  headers:
+    accept: application/json, text/plain, */*
+    referer: https://www.uci.org/competition-details/2025/MTB/74611
+    user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36
+      (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36
+  body: null
+response:
+  status: 200
+  statusText: ""
+  mimeType: application/json
+  headers:
+    content-type: application/json; charset=utf-8
+  body:
+    file: 001-get-api-calendar-results-d2ev344266-2f871421.response.json

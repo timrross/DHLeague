@@ -1,0 +1,24 @@
+{
+  "sourceHar": "/Users/tim/Documents/Workspace/dhleague/docs/results-example-response.har",
+  "createdAt": "2026-01-12T07:44:53.648Z",
+  "totalEntries": 4,
+  "xhrEntries": 4,
+  "fixtures": [
+    {
+      "fileStem": "001-get-assets-1-0-41388-sprite-store-svg-7fe6c761",
+      "url": "https://www.uci.org/assets/1.0.41388/sprite-store.svg"
+    },
+    {
+      "fileStem": "002-post-g-collect-d7d86524",
+      "url": "https://region1.analytics.google.com/g/collect?v=2&tid=G-LKPKTSYSBG&gtm=45je6171v887637142z8812678114za20gzb812678114zd812678114&_p=1768203644380&gcs=G111&gcd=13r3r3r3r5l1&npa=0&dma=0&cid=398348456.1765819847&ecid=730819140&ul=en-gb&sr=2560x1440&ir=1&uaa=arm&uab=64&uafvl=Google%2520Chrome%3B143.0.7499.170%7CChromium%3B143.0.7499.170%7CNot%2520A(Brand%3B24.0.0.0&uamb=0&uam=&uap=macOS&uapv=15.6.1&uaw=0&are=1&frm=0&pscdl=noapi&_eu=EAAAAAQ&_s=1&tag_exp=103116026~103200004~104527907~104528500~104684208~104684211~105391253~115938466~115938468~116514483&sid=1768203585&sct=6&seg=1&dl=https%3A%2F%2Fwww.uci.org%2Fcompetition-details%2F2025%2FMTB%2F74611&dr=https%3A%2F%2Fwww.uci.org%2Fcalendar%2Fmtb%2F1voMyukVGR4iZMhMlDfRv0%3Ftab%3Dcalendar-past%26discipline%3DMTB%26year%3D2025%26raceCategory%3DME%26raceType%3DDHI&dt=UCI%20MOUNTAIN%20BIKE%20WORLD%20CUP%20%E2%80%93%20XCO%2FXCC%2FDHI%20%7C%20UCI&en=page_view&tfd=5668"
+    },
+    {
+      "fileStem": "003-post-g-collect-d4d3b361",
+      "url": "https://region1.analytics.google.com/g/collect?v=2&tid=G-LKPKTSYSBG&gtm=45je6171v887637142z8812678114za20gzb812678114zd812678114&_p=1768203644380&_gaz=1&gcs=G111&gcd=13r3r3r3r5l1&npa=0&dma=0&gdid=dMmY1Mm&cid=398348456.1765819847&ecid=730819140&ul=en-gb&sr=2560x1440&ir=1&uaa=arm&uab=64&uafvl=Google%2520Chrome%3B143.0.7499.170%7CChromium%3B143.0.7499.170%7CNot%2520A(Brand%3B24.0.0.0&uamb=0&uam=&uap=macOS&uapv=15.6.1&uaw=0&are=1&frm=0&pscdl=noapi&_eu=EAAAAAQ&_s=2&tag_exp=103116026~103200004~104527907~104528500~104684208~104684211~105391253~115938466~115938468~116514483&sid=1768203585&sct=6&seg=1&dl=https%3A%2F%2Fwww.uci.org%2Fcompetition-details%2F2025%2FMTB%2F74611&dr=https%3A%2F%2Fwww.uci.org%2Fcalendar%2Fmtb%2F1voMyukVGR4iZMhMlDfRv0%3Ftab%3Dcalendar-past%26discipline%3DMTB%26year%3D2025%26raceCategory%3DME%26raceType%3DDHI&dt=UCI%20MOUNTAIN%20BIKE%20WORLD%20CUP%20%E2%80%93%20XCO%2FXCC%2FDHI%20%7C%20UCI&en=Click&ep.click_text=MEN%20ELITE%20-%20DOWNHILL&_et=7857&tfd=16390"
+    },
+    {
+      "fileStem": "004-get-api-calendar-results-d2ev344266-2f871421",
+      "url": "https://www.uci.org/api/calendar/results/D2EV344266?discipline=MTB&raceType=A&raceName=Men+Elite+-+Downhill"
+    }
+  ]
+}
