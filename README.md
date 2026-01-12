@@ -113,6 +113,7 @@ Every HTTP API is served beneath the `/api` prefix. The fantasy league service i
 - `/api/auth/user`, `/api/auth/admin`: Session + authorization metadata used by the client.
 - `/api/teams`, `/api/races`, `/api/leaderboard`, `/api/upload-image`: Core fantasy league resources.
 - `/api/rider-data/riders/*`, `/api/rider-data/races/*`: Rider data service routes.
+- `/api/admin/races/:raceId/results/uci`: Admin-only UCI results import (post a UCI results URL with category/gender metadata).
 
 If you run the fantasy league service standalone (without the `/api` mount), set `AUTH_BASE_URL` to the externally visible base (defaults to `http://localhost:5001`) and adjust `AUTH_PUBLIC_PATH` to match where you expose the routes. The callback URL injected into the Auth0 configuration uses the `LOCALHOST_CALLBACK_PORT` (defaults to `5001`) for `localhost`/`127.0.0.1`, so bump that env var whenever you change the published port during development.
 

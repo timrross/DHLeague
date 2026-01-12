@@ -5,6 +5,7 @@ import { settleRace } from "../services/game/settleRace";
 import { getRaceLeaderboard as fetchRaceLeaderboard } from "../services/game/standings";
 import { runGameTick } from "../services/game/tick";
 import { unlockRace } from "../services/game/unlockRace";
+import { importUciRaceResults } from "../services/game/uciResults";
 
 const parseFlag = (value: unknown) =>
   value === true || value === "true" || value === "1" || value === 1;
@@ -38,6 +39,46 @@ export async function unlockRaceAdmin(req: Request, res: Response) {
   } catch (error) {
     console.error("Error unlocking race:", error);
     res.status(500).json({ message: "Failed to unlock race" });
+  }
+}
+
+export async function importUciRaceResultsAdmin(req: Request, res: Response) {
+  try {
+    const raceId = Number(req.params.raceId);
+    if (Number.isNaN(raceId)) {
+      return res.status(400).json({ message: "Invalid race ID" });
+    }
+
+    const payload = req.body ?? {};
+    const sourceUrl = String(payload.sourceUrl ?? "").trim();
+    if (!sourceUrl) {
+      return res.status(400).json({ message: "sourceUrl is required" });
+    }
+
+    const gender = payload.gender;
+    if (gender !== "male" && gender !== "female") {
+      return res.status(400).json({ message: "gender must be male or female" });
+    }
+
+    const category = payload.category;
+    if (category !== "elite" && category !== "junior") {
+      return res.status(400).json({ message: "category must be elite or junior" });
+    }
+
+    const isFinal = parseFlag(payload.isFinal);
+    const result = await importUciRaceResults({
+      raceId,
+      sourceUrl,
+      gender,
+      category,
+      discipline: payload.discipline,
+      isFinal,
+    });
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Error importing UCI race results:", error);
+    res.status(500).json({ message: "Failed to import UCI race results" });
   }
 }
 

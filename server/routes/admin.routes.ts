@@ -23,6 +23,7 @@ import {
   runGameTickAdmin,
   settleRaceAdmin,
   upsertRaceResultsAdmin,
+  importUciRaceResultsAdmin,
 } from "../controllers/gameRaces.controller";
 import { updateRiderImage } from "../controllers/riderImages.controller";
 
@@ -47,6 +48,7 @@ router.get("/races", requireAuth, isAdmin, listRacesAdmin);
 router.post("/races/:raceId/lock", requireAuth, isAdmin, lockRaceAdmin);
 router.post("/races/:raceId/unlock", requireAuth, isAdmin, unlockRaceAdmin);
 router.post("/races/:raceId/results", requireAuth, isAdmin, upsertRaceResultsAdmin);
+router.post("/races/:raceId/results/uci", requireAuth, isAdmin, importUciRaceResultsAdmin);
 router.post("/races/:raceId/settle", requireAuth, isAdmin, settleRaceAdmin);
 router.post("/game/tick", requireAuth, isAdmin, runGameTickAdmin);
 

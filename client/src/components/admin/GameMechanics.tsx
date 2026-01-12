@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -37,6 +38,36 @@ type RaceResultPayload = {
   position?: number | null;
   qualificationPosition?: number | null;
 };
+
+type UciCategoryOption = {
+  value: "men-elite" | "men-junior" | "women-elite" | "women-junior";
+  label: string;
+  gender: "male" | "female";
+  category: "elite" | "junior";
+};
+
+type UciImportResponse = {
+  raceId: number;
+  updated: number;
+  total: number;
+  missing: number;
+  ambiguous: number;
+  missingNames: string[];
+  ambiguousNames: Array<{ name: string; matches: string[] }>;
+  sourceUrl: string;
+};
+
+const UCI_CATEGORY_OPTIONS: UciCategoryOption[] = [
+  { value: "men-elite", label: "Men Elite", gender: "male", category: "elite" },
+  { value: "men-junior", label: "Men Junior", gender: "male", category: "junior" },
+  { value: "women-elite", label: "Women Elite", gender: "female", category: "elite" },
+  { value: "women-junior", label: "Women Junior", gender: "female", category: "junior" },
+];
+
+const UCI_DISCIPLINE_OPTIONS = [
+  { value: "downhill", label: "Downhill" },
+  { value: "cross-country", label: "Cross-Country" },
+];
 
 const resultsTemplate = JSON.stringify(
   [
@@ -63,6 +94,11 @@ export default function GameMechanics() {
   const [allowProvisional, setAllowProvisional] = useState(false);
   const [resultsIsFinal, setResultsIsFinal] = useState(false);
   const [resultsPayload, setResultsPayload] = useState(resultsTemplate);
+  const [uciResultsUrl, setUciResultsUrl] = useState("");
+  const [uciCategory, setUciCategory] =
+    useState<UciCategoryOption["value"]>("men-elite");
+  const [uciDiscipline, setUciDiscipline] = useState("downhill");
+  const [uciResultsIsFinal, setUciResultsIsFinal] = useState(false);
 
   const {
     data: seasons = [],
@@ -211,6 +247,50 @@ export default function GameMechanics() {
     },
   });
 
+  const importUciResultsMutation = useMutation({
+    mutationFn: async (payload: {
+      raceId: number;
+      sourceUrl: string;
+      gender: "male" | "female";
+      category: "elite" | "junior";
+      discipline: string;
+      isFinal: boolean;
+    }) => {
+      return apiRequest<UciImportResponse>(
+        `/api/admin/races/${payload.raceId}/results/uci`,
+        {
+          method: "POST",
+          body: JSON.stringify(payload),
+        },
+      );
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: [racesUrl] });
+      const details: string[] = [];
+      if (data.missing > 0) {
+        details.push(`${data.missing} missing`);
+      }
+      if (data.ambiguous > 0) {
+        details.push(`${data.ambiguous} ambiguous`);
+      }
+
+      toast({
+        title: "UCI results loaded",
+        description:
+          details.length > 0
+            ? `${data.updated} matched (${details.join(", ")}).`
+            : `${data.updated} riders matched.`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: `Failed to load UCI results: ${error.message || "Unknown error"}`,
+        variant: "destructive",
+      });
+    },
+  });
+
   const formatDateTime = (value?: string | Date | null) => {
     if (!value) {
       return "—";
@@ -224,6 +304,41 @@ export default function GameMechanics() {
     }
     const start = new Date(race.startDate);
     return formatDateTime(new Date(start.getTime() - 24 * 60 * 60 * 1000));
+  };
+
+  const selectedUciCategory =
+    UCI_CATEGORY_OPTIONS.find((option) => option.value === uciCategory) ??
+    UCI_CATEGORY_OPTIONS[0];
+
+  const handleImportUciResults = (event: React.FormEvent) => {
+    event.preventDefault();
+
+    if (!selectedRaceId) {
+      toast({
+        title: "Missing race",
+        description: "Select a race to load results.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!uciResultsUrl.trim()) {
+      toast({
+        title: "Missing URL",
+        description: "Paste the UCI results endpoint URL.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    importUciResultsMutation.mutate({
+      raceId: Number(selectedRaceId),
+      sourceUrl: uciResultsUrl.trim(),
+      gender: selectedUciCategory.gender,
+      category: selectedUciCategory.category,
+      discipline: uciDiscipline,
+      isFinal: uciResultsIsFinal,
+    });
   };
 
   const handleUpsertResults = (event: React.FormEvent) => {
@@ -466,10 +581,109 @@ export default function GameMechanics() {
         <CardHeader>
           <CardTitle>Update Results</CardTitle>
           <CardDescription>
-            Paste raw results JSON to mark a race provisional or final.
+            Load results from a UCI endpoint or paste raw results JSON.
           </CardDescription>
         </CardHeader>
         <CardContent>
+          <form onSubmit={handleImportUciResults} className="space-y-4">
+            <div className="grid gap-4 lg:grid-cols-4 lg:items-end">
+              <div className="space-y-2 lg:col-span-2">
+                <Label>Race</Label>
+                <Select
+                  value={selectedRaceId}
+                  onValueChange={(value) => setSelectedRaceId(value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select race" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {races.map((race) => (
+                      <SelectItem key={race.id} value={String(race.id)}>
+                        #{race.id} {race.location}, {race.country} — {race.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Category</Label>
+                <Select
+                  value={uciCategory}
+                  onValueChange={(value) =>
+                    setUciCategory(value as UciCategoryOption["value"])
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {UCI_CATEGORY_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Discipline</Label>
+                <Select
+                  value={uciDiscipline}
+                  onValueChange={(value) => setUciDiscipline(value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select discipline" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {UCI_DISCIPLINE_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-4 lg:items-end">
+              <div className="space-y-2 lg:col-span-3">
+                <Label htmlFor="uci-results-url">UCI Results URL</Label>
+                <Input
+                  id="uci-results-url"
+                  value={uciResultsUrl}
+                  onChange={(event) => setUciResultsUrl(event.target.value)}
+                  placeholder="https://www.uci.org/api/calendar/results/..."
+                />
+              </div>
+              <div className="flex items-center gap-2 pt-2">
+                <Checkbox
+                  id="uci-results-final"
+                  checked={uciResultsIsFinal}
+                  onCheckedChange={(checked) =>
+                    setUciResultsIsFinal(checked === true)
+                  }
+                />
+                <Label htmlFor="uci-results-final">Mark as final</Label>
+              </div>
+            </div>
+
+            <Button type="submit" disabled={importUciResultsMutation.isPending}>
+              {importUciResultsMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Loading…
+                </>
+              ) : (
+                "Load UCI results"
+              )}
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              Paste each category's UCI endpoint URL to load all four result
+              sets for a race.
+            </p>
+          </form>
+
+          <div className="mt-6 border-t border-border pt-6">
           <form onSubmit={handleUpsertResults} className="space-y-4">
             <div className="grid gap-4 lg:grid-cols-3 lg:items-end">
               <div className="space-y-2">
@@ -527,6 +741,7 @@ export default function GameMechanics() {
               )}
             </Button>
           </form>
+          </div>
         </CardContent>
       </Card>
     </div>
