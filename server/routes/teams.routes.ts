@@ -2,6 +2,7 @@ import { Router } from "express";
 import { requireAuth } from "../auth";
 import { 
   getUserTeam,
+  getUserTeamPerformance,
   createTeam,
   updateTeam,
   deleteTeam,
@@ -13,6 +14,7 @@ const router = Router();
 
 // User team routes
 router.get("/user", requireAuth, getUserTeam);
+router.get("/user/performance", requireAuth, getUserTeamPerformance);
 router.get("/:seasonId", requireAuth, getUserTeamsBySeason);
 router.put("/:seasonId/:teamType", requireAuth, upsertUserTeam);
 router.post("/", requireAuth, createTeam);

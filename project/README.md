@@ -112,6 +112,7 @@ Every HTTP API is served beneath the `/api` prefix. The fantasy league service i
 - `/api/auth/login`, `/api/auth/callback`, `/api/auth/logout`: OIDC entry points for starting, completing, and ending sessions.
 - `/api/auth/user`, `/api/auth/admin`: Session + authorization metadata used by the client.
 - `/api/teams`, `/api/races`, `/api/leaderboard`, `/api/upload-image`: Core fantasy league resources.
+- `/api/teams/user/performance`: Authenticated team performance snapshots, per-round scores, and roster breakdowns.
 - `/api/rider-data/riders/*`, `/api/rider-data/races/*`: Rider data service routes.
 - `/api/admin/races/:raceId/results/uci`: Admin-only UCI results import (post a UCI results URL with category/gender metadata).
 

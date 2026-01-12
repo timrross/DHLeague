@@ -16,6 +16,7 @@ import TeamSummary from "@/components/team-summary";
 import CountdownTimer from "@/components/countdown-timer";
 import JokerCardDialog from "@/components/joker-card-dialog";
 import JokerCardButton from "@/components/joker-card-button";
+import TeamPerformancePanel from "@/components/team-performance-panel";
 import { Search, AlertTriangle, Info, RefreshCw, ArrowUpDown } from "lucide-react";
 import { useRacesQuery, useRidersQueryWithParams } from "@/services/riderDataApi";
 import { formatRiderDisplayName } from "@shared/utils";
@@ -632,6 +633,10 @@ export default function TeamBuilder() {
           </>
         )}
       </div>
+
+      {isAuthenticated && activeTeam && (
+        <TeamPerformancePanel teamType={activeTeam.teamType as "elite" | "junior"} />
+      )}
     </div>
   );
   

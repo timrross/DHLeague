@@ -2,6 +2,7 @@ import { Response } from "express";
 import { storage } from "../storage";
 import { riderDataClient } from "../services/riderDataClient";
 import { getActiveSeasonId } from "../services/game/seasons";
+import { getTeamPerformance } from "../services/game/teamPerformance";
 
 /**
  * Get a user's team
@@ -20,6 +21,25 @@ export async function getUserTeam(req: any, res: Response) {
   } catch (error) {
     console.error("Error fetching user team:", error);
     res.status(500).json({ message: "Failed to fetch user team" });
+  }
+}
+
+/**
+ * Get a user's team performance for the active season.
+ */
+export async function getUserTeamPerformance(req: any, res: Response) {
+  try {
+    const userId = req.oidc?.user?.sub;
+    if (!userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    const teamType = req.query.teamType === "junior" ? "junior" : "elite";
+    const performance = await getTeamPerformance(userId, teamType);
+    res.json(performance);
+  } catch (error) {
+    console.error("Error fetching user team performance:", error);
+    res.status(500).json({ message: "Failed to fetch team performance" });
   }
 }
 
