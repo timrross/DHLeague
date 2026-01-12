@@ -16,4 +16,4 @@ Welcome! This repository powers the DHLeague fantasy MTB experience. Use this gu
 
 ## Communication checklist
 - Summaries and PR bodies should call out touched areas (client/server/shared), tests you ran, and any follow-up risks.
-- When adding developer-facing functionality, mention how to exercise it locally (ports 5000/5001, environment variables, seed scripts).
+- When adding developer-facing functionality, mention how to exercise it locally (port 5001, environment variables, seed scripts).

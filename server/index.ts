@@ -80,17 +80,26 @@ app.use("/assets/flags", express.static(flagsDir, cacheStatic));
     serveStatic(app);
   }
 
-  // Default to port 5000 (serves both API and client).
-  const port = Number(process.env.PORT ?? 5000);
-  const host =
-    process.env.HOST ?? (isDevEnv ? "127.0.0.1" : "0.0.0.0");
-  const listenOptions = isDevEnv
-    ? { port, host }
-    : { port, host, reusePort: true };
+  // Default to port 5001 (serves both API and client).
+  const port = Number(process.env.PORT ?? 5001);
 
-  server.listen(listenOptions, () => {
-    log(`serving on port ${port}`);
-  });
+  if (isDevEnv) {
+    const devHost = process.env.HOST;
+    if (devHost) {
+      server.listen({ port, host: devHost }, () => {
+        log(`serving on port ${port}`);
+      });
+    } else {
+      server.listen(port, () => {
+        log(`serving on port ${port}`);
+      });
+    }
+  } else {
+    const host = process.env.HOST ?? "0.0.0.0";
+    server.listen({ port, host, reusePort: true }, () => {
+      log(`serving on port ${port}`);
+    });
+  }
 })().catch((error: unknown) => {
   const message =
     typeof error === "object" && error !== null && "message" in error

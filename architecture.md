@@ -11,7 +11,7 @@
 2. **Rider data service** (`server/apps/riderDataService.ts`): owns rider CRUD and public race metadata. Mounted at `/api/rider-data`, exposing race list/detail/results plus rider endpoints.
 3. **Fantasy league service** (`server/apps/fantasyLeagueService.ts`): core game routes for teams, races, riders, leaderboards, auth, and admin utilities. Mounted at `/api` and `/api/game`. Also exposes `/upload-image` and serves uploaded assets under `/uploads`.
 4. In development (`NODE_ENV=development`), Vite dev middleware is attached after API routes; in production static assets from `dist/public` are served after the API stack.
-5. The server listens on port **5000** for both API and client content.
+5. The server listens on port **5001** for both API and client content.
 
 ## Data and persistence
 - Postgres is the primary store. Connections are managed via `server/db.ts` (Drizzle + `pg`), using the schema in `shared/schema.ts`.
@@ -26,7 +26,7 @@
 ## Build and deployment
 - `npm run build` bundles the client with Vite and the server with esbuild into `dist/`. The production container serves `dist/index.js` and `dist/public`.
 - CI/CD uses GitHub Actions (`.github/workflows/deploy.yml`) to build, package artifacts, and deploy via SSH. Core environment variables (e.g., `DATABASE_URL`, `SESSION_SECRET`, `AUTH_BASE_URL`, OIDC values) must be set for runtime.
-- Docker workflows: `docker build`/`docker run` for single-container usage on port 5000; `docker compose up` for dev with Postgres and hot reload on port 5001 (proxying to the app’s 5000).
+- Docker workflows: `docker build`/`docker run` for single-container usage on port 5001; `docker compose up` for dev with Postgres and hot reload on port 5001.
 
 ## Cross-cutting concerns
 - **Auth**: configured in `server/auth.ts` and applied globally before route registration.

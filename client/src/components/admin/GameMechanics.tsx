@@ -363,81 +363,88 @@ export default function GameMechanics() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {races.map((race) => (
-                    <TableRow key={race.id}>
-                      <TableCell>{race.id}</TableCell>
-                      <TableCell>
-                        <div className="font-medium">
-                          {race.location}, {race.country}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {race.name}
-                        </div>
-                      </TableCell>
-                      <TableCell className="uppercase">
-                        {race.discipline}
-                      </TableCell>
-                      <TableCell>{formatDateTime(race.startDate)}</TableCell>
-                      <TableCell>{formatLockAt(race)}</TableCell>
-                      <TableCell className="capitalize">
-                        {race.gameStatus}
-                        {race.needsResettle ? " (needs resettle)" : ""}
-                      </TableCell>
-                      <TableCell className="flex flex-wrap gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={lockRaceMutation.isPending}
-                          onClick={() =>
-                            lockRaceMutation.mutate({
-                              raceId: race.id,
-                              force: lockForce,
-                            })
-                          }
-                        >
-                          {lockRaceMutation.isPending ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
+                  {races.map((race) => {
+                    const isRaceLocked = race.gameStatus === "locked";
+
+                    return (
+                      <TableRow key={race.id}>
+                        <TableCell>{race.id}</TableCell>
+                        <TableCell>
+                          <div className="font-medium">
+                            {race.location}, {race.country}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {race.name}
+                          </div>
+                        </TableCell>
+                        <TableCell className="uppercase">
+                          {race.discipline}
+                        </TableCell>
+                        <TableCell>{formatDateTime(race.startDate)}</TableCell>
+                        <TableCell>{formatLockAt(race)}</TableCell>
+                        <TableCell className="capitalize">
+                          {race.gameStatus}
+                          {race.needsResettle ? " (needs resettle)" : ""}
+                        </TableCell>
+                        <TableCell className="flex flex-wrap gap-2">
+                          {isRaceLocked ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={unlockRaceMutation.isPending}
+                              onClick={() =>
+                                unlockRaceMutation.mutate({
+                                  raceId: race.id,
+                                  force: unlockForce,
+                                })
+                              }
+                            >
+                              {unlockRaceMutation.isPending ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                "Unlock"
+                              )}
+                            </Button>
                           ) : (
-                            "Lock"
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={lockRaceMutation.isPending}
+                              onClick={() =>
+                                lockRaceMutation.mutate({
+                                  raceId: race.id,
+                                  force: lockForce,
+                                })
+                              }
+                            >
+                              {lockRaceMutation.isPending ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                "Lock"
+                              )}
+                            </Button>
                           )}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={unlockRaceMutation.isPending}
-                          onClick={() =>
-                            unlockRaceMutation.mutate({
-                              raceId: race.id,
-                              force: unlockForce,
-                            })
-                          }
-                        >
-                          {unlockRaceMutation.isPending ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
-                            "Unlock"
-                          )}
-                        </Button>
-                        <Button
-                          size="sm"
-                          disabled={settleRaceMutation.isPending}
-                          onClick={() =>
-                            settleRaceMutation.mutate({
-                              raceId: race.id,
-                              force: settleForce,
-                              allowProvisional,
-                            })
-                          }
-                        >
-                          {settleRaceMutation.isPending ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
-                            "Settle"
-                          )}
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                          <Button
+                            size="sm"
+                            disabled={settleRaceMutation.isPending}
+                            onClick={() =>
+                              settleRaceMutation.mutate({
+                                raceId: race.id,
+                                force: settleForce,
+                                allowProvisional,
+                              })
+                            }
+                          >
+                            {settleRaceMutation.isPending ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              "Settle"
+                            )}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             )}

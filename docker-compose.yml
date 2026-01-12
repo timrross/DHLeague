@@ -15,7 +15,7 @@ services:
       - .env
     command: sh -c "npm ci && npm run dev"
     ports:
-      - "5001:5000"
+      - "5001:5001"
     volumes:
       - .:/app
       - app_node_modules:/app/node_modules

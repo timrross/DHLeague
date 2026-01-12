@@ -10,7 +10,7 @@ RUN npm ci
 # Copy the rest of the repository for local development
 COPY . .
 
-EXPOSE 5000
+EXPOSE 5001
 
 CMD ["npm", "run", "dev"]
 
@@ -38,7 +38,7 @@ RUN npm ci --omit=dev
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/public ./public
 
-# The server always listens on port 5000
-EXPOSE 5000
+# The server always listens on port 5001
+EXPOSE 5001
 
 CMD ["node", "dist/index.js"]

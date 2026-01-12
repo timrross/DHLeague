@@ -36,7 +36,7 @@ At runtime the app expects the following environment variables:
 
 - `DATABASE_URL`: Postgres connection string used by both services.
 - `SESSION_SECRET`: Session signing secret for auth flows.
-- `RIDER_DATA_BASE_URL`: Base URL where the rider data service is reachable; defaults to `http://localhost:5000/api/rider-data`
+- `RIDER_DATA_BASE_URL`: Base URL where the rider data service is reachable; defaults to `http://localhost:5001/api/rider-data`
   when the services run together.
 - `AUTH_DOMAINS`: Comma-separated list of allowed hostnames for login callbacks. Include `mtbfantasy.com` in production.
 - `AUTH_BASE_URL`: Public base URL (scheme + host + optional port) for the app (defaults to `http://localhost:5001`).
@@ -57,11 +57,11 @@ You can adjust deployment targets by editing the env values at the top of the wo
 
 ### Single container (app only)
 
-Build and run the app in a container (listens on port `5000`):
+Build and run the app in a container (listens on port `5001`):
 
 ```bash
 docker build -t dhleague .
-docker run --rm -p 5000:5000 --env-file .env dhleague
+docker run --rm -p 5001:5001 --env-file .env dhleague
 ```
 
 The container image runs the prebuilt server from `dist/index.js` and serves the bundled client from `dist/public`. Provide environment variables (e.g., `DATABASE_URL`, `REPL_ID`, `SESSION_SECRET`, `ISSUER_URL`, `OIDC_CALLBACK_URL`) via `--env-file` or individual `-e` flags.
@@ -74,7 +74,7 @@ Spin up the app alongside a local Postgres instance with your source tree mounte
 docker compose up --build
 ```
 
-This uses `docker-compose.yml` to build the `dev` stage, expose port `5001` (mapped to the app's `5000`), and start a `postgres:16-alpine` container with credentials `postgres/postgres`. The app service binds the repository into the container, installs dependencies into an isolated `app_node_modules` volume, and runs `npm run dev`, enabling Vite/Express hot reload whenever you edit files locally. The app receives a `DATABASE_URL` pointing at the companion database; override any values by setting them in your `.env` file or by passing `--env` flags to `docker compose`.
+This uses `docker-compose.yml` to build the `dev` stage, expose port `5001` (mapped to the app's `5001`), and start a `postgres:16-alpine` container with credentials `postgres/postgres`. The app service binds the repository into the container, installs dependencies into an isolated `app_node_modules` volume, and runs `npm run dev`, enabling Vite/Express hot reload whenever you edit files locally. The app receives a `DATABASE_URL` pointing at the companion database; override any values by setting them in your `.env` file or by passing `--env` flags to `docker compose`.
 
 ### App on host + Postgres container (recommended for local dev)
 

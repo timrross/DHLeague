@@ -26,4 +26,4 @@
 
 ## Documentation and communication
 - Update relevant docs when behaviors change (`README.md`, `architecture.md`, `conventions.md`, or feature-specific notes). Keep environment variable requirements accurate.
-- Summaries and PRs should list modified areas (client/server/shared), user-visible impacts, and test coverage. Include repro steps for functional changes (ports 5000/5001, env vars, seed commands).
+- Summaries and PRs should list modified areas (client/server/shared), user-visible impacts, and test coverage. Include repro steps for functional changes (port 5001, env vars, seed commands).

@@ -57,4 +57,4 @@ This roadmap captures the minimum deliverable for the project in a Codex-friendl
 
 - Users can create a team, view upcoming races, and see a leaderboard after at least one race is scored.  
 - Admins can seed races/riders and post results without direct database edits.  
-- CI build succeeds and the Dockerized app serves both client and API on port 5000 as documented.
+- CI build succeeds and the Dockerized app serves both client and API on port 5001 as documented.

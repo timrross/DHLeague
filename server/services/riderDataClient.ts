@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const DEFAULT_BASE_URL =
-  process.env.RIDER_DATA_BASE_URL || "http://localhost:5000/api/rider-data";
+  process.env.RIDER_DATA_BASE_URL || "http://localhost:5001/api/rider-data";
 
 export class RiderDataClient {
   constructor(private readonly baseUrl: string = DEFAULT_BASE_URL) {}
@@ -13,4 +13,3 @@ export class RiderDataClient {
 }
 
 export const riderDataClient = new RiderDataClient();
-
