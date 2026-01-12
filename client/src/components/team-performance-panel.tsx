@@ -70,10 +70,12 @@ const getSlotLabel = (slotIndex: number | null) =>
 
 type TeamPerformancePanelProps = {
   teamType: "elite" | "junior";
+  className?: string;
 };
 
 export default function TeamPerformancePanel({
   teamType,
+  className,
 }: TeamPerformancePanelProps) {
   const [expandedRounds, setExpandedRounds] = useState<number[]>([]);
 
@@ -104,7 +106,7 @@ export default function TeamPerformancePanel({
   const showEmptyState = !isLoading && !isError && rounds.length === 0;
 
   return (
-    <Card className="mt-6">
+    <Card className={className}>
       <CardHeader className="space-y-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">Team Performance</CardTitle>

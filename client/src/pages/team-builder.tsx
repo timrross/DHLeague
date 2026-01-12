@@ -591,83 +591,90 @@ export default function TeamBuilder() {
         />
       </div>
       
-      {/* Team summary */}
-      <TeamSummary
-        selectedRiders={selectedRiders}
-        toggleRiderSelection={
-          isEditingTeam && !isTeamLocked ? toggleRiderSelection : undefined
-        }
-        benchRider={benchRider}
-        benchMode={benchMode}
-        onSelectBench={
-          isEditingTeam && !isTeamLocked ? startBenchSelection : undefined
-        }
-        onRemoveBench={
-          isEditingTeam && !isTeamLocked ? removeBenchRider : undefined
-        }
-        totalBudget={totalBudget}
-        usedBudget={usedBudget}
-        remainingBudget={remainingBudget}
-        budgetPercentage={budgetPercentage}
-        maleRidersCount={maleRidersCount}
-        femaleRidersCount={femaleRidersCount}
-        isTeamLocked={isTeamLocked}
-        swapsRemaining={swapsRemaining}
-        swapMode={swapMode}
-        initiateSwap={isEditingTeam ? initiateSwap : undefined}
-        cancelSwap={isEditingTeam ? cancelSwap : undefined}
-        swapRider={swapRiderData}
-      />
-      
-      {/* Action buttons */}
-      <div className="flex flex-col md:flex-row gap-3 mt-5">
-        {isAuthenticated ? (
-          <>
-            {/* Save/update button for authenticated users */}
-            <Button
-              className="w-full"
-              onClick={handleSaveTeam}
-              disabled={
-                !isEditingTeam ||
-                !isTeamValid ||
-                createTeam.isPending ||
-                updateTeam.isPending
-              }
-            >
-              {activeTeam && !isCreatingTeam ? 'Update Team' : 'Save Team'}
-            </Button>
-            
-            {/* Joker card button */}
-            {activeTeam && (
-              <JokerCardButton
-                jokerCardUsed={jokerCardUsed}
-                onClick={handleUseJokerCard}
-                className="w-full md:w-auto"
-              />
-            )}
-          </>
-        ) : (
-          <>
-            {/* Login CTA button for guests */}
-            <div className="w-full">
-              <Link href="/login">
+      <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+        <div>
+          {/* Team summary */}
+          <TeamSummary
+            selectedRiders={selectedRiders}
+            toggleRiderSelection={
+              isEditingTeam && !isTeamLocked ? toggleRiderSelection : undefined
+            }
+            benchRider={benchRider}
+            benchMode={benchMode}
+            onSelectBench={
+              isEditingTeam && !isTeamLocked ? startBenchSelection : undefined
+            }
+            onRemoveBench={
+              isEditingTeam && !isTeamLocked ? removeBenchRider : undefined
+            }
+            totalBudget={totalBudget}
+            usedBudget={usedBudget}
+            remainingBudget={remainingBudget}
+            budgetPercentage={budgetPercentage}
+            maleRidersCount={maleRidersCount}
+            femaleRidersCount={femaleRidersCount}
+            isTeamLocked={isTeamLocked}
+            swapsRemaining={swapsRemaining}
+            swapMode={swapMode}
+            initiateSwap={isEditingTeam ? initiateSwap : undefined}
+            cancelSwap={isEditingTeam ? cancelSwap : undefined}
+            swapRider={swapRiderData}
+          />
+
+          {/* Action buttons */}
+          <div className="flex flex-col md:flex-row gap-3 mt-5">
+            {isAuthenticated ? (
+              <>
+                {/* Save/update button for authenticated users */}
                 <Button
                   className="w-full"
+                  onClick={handleSaveTeam}
+                  disabled={
+                    !isEditingTeam ||
+                    !isTeamValid ||
+                    createTeam.isPending ||
+                    updateTeam.isPending
+                  }
                 >
-                  Log In to Save Team
+                  {activeTeam && !isCreatingTeam ? 'Update Team' : 'Save Team'}
                 </Button>
-              </Link>
-              <p className="text-xs text-gray-500 mt-2 text-center">
-                Create an account to save your team and compete in the 2025 fantasy league
-              </p>
-            </div>
-          </>
+
+                {/* Joker card button */}
+                {activeTeam && (
+                  <JokerCardButton
+                    jokerCardUsed={jokerCardUsed}
+                    onClick={handleUseJokerCard}
+                    className="w-full md:w-auto"
+                  />
+                )}
+              </>
+            ) : (
+              <>
+                {/* Login CTA button for guests */}
+                <div className="w-full">
+                  <Link href="/login">
+                    <Button
+                      className="w-full"
+                    >
+                      Log In to Save Team
+                    </Button>
+                  </Link>
+                  <p className="text-xs text-gray-500 mt-2 text-center">
+                    Create an account to save your team and compete in the 2025 fantasy league
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {isAuthenticated && activeTeam && (
+          <TeamPerformancePanel
+            teamType={activeTeam.teamType as "elite" | "junior"}
+            className="h-full"
+          />
         )}
       </div>
-
-      {isAuthenticated && activeTeam && (
-        <TeamPerformancePanel teamType={activeTeam.teamType as "elite" | "junior"} />
-      )}
     </div>
   );
   
