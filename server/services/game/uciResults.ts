@@ -3,6 +3,11 @@ import { and, eq, inArray } from "drizzle-orm";
 import { db } from "../../db";
 import { raceResults, races, riders } from "@shared/schema";
 import type { Gender, ResultStatus } from "./config";
+import {
+  matchUciResultsToRiders,
+  type ParsedUciResult,
+  type RiderIdentityRow,
+} from "./uciResultsMatch";
 
 type UciResultEntry = {
   headerType?: string;
@@ -36,16 +41,6 @@ export type ImportUciRaceResultsResult = {
 
 const ALLOWED_UCI_HOSTS = new Set(["www.uci.org", "uci.org"]);
 
-const normalizeNamePart = (value: string) =>
-  value
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-zA-Z0-9]/g, "")
-    .toLowerCase();
-
-const buildNameKey = (firstName: string, lastName: string) =>
-  `${normalizeNamePart(firstName)}:${normalizeNamePart(lastName)}`;
-
 const parseResultStatus = (value: string): ResultStatus => {
   const normalized = value.trim().toUpperCase();
   if (normalized === "DNF") return "DNF";
@@ -61,22 +56,6 @@ const parsePosition = (value: unknown): number | null => {
   }
   const parsed = Number.parseInt(String(value ?? ""), 10);
   return Number.isFinite(parsed) ? parsed : null;
-};
-
-const getRiderNameParts = (rider: {
-  firstName: string | null;
-  lastName: string | null;
-  name: string;
-}) => {
-  const fallbackName = rider.name?.trim() ?? "";
-  const parts = fallbackName.split(/\s+/).filter(Boolean);
-  const fallbackFirstName = parts[0] ?? "";
-  const fallbackLastName = parts.slice(1).join(" ");
-
-  return {
-    firstName: rider.firstName?.trim() || fallbackFirstName,
-    lastName: rider.lastName?.trim() || fallbackLastName,
-  };
 };
 
 const ensureAllowedUrl = (sourceUrl: string) => {
@@ -128,7 +107,7 @@ export async function importUciRaceResults(
     (entry) => entry.headerType === "rider",
   );
 
-  const parsedResults = entries
+  const parsedResults: ParsedUciResult[] = entries
     .map((entry) => {
       const values = entry.values ?? {};
       const firstName = String(values.firstname ?? "").trim();
@@ -139,15 +118,16 @@ export async function importUciRaceResults(
       }
 
       return {
+        firstName,
+        lastName,
         name: `${firstName} ${lastName}`,
-        key: buildNameKey(firstName, lastName),
         status: parseResultStatus(String(values.result ?? "")),
         position: parsePosition(values.rank),
       };
     })
     .filter((entry): entry is NonNullable<typeof entry> => !!entry);
 
-  const riderRows = await db
+  const riderRows: RiderIdentityRow[] = await db
     .select({
       uciId: riders.uciId,
       firstName: riders.firstName,
@@ -157,48 +137,10 @@ export async function importUciRaceResults(
     .from(riders)
     .where(and(eq(riders.gender, gender), eq(riders.category, category)));
 
-  const riderKeys = new Map<string, Array<{ uciId: string; name: string }>>();
-
-  for (const rider of riderRows) {
-    const { firstName, lastName } = getRiderNameParts(rider);
-    if (!firstName || !lastName) {
-      continue;
-    }
-    const key = buildNameKey(firstName, lastName);
-    const matches = riderKeys.get(key) ?? [];
-    matches.push({ uciId: rider.uciId, name: rider.name });
-    riderKeys.set(key, matches);
-  }
-
-  const missingNames = new Set<string>();
-  const ambiguousNames = new Map<string, string[]>();
-  const resultsByUciId = new Map<string, { uciId: string; status: ResultStatus; position: number | null }>();
-
-  for (const result of parsedResults) {
-    const matches = riderKeys.get(result.key) ?? [];
-    if (matches.length === 0) {
-      missingNames.add(result.name);
-      continue;
-    }
-    if (matches.length > 1) {
-      ambiguousNames.set(
-        result.name,
-        matches.map((match) => match.name),
-      );
-      continue;
-    }
-
-    resultsByUciId.set(matches[0].uciId, {
-      uciId: matches[0].uciId,
-      status: result.status,
-      position: result.position,
-    });
-  }
-
-  const results = Array.from(resultsByUciId.values());
-  if (results.length === 0) {
-    throw new Error("No matching riders found for the selected category");
-  }
+  const { results, missingNames, ambiguousNames } = matchUciResultsToRiders(
+    parsedResults,
+    riderRows,
+  );
 
   return await db.transaction(async (tx) => {
     const [race] = await tx.select().from(races).where(eq(races.id, raceId));
@@ -260,10 +202,12 @@ export async function importUciRaceResults(
       missing: missingNames.size,
       ambiguous: ambiguousNames.size,
       missingNames: Array.from(missingNames),
-      ambiguousNames: Array.from(ambiguousNames.entries()).map(([name, matches]) => ({
-        name,
-        matches,
-      })),
+      ambiguousNames: Array.from(ambiguousNames.entries()).map(
+        ([name, matches]) => ({
+          name,
+          matches,
+        }),
+      ),
       sourceUrl,
     };
   });
