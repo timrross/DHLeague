@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Rider } from "@shared/schema";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn, getColorFromName, getInitials, safeImageUrl } from "@/lib/utils";
+import { getFlagCode } from "@/lib/flags";
 import { formatRiderDisplayName } from "@shared/utils";
 
 type RiderAvatarProps = {
@@ -18,15 +19,13 @@ const sizeMap: Record<NonNullable<RiderAvatarProps["size"]>, string> = {
 };
 
 export function RiderAvatar({ rider, size = "md", className, highlight = false }: RiderAvatarProps) {
-  const [flagError, setFlagError] = useState(false);
   const displayName = useMemo(
     () => formatRiderDisplayName(rider) || rider.name || rider.riderId || "Rider",
     [rider],
   );
 
   const initials = getInitials(displayName);
-  const flagCode = rider.country?.toLowerCase();
-  const flagSrc = flagCode ? `/assets/flags/${flagCode}.svg` : undefined;
+  const flagCode = getFlagCode(rider.country);
   const flagLabel = rider.country?.toUpperCase() || "?";
   const placeholderUrl = rider.uciId
     ? `/api/riders/${encodeURIComponent(rider.uciId)}/placeholder.svg`
@@ -63,12 +62,11 @@ export function RiderAvatar({ rider, size = "md", className, highlight = false }
               : "w-6 h-6 -bottom-1.5 -right-1.5",
         )}
       >
-        {flagSrc && !flagError ? (
-          <img
-            src={flagSrc}
-            alt={`${flagLabel} flag`}
-            className="w-full h-full object-cover rounded-full"
-            onError={() => setFlagError(true)}
+        {flagCode ? (
+          <span
+            role="img"
+            aria-label={`${flagLabel} flag`}
+            className={cn("fi", `fi-${flagCode}`, "w-full h-full rounded-full")}
           />
         ) : (
           <span>{flagLabel}</span>

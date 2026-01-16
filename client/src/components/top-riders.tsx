@@ -1,26 +1,24 @@
-import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Rider } from "@shared/schema";
 import { formatRiderDisplayName } from "@shared/utils";
 import { safeImageUrl } from "@/lib/utils";
+import { getFlagCode } from "@/lib/flags";
 
 interface TopRidersProps {
   riders?: Rider[];
 }
 
 function FlagBadge({ country }: { country?: string | null }) {
-  const [failed, setFailed] = useState(false);
   const code = country?.toUpperCase() ?? "?";
-  const src = country ? `/assets/flags/${country.toLowerCase()}.svg` : undefined;
+  const flagCode = getFlagCode(country);
 
   return (
     <div className="absolute top-3 right-3 w-10 h-10 rounded-full overflow-hidden border border-white bg-slate-900 text-white text-sm font-bold flex items-center justify-center shadow-lg">
-      {src && !failed ? (
-        <img
-          src={src}
-          alt={`${code} flag`}
-          className="w-full h-full object-cover"
-          onError={() => setFailed(true)}
+      {flagCode ? (
+        <span
+          role="img"
+          aria-label={`${code} flag`}
+          className={`fi fi-${flagCode} w-full h-full`}
         />
       ) : (
         <span>{code}</span>
