@@ -79,6 +79,7 @@ export default function TeamBuilder() {
 
   const activeTeam = userTeam;
   const isCreatingTeam = !isAuthenticated || !activeTeam;
+  const hasSavedTeam = Boolean(activeTeam);
 
   const invalidateUserTeams = () => {
     queryClient.invalidateQueries({ queryKey: [userTeamQueryKey] });
@@ -201,6 +202,12 @@ export default function TeamBuilder() {
       setDraftInitialized(true);
     }
   }, [activeTeam, draftInitialized]);
+
+  useEffect(() => {
+    if (!teamLoading && !hasSavedTeam) {
+      setIsEditingTeam(true);
+    }
+  }, [teamLoading, hasSavedTeam]);
 
   useEffect(() => {
     if (user) {
@@ -565,14 +572,16 @@ export default function TeamBuilder() {
     <div className="bg-gray-50 p-5 rounded-lg">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="font-heading font-bold text-xl text-secondary">YOUR TEAM</h3>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setIsEditingTeam((current) => !current)}
-          disabled={isTeamLocked && swapsRemaining <= 0}
-        >
-          {isEditingTeam ? "Done Editing" : isTeamLocked ? "Manage Swaps" : "Edit Team"}
-        </Button>
+        {hasSavedTeam && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsEditingTeam((current) => !current)}
+            disabled={isTeamLocked && swapsRemaining <= 0}
+          >
+            {isEditingTeam ? "Done Editing" : isTeamLocked ? "Manage Swaps" : "Edit Team"}
+          </Button>
+        )}
       </div>
       
       {/* Team lock countdown */}
