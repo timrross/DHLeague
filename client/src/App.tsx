@@ -13,34 +13,37 @@ import Login from "@/pages/login";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import AdProvider from "@/components/layout/ad-provider";
+import AnalyticsProvider from "@/components/layout/analytics-provider";
 
 function App() {
   return (
     <TooltipProvider>
-      <AdProvider>
-        <div className="flex flex-col min-h-screen">
-          <Header />
-          <main className="flex-grow">
-            <Switch>
-              <Route path="/" component={Home} />
-              <Route path="/team-builder" component={TeamBuilder} />
-              <Route path="/races" component={Races} />
-              <Route path="/races/:id">
-                {(params) => <RaceDetail id={Number(params.id)} />}
-              </Route>
-              <Route path="/leaderboard" component={Leaderboard} />
-              <Route path="/rules" component={Rules} />
-              <Route path="/admin/:tab/:id" component={Admin} />
-              <Route path="/admin/:tab" component={Admin} />
-              <Route path="/admin" component={Admin} />
-              <Route path="/login" component={Login} />
-              <Route component={NotFound} />
-            </Switch>
-          </main>
-          <Footer />
-        </div>
-        <Toaster />
-      </AdProvider>
+      <AnalyticsProvider>
+        <AdProvider>
+          <div className="flex flex-col min-h-screen">
+            <Header />
+            <main className="flex-grow">
+              <Switch>
+                <Route path="/" component={Home} />
+                <Route path="/team-builder" component={TeamBuilder} />
+                <Route path="/races" component={Races} />
+                <Route path="/races/:id">
+                  {(params) => <RaceDetail id={Number(params.id)} />}
+                </Route>
+                <Route path="/leaderboard" component={Leaderboard} />
+                <Route path="/rules" component={Rules} />
+                <Route path="/admin/:tab/:id" component={Admin} />
+                <Route path="/admin/:tab" component={Admin} />
+                <Route path="/admin" component={Admin} />
+                <Route path="/login" component={Login} />
+                <Route component={NotFound} />
+              </Switch>
+            </main>
+            <Footer />
+          </div>
+          <Toaster />
+        </AdProvider>
+      </AnalyticsProvider>
     </TooltipProvider>
   );
 }

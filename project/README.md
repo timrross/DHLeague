@@ -44,6 +44,11 @@ At runtime the app expects the following environment variables:
 - `ISSUER_URL`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_TOKEN_ENDPOINT_AUTH_METHOD`, `OIDC_CALLBACK_URL`: OIDC values required for login; ask the admin
   for the tenant-specific credentials before deploying. In production the callback should be `https://mtbfantasy.com/api/callback`.
 
+Client build environment variables (Vite):
+
+- `VITE_GOOGLE_ADSENSE_CLIENT_ID`: AdSense client ID used to load ads in production.
+- `VITE_GA4_MEASUREMENT_ID`: GA4 measurement ID used to send client-side analytics.
+
 ## Configurable paths and service name
 
 You can adjust deployment targets by editing the env values at the top of the workflow:
