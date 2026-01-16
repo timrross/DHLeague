@@ -9,6 +9,7 @@ import {
   raceSnapshots,
   races,
   seasons,
+  users,
 } from "@shared/schema";
 
 const hasDb = Boolean(process.env.DATABASE_URL);
@@ -35,9 +36,11 @@ if (hasDb) {
   describe("result import rules integration", () => {
     let seasonId: number;
     let raceId: number;
+    let userId: string;
 
     beforeEach(async () => {
       const runId = `test-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      userId = `user-${runId}`;
       const [season] = await db
         .insert(seasons)
         .values({
@@ -49,6 +52,18 @@ if (hasDb) {
         })
         .returning();
       seasonId = season.id;
+
+      await db.insert(users).values({
+        id: userId,
+        email: `${userId}@example.com`,
+        firstName: "Test",
+        lastName: "User",
+        isAdmin: false,
+        isActive: true,
+        jokerCardUsed: false,
+        createdAt: now,
+        updatedAt: now,
+      });
 
       const [race] = await db
         .insert(races)
@@ -74,6 +89,7 @@ if (hasDb) {
       await db.delete(raceResults).where(eq(raceResults.raceId, raceId));
       await db.delete(raceResultImports).where(eq(raceResultImports.raceId, raceId));
       await db.delete(raceSnapshots).where(eq(raceSnapshots.raceId, raceId));
+      await db.delete(users).where(eq(users.id, userId));
       await db.delete(races).where(eq(races.id, raceId));
       await db.delete(seasons).where(eq(seasons.id, seasonId));
     });
@@ -145,6 +161,27 @@ if (hasDb) {
           updatedAt: now,
         },
       ]);
+
+      await db.insert(raceResults).values({
+        raceId,
+        uciId: "uci-1",
+        status: "FIN",
+        position: 1,
+        qualificationPosition: null,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      await db.insert(raceSnapshots).values({
+        raceId,
+        userId,
+        teamType: "ELITE",
+        startersJson: [{ uciId: "uci-1", gender: "male" }],
+        benchJson: null,
+        totalCostAtLock: 0,
+        snapshotHash: `snapshot-${raceId}`,
+        createdAt: now,
+      });
 
       const result = await settleRace(raceId);
       assert.equal(result.raceId, raceId);
