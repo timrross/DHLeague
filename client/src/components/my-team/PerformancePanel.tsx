@@ -1,18 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatRaceDateRange } from "@/components/race-label";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import PerformanceTrendMini from "@/components/my-team/PerformanceTrendMini";
+import { ChevronDown, ChevronUp, LineChart } from "lucide-react";
 import { formatRiderDisplayName } from "@shared/utils";
-import { type MyPerformanceResponse, type MyPerformanceRound } from "@/services/myTeamApi";
+import { type MyPerformanceResponse, type NextRound } from "@/services/myTeamApi";
 
 type PerformancePanelProps = {
   data: MyPerformanceResponse | undefined;
   isLoading: boolean;
   isError: boolean;
   juniorEnabled: boolean;
+  nextRound: NextRound | null;
+  now: number;
 };
 
 const formatPoints = (value: number | null) =>
@@ -24,21 +26,36 @@ const formatStatus = (value: string | null) =>
 const formatTeamLabel = (teamType: "elite" | "junior") =>
   teamType === "elite" ? "Elite" : "Junior";
 
+const formatCountdown = (targetMs: number) => {
+  if (targetMs <= 0) return "0m";
+  const totalMinutes = Math.floor(targetMs / 60000);
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  const minutes = totalMinutes % 60;
+  const parts = [];
+  if (days > 0) parts.push(`${days}d`);
+  if (hours > 0 || days > 0) parts.push(`${hours}h`);
+  parts.push(`${minutes}m`);
+  return parts.join(" ");
+};
+
 export default function PerformancePanel({
   data,
   isLoading,
   isError,
   juniorEnabled,
+  nextRound,
+  now,
 }: PerformancePanelProps) {
   const [view, setView] = useState<"elite" | "combined" | "junior">("elite");
   const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
 
   const availableTabs = juniorEnabled
     ? ["elite", "combined", "junior"]
-    : ["elite", "combined"];
+    : ["elite"];
 
   useEffect(() => {
-    if (!juniorEnabled && view === "junior") {
+    if (!juniorEnabled && view !== "elite") {
       setView("elite");
     }
   }, [juniorEnabled, view]);
@@ -62,28 +79,50 @@ export default function PerformancePanel({
     return filteredRounds[filteredRounds.length - 1].totalPoints ?? null;
   }, [filteredRounds]);
 
+  const hasScores = useMemo(
+    () => filteredRounds.some((round) => round.totalPoints !== null),
+    [filteredRounds],
+  );
+
+  const trendValues = useMemo(
+    () => filteredRounds.map((round) => round.totalPoints),
+    [filteredRounds],
+  );
+
   const toggleRound = (key: string) => {
     setExpandedKeys((prev) =>
       prev.includes(key) ? prev.filter((item) => item !== key) : [...prev, key],
     );
   };
 
+  const lockCountdown =
+    nextRound?.lockAt
+      ? `Next lock in ${formatCountdown(new Date(nextRound.lockAt).getTime() - now)}`
+      : null;
+
   return (
     <Card>
       <CardHeader className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <CardTitle className="text-lg">Performance</CardTitle>
-          <Tabs value={view} onValueChange={(value) => setView(value as typeof view)}>
-            <TabsList>
-              {availableTabs.map((tab) => (
-                <TabsTrigger key={tab} value={tab} className="capitalize">
-                  {tab}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
+          {availableTabs.length > 1 && (
+            <div className="flex flex-col items-end gap-1">
+              <Tabs value={view} onValueChange={(value) => setView(value as typeof view)}>
+                <TabsList>
+                  {availableTabs.map((tab) => (
+                    <TabsTrigger key={tab} value={tab} className="capitalize">
+                      {tab}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
+              <span className="text-xs text-gray-500">
+                Combined = Elite + Junior team points
+              </span>
+            </div>
+          )}
         </div>
-        <div className="flex flex-wrap items-center gap-4">
+        <div className="flex flex-wrap items-center gap-6">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
               Season Total
@@ -97,9 +136,17 @@ export default function PerformancePanel({
               Last Round
             </p>
             <p className="text-base font-semibold text-secondary">
-              {lastRoundPoints === null ? "—" : `${lastRoundPoints} pts`}
+              {lastRoundPoints === null ? "-" : `${lastRoundPoints} pts`}
             </p>
           </div>
+          {hasScores && (
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Trend
+              </p>
+              <PerformanceTrendMini values={trendValues} className="mt-2" />
+            </div>
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -116,10 +163,23 @@ export default function PerformancePanel({
           </p>
         )}
 
-        {!isLoading && !isError && filteredRounds.length === 0 && (
-          <p className="text-sm text-gray-600">
-            No locked rounds yet. Scores will appear after the first lock.
-          </p>
+        {!isLoading && !isError && !hasScores && (
+          <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 p-6 text-center">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-sm">
+              <LineChart className="h-5 w-5 text-primary" />
+            </div>
+            <h3 className="mt-3 text-lg font-semibold text-secondary">
+              Your season starts here
+            </h3>
+            <p className="mt-1 text-sm text-gray-600">
+              Points will appear after the first race locks/settles.
+            </p>
+            {lockCountdown && (
+              <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                {lockCountdown}
+              </p>
+            )}
+          </div>
         )}
 
         {!isLoading &&
@@ -137,13 +197,19 @@ export default function PerformancePanel({
 
             return (
               <div key={key} className="rounded-lg border border-gray-200 bg-white">
-                <div className="flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
+                <button
+                  type="button"
+                  onClick={() => toggleRound(key)}
+                  className="flex w-full flex-col gap-3 p-4 text-left transition hover:bg-gray-50 md:flex-row md:items-center md:justify-between"
+                  aria-expanded={isExpanded}
+                >
                   <div className="space-y-1">
                     <p className="font-semibold text-secondary">
-                      {round.location}, {round.country}
+                      {round.raceName}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {round.raceName} • {formatRaceDateRange(round.startDate, round.endDate)}
+                      {formatRaceDateRange(round.startDate, round.endDate)} -{" "}
+                      {round.location}, {round.country}
                     </p>
                     <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
                       <Badge variant="outline" className="capitalize">
@@ -160,25 +226,19 @@ export default function PerformancePanel({
                     <span className="text-sm font-semibold text-secondary">
                       {formatPoints(round.totalPoints)}
                     </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toggleRound(key)}
-                    >
-                      {isExpanded ? (
-                        <>
-                          Hide
-                          <ChevronUp className="ml-1 h-4 w-4" />
-                        </>
-                      ) : (
-                        <>
-                          Details
-                          <ChevronDown className="ml-1 h-4 w-4" />
-                        </>
-                      )}
-                    </Button>
+                    {isExpanded ? (
+                      <span className="flex items-center text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        Hide details
+                        <ChevronUp className="ml-1 h-4 w-4" />
+                      </span>
+                    ) : (
+                      <span className="flex items-center text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        View details
+                        <ChevronDown className="ml-1 h-4 w-4" />
+                      </span>
+                    )}
                   </div>
-                </div>
+                </button>
 
                 {isExpanded && (
                   <div className="border-t border-gray-100 bg-gray-50 p-4 space-y-4">
@@ -197,11 +257,11 @@ export default function PerformancePanel({
                                 {formatRiderDisplayName(starter.rider) || starter.rider.name}
                               </p>
                               <p className="text-xs text-gray-500">
-                                Status: {formatStatus(starter.status)} • Pos: {starter.position ?? "—"}
+                                Status: {formatStatus(starter.status)} - Pos: {starter.position ?? "-"}
                               </p>
                             </div>
                             <span className="font-semibold text-secondary">
-                              {starter.points ?? "—"} pts
+                              {starter.points ?? "-"} pts
                             </span>
                           </div>
                         ))}
@@ -223,7 +283,7 @@ export default function PerformancePanel({
                             </p>
                           </div>
                           <span className="font-semibold text-secondary">
-                            {bench.points ?? "—"} pts
+                            {bench.points ?? "-"} pts
                           </span>
                         </div>
                       ) : (
@@ -238,7 +298,7 @@ export default function PerformancePanel({
                         {formatRiderDisplayName(bench.rider) || bench.rider.name} auto-subbed for{" "}
                         {replacedStarter
                           ? formatRiderDisplayName(replacedStarter.rider) || replacedStarter.rider.name
-                          : `starter #${substitution.replacedStarterIndex ?? "—"}`}
+                          : `starter #${substitution.replacedStarterIndex ?? "-"}`}
                         .
                       </div>
                     )}

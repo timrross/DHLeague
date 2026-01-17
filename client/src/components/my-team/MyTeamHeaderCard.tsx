@@ -55,7 +55,17 @@ export default function MyTeamHeaderCard({ now, sections }: MyTeamHeaderCardProp
           const round = section.round;
           const editingOpen = round?.editingOpen ?? false;
           const statusLabel = round ? (editingOpen ? "Editing Open" : "Locked") : "TBD";
+          const statusSummary = round
+            ? editingOpen
+              ? "Editing Open"
+              : `Locked for ${round.name}`
+            : "Next round TBD";
           const lockLabel = formatLockLabel(round, now);
+          const helperCopy = round
+            ? editingOpen
+              ? "Edits apply to the next round until the lock window closes."
+              : "Edits reopen after the next lock window begins."
+            : "Check back for the next round announcement.";
           return (
             <div
               key={section.teamType}
@@ -77,16 +87,18 @@ export default function MyTeamHeaderCard({ now, sections }: MyTeamHeaderCardProp
                         {round.location}, {round.country}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {round.name} • {formatRaceDateRange(round.startDate, round.endDate)}
+                        {round.name} - {formatRaceDateRange(round.startDate, round.endDate)}
                       </p>
-                      <p className="text-xs text-gray-600">
-                        {round.discipline} • {lockLabel}
-                      </p>
+                    <p className="text-xs text-gray-600">
+                      {round.discipline} - {lockLabel}
+                    </p>
+                    <p className="text-xs font-semibold text-gray-600">
+                      {statusSummary}
+                    </p>
+                    <p className="text-xs text-gray-500">{helperCopy}</p>
                     </>
                   ) : (
-                    <p className="text-sm text-gray-500">
-                      No upcoming rounds scheduled yet.
-                    </p>
+                    <p className="text-sm text-gray-500">{helperCopy}</p>
                   )}
                 </div>
                 <div className="flex flex-col gap-2">

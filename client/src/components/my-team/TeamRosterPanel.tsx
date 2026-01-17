@@ -7,7 +7,10 @@ import { type TeamWithRiders } from "@shared/schema";
 import BudgetBar from "@/components/team-builder/BudgetBar";
 import GenderSlotsIndicator from "@/components/team-builder/GenderSlotsIndicator";
 import { getGenderCounts } from "@/lib/team-builder";
+import { cn } from "@/lib/utils";
+import { getFlagCode } from "@/lib/flags";
 import { type NextRound } from "@/services/myTeamApi";
+import { Armchair, Zap } from "lucide-react";
 
 type TeamRosterPanelProps = {
   team: TeamWithRiders | null;
@@ -44,19 +47,47 @@ export default function TeamRosterPanel({
   const statusCopy = nextRound
     ? nextRound.editingOpen
       ? "Applies to the next round."
-      : "Locked snapshot exists for this round."
+      : "Changes won't affect scoring until the next lock window."
     : "No upcoming round scheduled yet.";
   const statusBadge = nextRound
     ? nextRound.editingOpen
       ? "Editing Open"
       : "Locked"
     : "TBD";
+  const lockedSnapshotLabel =
+    nextRound && !nextRound.editingOpen
+      ? `Locked snapshot for ${nextRound.name}`
+      : null;
 
   const maleStarters = starters.filter((rider) => rider.gender === "male");
   const femaleStarters = starters.filter((rider) => rider.gender === "female");
 
   const maleSlots = renderSlots(maleStarters, 4);
   const femaleSlots = renderSlots(femaleStarters, 2);
+
+  const renderRiderMeta = (rider: TeamWithRiders["riders"][number]) => {
+    const flagCode = getFlagCode(rider.country);
+    return (
+      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+        {flagCode && (
+          <span
+            role="img"
+            aria-label={`${rider.country ?? ""} flag`}
+            className={cn("fi", `fi-${flagCode}`, "h-4 w-4 rounded-full")}
+          />
+        )}
+        <span
+          className={cn(
+            "h-2 w-2 rounded-full",
+            rider.gender === "male" ? "bg-blue-500" : "bg-pink-500",
+          )}
+          aria-hidden="true"
+        />
+        <span>{rider.gender === "male" ? "Male" : "Female"}</span>
+        <span className="truncate">{rider.team}</span>
+      </div>
+    );
+  };
 
   return (
     <Card>
@@ -69,7 +100,12 @@ export default function TeamRosterPanel({
             {statusBadge}
           </Badge>
         </div>
-        <p className="text-xs text-gray-500">{statusCopy}</p>
+        <div className="space-y-1">
+          {lockedSnapshotLabel && (
+            <Badge variant="secondary">{lockedSnapshotLabel}</Badge>
+          )}
+          <p className="text-xs text-gray-500">{statusCopy}</p>
+        </div>
       </CardHeader>
       <CardContent className="space-y-5">
         {team ? (
@@ -80,10 +116,13 @@ export default function TeamRosterPanel({
             </div>
 
             <div className="space-y-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
-                  Starters
-                </p>
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Zap className="h-4 w-4 text-amber-500" />
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Starters
+                  </p>
+                </div>
                 <div className="grid gap-4 lg:grid-cols-2">
                   <div className="space-y-2">
                     <p className="text-xs font-semibold uppercase text-blue-600">
@@ -92,16 +131,14 @@ export default function TeamRosterPanel({
                     {maleSlots.map((rider, index) => (
                       <div
                         key={`male-${index}-${rider?.id ?? "empty"}`}
-                        className="rounded-md border border-gray-200 bg-white px-3 py-2 text-sm"
+                        className="min-h-[44px] rounded-md border border-gray-200 bg-white px-3 py-2 text-sm"
                       >
                         {rider ? (
                           <>
                             <p className="font-semibold text-secondary">
                               {formatRiderDisplayName(rider) || rider.name}
                             </p>
-                            <p className="text-xs text-gray-500 truncate">
-                              {rider.team}
-                            </p>
+                            {renderRiderMeta(rider)}
                           </>
                         ) : (
                           <p className="text-xs text-gray-500">Empty slot</p>
@@ -116,16 +153,14 @@ export default function TeamRosterPanel({
                     {femaleSlots.map((rider, index) => (
                       <div
                         key={`female-${index}-${rider?.id ?? "empty"}`}
-                        className="rounded-md border border-gray-200 bg-white px-3 py-2 text-sm"
+                        className="min-h-[44px] rounded-md border border-gray-200 bg-white px-3 py-2 text-sm"
                       >
                         {rider ? (
                           <>
                             <p className="font-semibold text-secondary">
                               {formatRiderDisplayName(rider) || rider.name}
                             </p>
-                            <p className="text-xs text-gray-500 truncate">
-                              {rider.team}
-                            </p>
+                            {renderRiderMeta(rider)}
                           </>
                         ) : (
                           <p className="text-xs text-gray-500">Empty slot</p>
@@ -136,21 +171,22 @@ export default function TeamRosterPanel({
                 </div>
               </div>
 
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
-                  Bench
-                </p>
-                <p className="text-xs text-gray-500 mb-2">
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Armchair className="h-4 w-4 text-slate-500" />
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Bench
+                  </p>
+                </div>
+                <p className="text-xs text-gray-500 mb-3">
                   Bench rider only scores if a same-gender starter DNS. Only one auto-sub per round.
                 </p>
                 {bench ? (
-                  <div className="rounded-md border border-gray-200 bg-white px-3 py-2 text-sm">
+                  <div className="min-h-[44px] rounded-md border border-gray-200 bg-white px-3 py-2 text-sm">
                     <p className="font-semibold text-secondary">
                       {formatRiderDisplayName(bench) || bench.name}
                     </p>
-                    <p className="text-xs text-gray-500 truncate">
-                      {bench.gender === "male" ? "Male" : "Female"} • {bench.team}
-                    </p>
+                    {renderRiderMeta(bench)}
                   </div>
                 ) : (
                   <p className="text-sm text-gray-500">No bench rider selected.</p>
