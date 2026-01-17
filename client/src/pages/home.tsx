@@ -18,6 +18,16 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-neutral">
+      <section className="border-b border-amber-200 bg-amber-50">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex flex-col gap-1 text-sm text-amber-900 md:flex-row md:items-center md:justify-between">
+            <span className="font-semibold uppercase tracking-wide">Beta Notice</span>
+            <span>
+              The site is currently in beta and will launch before the 2026 Downhill season.
+            </span>
+          </div>
+        </div>
+      </section>
       {/* Hero Section */}
       <section className="relative bg-secondary" style={{ backgroundImage: "url('https://images.ctfassets.net/761l7gh5x5an/6imXFOweEx2vvfLsWdjaAC/df5f9d1fcade37a98121bc89d846c369/UCI_WCh-DHI_65.JPG?fit=thumb&fl=progressive&w=2400&h=')", backgroundSize: "cover", backgroundPosition: "center" }}>
         <div className="absolute inset-0 bg-black bg-opacity-50"></div>
