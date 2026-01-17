@@ -1,3 +1,5 @@
+import { Link } from "wouter";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatRiderDisplayName } from "@shared/utils";
 import { type TeamWithRiders } from "@shared/schema";
@@ -11,6 +13,10 @@ import { Armchair, Zap } from "lucide-react";
 type TeamRosterPanelProps = {
   team: TeamWithRiders | null;
   teamType: "elite" | "junior";
+  cta?: {
+    label: string;
+    href: string;
+  };
 };
 
 const defaultBudgetCap = (teamType: "elite" | "junior") =>
@@ -30,6 +36,7 @@ const renderSlots = (riders: TeamWithRiders["riders"], total: number) => {
 export default function TeamRosterPanel({
   team,
   teamType,
+  cta,
 }: TeamRosterPanelProps) {
   const starters = team?.riders ?? [];
   const bench = team?.benchRider ?? null;
@@ -78,15 +85,10 @@ export default function TeamRosterPanel({
       </CardHeader>
       <CardContent className="space-y-5">
         {team ? (
-          <>
-            <div className="grid gap-4 lg:grid-cols-2">
-              <BudgetBar used={totalCost} cap={budgetCap} />
-              <GenderSlotsIndicator maleCount={maleCount} femaleCount={femaleCount} />
-            </div>
-
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-start">
             <div className="space-y-4">
               <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                <div className="flex items-center gap-2 mb-3">
+                <div className="mb-3 flex items-center gap-2">
                   <Zap className="h-4 w-4 text-amber-500" />
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                     Starters
@@ -141,13 +143,13 @@ export default function TeamRosterPanel({
               </div>
 
               <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                <div className="flex items-center gap-2 mb-3">
+                <div className="mb-3 flex items-center gap-2">
                   <Armchair className="h-4 w-4 text-slate-500" />
                   <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                     Bench
                   </p>
                 </div>
-                <p className="text-xs text-gray-500 mb-3">
+                <p className="mb-3 text-xs text-gray-500">
                   Bench rider only scores if a same-gender starter DNS. Only one auto-sub per round.
                 </p>
                 {bench ? (
@@ -162,13 +164,29 @@ export default function TeamRosterPanel({
                 )}
               </div>
             </div>
-          </>
+
+            <div className="space-y-4">
+              <BudgetBar used={totalCost} cap={budgetCap} />
+              <GenderSlotsIndicator maleCount={maleCount} femaleCount={femaleCount} />
+              {cta && (
+                <Link href={cta.href}>
+                  <Button className="w-full mt-4">{cta.label}</Button>
+                </Link>
+              )}
+            </div>
+          </div>
         ) : (
-          <div className="rounded-md border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
-            No {formatTeamLabel(teamType).toLowerCase()} team saved yet.
+          <div className="space-y-4">
+            <div className="rounded-md border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+              No {formatTeamLabel(teamType).toLowerCase()} team saved yet.
+            </div>
+            {cta && (
+              <Link href={cta.href}>
+                <Button className="w-full">{cta.label}</Button>
+              </Link>
+            )}
           </div>
         )}
-
       </CardContent>
     </Card>
   );

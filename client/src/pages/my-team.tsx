@@ -41,6 +41,16 @@ export default function MyTeam() {
   const showJunior = juniorTeamEnabled;
   const eliteRound = nextRounds?.elite ?? null;
   const juniorRound = showJunior ? nextRounds?.junior ?? null : null;
+  const eliteCta = {
+    label: showJunior ? "Go to Elite Team Builder" : "Go to Team Builder",
+    href: "/team-builder?teamType=ELITE",
+  };
+  const juniorCta = showJunior
+    ? {
+        label: "Go to Junior Team Builder",
+        href: "/team-builder?teamType=JUNIOR",
+      }
+    : undefined;
 
   if (!authLoading && !isAuthenticated) {
     return (
@@ -76,22 +86,20 @@ export default function MyTeam() {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-start">
-          <div className="space-y-6">
-            <PerformancePanel
-              data={performance}
-              isLoading={performanceLoading || featuresLoading}
-              isError={performanceError}
-              juniorEnabled={showJunior}
-            />
-            <NextRacePanel
-              now={now}
-              eliteRound={eliteRound}
-              juniorRound={juniorRound}
-              showJunior={showJunior}
-            />
-          </div>
+          <PerformancePanel
+            data={performance}
+            isLoading={performanceLoading || featuresLoading}
+            isError={performanceError}
+            juniorEnabled={showJunior}
+          />
+          <NextRacePanel
+            now={now}
+            eliteRound={eliteRound}
+            juniorRound={juniorRound}
+            showJunior={showJunior}
+          />
 
-          <section className="space-y-4">
+          <section className="space-y-4 lg:col-span-2">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-lg font-heading font-bold text-secondary">
                 My Riders
@@ -118,12 +126,14 @@ export default function MyTeam() {
                 <TeamRosterPanel
                   team={teams?.eliteTeam ?? null}
                   teamType="elite"
+                  cta={eliteCta}
                 />
 
                 {showJunior && (
                   <TeamRosterPanel
                     team={teams?.juniorTeam ?? null}
                     teamType="junior"
+                    cta={juniorCta}
                   />
                 )}
               </div>

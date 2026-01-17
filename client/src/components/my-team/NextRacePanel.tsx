@@ -1,6 +1,4 @@
-import { Link } from "wouter";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatRaceDateRange } from "@/components/race-label";
 import { type NextRound } from "@/services/myTeamApi";
@@ -50,14 +48,6 @@ export default function NextRacePanel({
         ? "Edits apply to this round until the lock window closes."
         : "Locked for this round. Editing opens after lock."
       : "Next round details will appear soon.";
-    const actionLabel = editingOpen
-      ? showJunior
-        ? `Edit ${teamLabel} Team`
-        : "Edit Team"
-      : showJunior
-        ? `View ${teamLabel} Team Builder`
-        : "View Team Builder";
-
     return (
       <div
         key={teamType}
@@ -93,14 +83,6 @@ export default function NextRacePanel({
               <p className="text-sm text-gray-500">{helperCopy}</p>
             )}
           </div>
-          <Link href={`/team-builder?teamType=${teamType.toUpperCase()}`}>
-            <Button
-              className="w-full md:w-auto"
-              variant={editingOpen ? "default" : "outline"}
-            >
-              {actionLabel}
-            </Button>
-          </Link>
         </div>
       </div>
     );
