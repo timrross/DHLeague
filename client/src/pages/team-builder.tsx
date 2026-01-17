@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
@@ -6,28 +6,27 @@ import { Link } from "wouter";
 import { Rider, TeamWithRiders } from "@shared/schema";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import RiderCard from "@/components/rider-card";
-import TeamSummary from "@/components/team-summary";
-import CountdownTimer from "@/components/countdown-timer";
 import JokerCardDialog from "@/components/joker-card-dialog";
 import JokerCardButton from "@/components/joker-card-button";
-import TeamPerformancePanel from "@/components/team-performance-panel";
-import { Search, AlertTriangle, Info, RefreshCw, ArrowUpDown } from "lucide-react";
+import TeamStatusPanel from "@/components/team-builder/TeamStatusPanel";
+import BudgetBar from "@/components/team-builder/BudgetBar";
+import GenderSlotsIndicator from "@/components/team-builder/GenderSlotsIndicator";
+import SelectedRidersList from "@/components/team-builder/SelectedRidersList";
+import BenchSelector from "@/components/team-builder/BenchSelector";
+import RiderList from "@/components/team-builder/RiderList";
+import StickyMobileActions from "@/components/team-builder/StickyMobileActions";
+import TeamBuilderHeader from "@/components/team-builder-header";
 import { useRacesQuery, useRidersQueryWithParams } from "@/services/riderDataApi";
-import { formatRiderDisplayName } from "@shared/utils";
-import { formatRaceDateRange } from "@/components/race-label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  FEMALE_SLOTS,
+  MALE_SLOTS,
+  TEAM_SIZE,
+  getAddDisabledReason,
+  getBudgetState,
+  getGenderCounts,
+  getTeamValidity,
+} from "@/lib/team-builder";
 
 export default function TeamBuilder() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -40,21 +39,37 @@ export default function TeamBuilder() {
   const [benchMode, setBenchMode] = useState(false);
   const [teamName, setTeamName] = useState("My DH Team");
   const [draftInitialized, setDraftInitialized] = useState(false);
-  const [isEditingTeam, setIsEditingTeam] = useState(false);
   const [swapMode, setSwapMode] = useState(false);
   const [swapRiderData, setSwapRiderData] = useState<Rider | null>(null);
   const [showJokerDialog, setShowJokerDialog] = useState(false);
   const [jokerCardUsed, setJokerCardUsed] = useState(false);
   const [sortBy, setSortBy] = useState<"rank" | "name" | "cost">("rank");
+  const [showMobileRiders, setShowMobileRiders] = useState(false);
+  const [lockCountdownLabel, setLockCountdownLabel] = useState("Lock time TBD");
 
   // Fetch all races
-  const { data: races, isLoading: racesLoading } = useRacesQuery();
+  const { data: races } = useRacesQuery();
 
   // Determine next race
   const nextRace = races?.find((race) => race.status === 'next');
   
   // Calculate lock date (1 day before race start)
-  const lockDate = nextRace ? new Date(new Date(nextRace.startDate).getTime() - 24 * 60 * 60 * 1000) : new Date();
+  const lockDate = nextRace
+    ? new Date(new Date(nextRace.startDate).getTime() - 24 * 60 * 60 * 1000)
+    : null;
+
+  const formatCountdown = (targetMs: number) => {
+    if (targetMs <= 0) return "0m";
+    const totalMinutes = Math.floor(targetMs / 60000);
+    const days = Math.floor(totalMinutes / (60 * 24));
+    const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+    const minutes = totalMinutes % 60;
+    const parts = [];
+    if (days > 0) parts.push(`${days}d`);
+    if (hours > 0 || days > 0) parts.push(`${hours}h`);
+    parts.push(`${minutes}m`);
+    return parts.join(" ");
+  };
   
   // Fetch riders
   const normalizedSearch = searchTerm.trim();
@@ -72,15 +87,13 @@ export default function TeamBuilder() {
   const userTeamQueryKey = "/api/teams/user";
 
   // Fetch user's teams if authenticated
-  const { data: userTeam, isLoading: teamLoading } = useQuery<TeamWithRiders | null>({
+  const { data: userTeam } = useQuery<TeamWithRiders | null>({
     queryKey: [userTeamQueryKey],
     enabled: isAuthenticated,
   });
 
   const activeTeam = userTeam;
   const isCreatingTeam = !isAuthenticated || !activeTeam;
-  const hasSavedTeam = Boolean(activeTeam);
-
   const invalidateUserTeams = () => {
     queryClient.invalidateQueries({ queryKey: [userTeamQueryKey] });
   };
@@ -100,7 +113,6 @@ export default function TeamBuilder() {
         description: "Your fantasy team has been created.",
         variant: "default",
       });
-      setIsEditingTeam(false);
       invalidateUserTeams();
     },
     onError: (error: any) => {
@@ -127,7 +139,6 @@ export default function TeamBuilder() {
         description: "Your fantasy team has been updated.",
         variant: "default",
       });
-      setIsEditingTeam(false);
       invalidateUserTeams();
     },
     onError: (error: any) => {
@@ -173,25 +184,89 @@ export default function TeamBuilder() {
   const startersBudget = selectedRiders.reduce((sum, rider) => sum + rider.cost, 0);
   const benchBudget = benchRider?.cost ?? 0;
   const usedBudget = startersBudget + benchBudget;
-  const remainingBudget = totalBudget - usedBudget;
-  const budgetPercentage = (usedBudget / totalBudget) * 100;
-  
-  const maleRidersCount = selectedRiders.filter(r => r.gender === "male").length;
-  const femaleRidersCount = selectedRiders.filter(r => r.gender === "female").length;
-  
+  const budgetState = getBudgetState(usedBudget, totalBudget);
+  const { maleCount: maleRidersCount, femaleCount: femaleRidersCount } = getGenderCounts(selectedRiders);
+
   // Team lock status and swap tracking
   const isTeamLocked = activeTeam?.isLocked || false;
   const swapsUsed = activeTeam?.swapsUsed || 0;
-  const swapsRemaining = 2 - swapsUsed;
-  const showRiderPicker = isEditingTeam;
-  
+  const swapsRemaining = Math.max(0, 2 - swapsUsed);
+  const lockStatusLabel = isTeamLocked ? "Locked for this round" : "Editing Open";
+  const lockCountdownText = isTeamLocked ? "Locked for this round" : lockCountdownLabel;
+
   const benchIsValid = !benchRider || !selectedRiders.some((rider) => rider.id === benchRider.id);
 
-  const isTeamValid = selectedRiders.length === 6 && 
-                     maleRidersCount <= 4 && 
-                     femaleRidersCount >= 2 && 
-                     usedBudget <= totalBudget &&
-                     benchIsValid;
+  const teamValidity = getTeamValidity({
+    starters: selectedRiders,
+    bench: benchRider,
+    budgetState,
+  });
+
+  const isTeamValid =
+    selectedRiders.length === TEAM_SIZE &&
+    maleRidersCount === MALE_SLOTS &&
+    femaleRidersCount === FEMALE_SLOTS &&
+    usedBudget <= totalBudget &&
+    benchIsValid;
+
+  const hasChanges = useMemo(() => {
+    if (!activeTeam) return true;
+    const savedIds = (activeTeam.riders ?? []).map((rider) => rider.id).sort((a, b) => a - b);
+    const currentIds = selectedRiders.map((rider) => rider.id).sort((a, b) => a - b);
+    const savedBenchId = activeTeam.benchRider?.id ?? null;
+    const currentBenchId = benchRider?.id ?? null;
+    const savedName = (activeTeam.name || "My DH Team").trim();
+    const currentName = teamName.trim();
+
+    return (
+      savedName !== currentName ||
+      savedBenchId !== currentBenchId ||
+      savedIds.join(",") !== currentIds.join(",")
+    );
+  }, [activeTeam, selectedRiders, benchRider, teamName]);
+
+  const canSave = isAuthenticated && isTeamValid && (isCreatingTeam || hasChanges) && !isTeamLocked;
+  const isSubmitting = createTeam.isPending || updateTeam.isPending;
+  const statusIssues = useMemo(() => {
+    const issues = [];
+    if (!benchIsValid) {
+      issues.push({ level: "error" as const, message: "Bench rider must be different from starters" });
+    }
+    issues.push(...teamValidity.issues);
+    return issues;
+  }, [benchIsValid, teamValidity.issues]);
+
+  const summaryLabel = useMemo(() => {
+    const budgetLabel =
+      budgetState.remaining >= 0
+        ? `$${budgetState.remaining.toLocaleString()} remaining`
+        : `$${Math.abs(budgetState.remaining).toLocaleString()} over budget`;
+    const statusLabel = statusIssues.length > 0 ? statusIssues[0].message : "Team valid";
+    return `${budgetLabel} • ${statusLabel}`;
+  }, [budgetState, statusIssues]);
+
+  const getDisabledReasonForRider = (rider: Rider) => {
+    const mode = swapMode ? "swap" : benchMode ? "bench" : "starter";
+    return getAddDisabledReason({
+      rider,
+      starters: selectedRiders,
+      bench: benchRider,
+      budgetState,
+      mode,
+      isSelected: selectedRiders.some((item) => item.id === rider.id),
+      isTeamLocked,
+      swapRider: swapRiderData ?? undefined,
+    });
+  };
+
+  const raceLabel = nextRace
+    ? `${nextRace.location}, ${nextRace.country}`
+    : "No upcoming race";
+  const raceName = nextRace?.name ?? "Next race TBD";
+  const lockBadgeClass = isTeamLocked
+    ? "bg-red-100 text-red-700"
+    : "bg-emerald-100 text-emerald-700";
+  const primaryActionLabel = activeTeam && !isCreatingTeam ? "Update Team" : "Save Team";
 
   // Initialize draft from saved team (once)
   useEffect(() => {
@@ -204,24 +279,26 @@ export default function TeamBuilder() {
   }, [activeTeam, draftInitialized]);
 
   useEffect(() => {
-    if (!teamLoading && !hasSavedTeam) {
-      setIsEditingTeam(true);
+    if (!lockDate) {
+      setLockCountdownLabel("Lock time TBD");
+      return;
     }
-  }, [teamLoading, hasSavedTeam]);
+
+    const updateCountdown = () => {
+      const diff = lockDate.getTime() - Date.now();
+      setLockCountdownLabel(`Locks in ${formatCountdown(diff)}`);
+    };
+
+    updateCountdown();
+    const timer = setInterval(updateCountdown, 60000);
+    return () => clearInterval(timer);
+  }, [lockDate]);
 
   useEffect(() => {
     if (user) {
       setJokerCardUsed(user.jokerCardUsed || false);
     }
   }, [user]);
-
-  useEffect(() => {
-    if (!isEditingTeam) {
-      setBenchMode(false);
-      setSwapMode(false);
-      setSwapRiderData(null);
-    }
-  }, [isEditingTeam]);
 
   // Filter riders based on search and tab
   const filteredRiders = safeRiders.filter((rider: Rider) => {
@@ -268,161 +345,98 @@ export default function TeamBuilder() {
     return b.points - a.points;
   });
 
-  // Handle rider selection/deselection
-  const toggleRiderSelection = (rider: Rider) => {
-    // If in swap mode, handle the swap
-    if (swapMode && swapRiderData) {
-      // Can't swap with a rider already on the team
-      if (selectedRiders.some(r => r.id === rider.id)) {
-        toast({
-          title: "Rider already on team",
-          description: "You can't swap with a rider already on your team.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      // Check if team would still be valid after swap
-      const isRemovingMale = swapRiderData.gender === "male";
-      const isAddingMale = rider.gender === "male";
-      
-      if (isRemovingMale && !isAddingMale) {
-        // Removing male, adding female - check team composition
-        if (maleRidersCount <= 2) {
-          toast({
-            title: "Invalid team composition",
-            description: "Your team must include at least 2 male riders.",
-            variant: "destructive",
-          });
-          return;
-        }
-        
-        if (femaleRidersCount >= 4) {
-          toast({
-            title: "Invalid team composition",
-            description: "Your team can include a maximum of 4 female riders.",
-            variant: "destructive",
-          });
-          return;
-        }
-      } else if (!isRemovingMale && isAddingMale) {
-        // Removing female, adding male - check team composition
-        if (femaleRidersCount <= 2) {
-          toast({
-            title: "Invalid team composition",
-            description: "Your team must include at least 2 female riders.",
-            variant: "destructive",
-          });
-          return;
-        }
-        
-        if (maleRidersCount >= 4) {
-          toast({
-            title: "Invalid team composition",
-            description: "Your team can include a maximum of 4 male riders.",
-            variant: "destructive",
-          });
-          return;
-        }
-      }
-      
-      // Check budget
-      const newBudget = usedBudget - swapRiderData.cost + rider.cost;
-      if (newBudget > totalBudget) {
-        toast({
-          title: "Budget exceeded",
-          description: "This swap would exceed your $2,000,000 budget.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      // Perform the swap
-      if (activeTeam && swapRiderData) {
-        performSwapRider.mutate({
-          teamId: activeTeam.id,
-          removedRiderId: swapRiderData.id,
-          addedRiderId: rider.id
-        });
-      }
-      
-      return;
-    }
-
-    if (benchMode) {
-      if (selectedRiders.some(r => r.id === rider.id)) {
-        toast({
-          title: "Rider already a starter",
-          description: "Your bench rider must be different from your starters.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const newBudget = startersBudget + rider.cost;
-      if (newBudget > totalBudget) {
-        toast({
-          title: "Budget exceeded",
-          description: "Adding this bench rider would exceed your $2,000,000 budget.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      setBenchRider(rider);
-      setBenchMode(false);
-      return;
-    }
-    
-    // Regular rider selection/deselection (not in swap mode)
-    setSelectedRiders(riders => {
-      // If rider is already selected, remove them
-      if (riders.some(r => r.id === rider.id)) {
-        return riders.filter(r => r.id !== rider.id);
-      }
-
-      if (benchRider?.id === rider.id) {
-        toast({
-          title: "Bench rider selected",
-          description: "Remove this rider from your bench before adding as a starter.",
-          variant: "destructive",
-        });
-        return riders;
-      }
-      
-      // Check if adding rider would exceed team limit
-      if (riders.length >= 6) {
-        toast({
-          title: "Team limit reached",
-          description: "Your team can have a maximum of 6 riders.",
-          variant: "destructive",
-        });
-        return riders;
-      }
-      
-      // Check gender balance
-      if (rider.gender === "male" && maleRidersCount >= 4) {
-        toast({
-          title: "Invalid team composition",
-          description: "Your team can include a maximum of 4 male riders.",
-          variant: "destructive",
-        });
-        return riders;
-      }
-      
-      // Check budget
-      if (usedBudget + rider.cost > totalBudget) {
-        toast({
-          title: "Budget exceeded",
-          description: "Adding this rider would exceed your $2,000,000 budget.",
-          variant: "destructive",
-        });
-        return riders;
-      }
-      
-      // Add the rider
-      return [...riders, rider];
+  const handleAddStarter = (rider: Rider) => {
+    const disabledReason = getAddDisabledReason({
+      rider,
+      starters: selectedRiders,
+      bench: benchRider,
+      budgetState,
+      mode: "starter",
+      isSelected: selectedRiders.some((item) => item.id === rider.id),
+      isTeamLocked,
     });
+
+    if (disabledReason) {
+      toast({
+        title: "Cannot add rider",
+        description: disabledReason,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSelectedRiders((riders) => [...riders, rider]);
+  };
+
+  const handleRemoveStarter = (rider: Rider) => {
+    if (isTeamLocked) return;
+    setSelectedRiders((riders) => riders.filter((item) => item.id !== rider.id));
+  };
+
+  const handleBenchSelection = (rider: Rider) => {
+    const disabledReason = getAddDisabledReason({
+      rider,
+      starters: selectedRiders,
+      bench: benchRider,
+      budgetState,
+      mode: "bench",
+      isSelected: false,
+      isTeamLocked,
+    });
+
+    if (disabledReason) {
+      toast({
+        title: "Cannot set bench",
+        description: disabledReason,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setBenchRider(rider);
+    setBenchMode(false);
+  };
+
+  const handleSwapSelection = (rider: Rider) => {
+    if (!swapRiderData || !activeTeam) return;
+
+    const disabledReason = getAddDisabledReason({
+      rider,
+      starters: selectedRiders,
+      bench: benchRider,
+      budgetState,
+      mode: "swap",
+      isSelected: selectedRiders.some((item) => item.id === rider.id),
+      isTeamLocked,
+      swapRider: swapRiderData,
+    });
+
+    if (disabledReason) {
+      toast({
+        title: "Cannot swap rider",
+        description: disabledReason,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    performSwapRider.mutate({
+      teamId: activeTeam.id,
+      removedRiderId: swapRiderData.id,
+      addedRiderId: rider.id,
+    });
+  };
+
+  const handleRiderSelect = (rider: Rider) => {
+    if (swapMode) {
+      handleSwapSelection(rider);
+      return;
+    }
+    if (benchMode) {
+      handleBenchSelection(rider);
+      return;
+    }
+    handleAddStarter(rider);
   };
 
   // Functions to handle rider swaps
@@ -459,17 +473,31 @@ export default function TeamBuilder() {
     setBenchMode(false);
   };
 
-  const cancelBenchSelection = () => {
-    setBenchMode(false);
-  };
-
   // Handle save/update team
   const handleSaveTeam = () => {
+    if (isTeamLocked) {
+      toast({
+        title: "Team locked",
+        description: "This team is locked for the current round.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!isTeamValid) {
       toast({
         title: "Invalid team",
-        description: "Your team must include exactly 6 riders (max 4 men, min 2 women) within the $2,000,000 budget.",
+        description: "Your team must include 4 men and 2 women within the $2,000,000 budget.",
         variant: "destructive",
+      });
+      return;
+    }
+
+    if (!isCreatingTeam && !hasChanges) {
+      toast({
+        title: "No changes to save",
+        description: "Make a change before updating your team.",
+        variant: "default",
       });
       return;
     }
@@ -543,7 +571,7 @@ export default function TeamBuilder() {
     if (!isTeamValid) {
       toast({
         title: "Invalid team",
-        description: "Your team must include max 4 men, min 2 women within budget.",
+        description: "Your team must include 4 men and 2 women within budget.",
         variant: "destructive",
       });
       return;
@@ -567,357 +595,187 @@ export default function TeamBuilder() {
     });
   };
 
-  // Render UI components based on role
-  const renderTeamSection = () => (
-    <div className="bg-gray-50 p-5 rounded-lg">
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="font-heading font-bold text-xl text-secondary">YOUR TEAM</h3>
-        {hasSavedTeam && (
+  return (
+    <div className="min-h-screen bg-neutral pb-24 lg:pb-0">
+      <div className="container mx-auto px-4 py-8">
+        <TeamBuilderHeader isAuthenticated={isAuthenticated} authLoading={authLoading} />
+
+        <div className="hidden lg:flex items-center justify-between gap-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Lock Countdown
+            </p>
+            <p className="font-heading text-lg font-bold text-secondary">
+              {lockCountdownText}
+            </p>
+            <p className="text-xs text-gray-600">{raceLabel} · {raceName}</p>
+          </div>
+          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${lockBadgeClass}`}>
+            {lockStatusLabel}
+          </span>
+        </div>
+
+        <div className="lg:hidden sticky top-16 z-30 -mx-4 mb-4 border-b border-gray-200 bg-white/95 px-4 py-3 shadow-sm backdrop-blur">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                Lock Countdown
+              </p>
+              <p className="font-heading text-base font-bold text-secondary">
+                {lockCountdownText}
+              </p>
+              <p className="text-xs text-gray-600">{raceLabel}</p>
+            </div>
+            <span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${lockBadgeClass}`}>
+              {lockStatusLabel}
+            </span>
+          </div>
+        </div>
+
+        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
+          <div className="space-y-6">
+            <TeamStatusPanel
+              lockStatusLabel={lockStatusLabel}
+              lockCountdownLabel={lockCountdownText}
+              issues={statusIssues}
+              isTeamLocked={isTeamLocked}
+            />
+
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-5 shadow-sm">
+              <div className="space-y-5">
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Team Name
+                  </label>
+                  <Input
+                    value={teamName}
+                    onChange={(event) => setTeamName(event.target.value)}
+                    placeholder="Team Name"
+                    disabled={isTeamLocked && !isCreatingTeam}
+                    className="font-heading font-bold"
+                  />
+                </div>
+
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <BudgetBar used={usedBudget} cap={totalBudget} />
+                  <GenderSlotsIndicator
+                    maleCount={maleRidersCount}
+                    femaleCount={femaleRidersCount}
+                  />
+                </div>
+
+                <SelectedRidersList
+                  riders={selectedRiders}
+                  isTeamLocked={isTeamLocked}
+                  swapsRemaining={swapsRemaining}
+                  swapMode={swapMode}
+                  swapRider={swapRiderData}
+                  onRemoveRider={handleRemoveStarter}
+                  onStartSwap={initiateSwap}
+                  onCancelSwap={cancelSwap}
+                />
+
+                <BenchSelector
+                  benchRider={benchRider}
+                  benchMode={benchMode}
+                  isTeamLocked={isTeamLocked}
+                  onSelectBench={startBenchSelection}
+                  onRemoveBench={removeBenchRider}
+                />
+
+                <div className="hidden lg:flex flex-col gap-3">
+                  {isAuthenticated ? (
+                    <>
+                      <Button
+                        className="w-full"
+                        onClick={handleSaveTeam}
+                        disabled={!canSave || isSubmitting}
+                      >
+                        {primaryActionLabel}
+                      </Button>
+                      {activeTeam && (
+                        <JokerCardButton
+                          jokerCardUsed={jokerCardUsed}
+                          onClick={handleUseJokerCard}
+                          className="w-full"
+                        />
+                      )}
+                    </>
+                  ) : (
+                    <div className="w-full">
+                      <Link href="/login">
+                        <Button className="w-full">Log In to Save Team</Button>
+                      </Link>
+                      <p className="text-xs text-gray-500 mt-2 text-center">
+                        Create an account to save your team and compete this season.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="hidden lg:block">
+            <RiderList
+              riders={sortedRiders}
+              isLoading={ridersLoading}
+              selectedTab={selectedTab}
+              onTabChange={setSelectedTab}
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              sortBy={sortBy}
+              onSortChange={setSortBy}
+              onSelectRider={handleRiderSelect}
+              isSelected={(rider) => selectedRiders.some((item) => item.id === rider.id)}
+              getDisabledReason={getDisabledReasonForRider}
+              isTeamLocked={isTeamLocked}
+              swapMode={swapMode}
+              benchMode={benchMode}
+            />
+          </div>
+        </div>
+
+        <div className="mt-6 lg:hidden space-y-3">
           <Button
             variant="outline"
-            size="sm"
-            onClick={() => setIsEditingTeam((current) => !current)}
-            disabled={isTeamLocked && swapsRemaining <= 0}
+            className="w-full"
+            onClick={() => setShowMobileRiders((current) => !current)}
+            aria-expanded={showMobileRiders}
           >
-            {isEditingTeam ? "Done Editing" : isTeamLocked ? "Manage Swaps" : "Edit Team"}
+            {showMobileRiders ? "Hide Rider List" : "Browse Riders"}
           </Button>
-        )}
-      </div>
-      
-      {/* Team lock countdown */}
-      {nextRace && isAuthenticated && activeTeam && (
-        <div className="mb-5">
-          <CountdownTimer 
-            targetDate={lockDate} 
-            title={
-              <>
-                <span className="font-heading uppercase font-bold">
-                  {nextRace.location},{" "}
-                  <span className="uppercase">{nextRace.country}</span>
-                </span>
-                <span className="ml-2 text-xs opacity-80">
-                  {formatRaceDateRange(nextRace.startDate, nextRace.endDate)}
-                </span>
-              </>
-            }
-            subtitle={nextRace.name}
-            showLockStatus
-          />
-        </div>
-      )}
-      
-      {/* Team name */}
-      <div className="mb-4">
-        <Input
-          value={teamName}
-          onChange={(e) => setTeamName(e.target.value)}
-          placeholder="Team Name"
-          disabled={(!isEditingTeam && !isCreatingTeam) || (isTeamLocked && !isCreatingTeam)}
-          className="font-heading font-bold"
-        />
-      </div>
-      
-      <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
-        <div>
-          {/* Team summary */}
-          <TeamSummary
-            selectedRiders={selectedRiders}
-            toggleRiderSelection={
-              isEditingTeam && !isTeamLocked ? toggleRiderSelection : undefined
-            }
-            benchRider={benchRider}
-            benchMode={benchMode}
-            onSelectBench={
-              isEditingTeam && !isTeamLocked ? startBenchSelection : undefined
-            }
-            onRemoveBench={
-              isEditingTeam && !isTeamLocked ? removeBenchRider : undefined
-            }
-            totalBudget={totalBudget}
-            usedBudget={usedBudget}
-            remainingBudget={remainingBudget}
-            budgetPercentage={budgetPercentage}
-            maleRidersCount={maleRidersCount}
-            femaleRidersCount={femaleRidersCount}
-            isTeamLocked={isTeamLocked}
-            swapsRemaining={swapsRemaining}
-            swapMode={swapMode}
-            initiateSwap={isEditingTeam ? initiateSwap : undefined}
-            cancelSwap={isEditingTeam ? cancelSwap : undefined}
-            swapRider={swapRiderData}
-          />
-
-          {/* Action buttons */}
-          <div className="flex flex-col md:flex-row gap-3 mt-5">
-            {isAuthenticated ? (
-              <>
-                {/* Save/update button for authenticated users */}
-                <Button
-                  className="w-full"
-                  onClick={handleSaveTeam}
-                  disabled={
-                    !isEditingTeam ||
-                    !isTeamValid ||
-                    createTeam.isPending ||
-                    updateTeam.isPending
-                  }
-                >
-                  {activeTeam && !isCreatingTeam ? 'Update Team' : 'Save Team'}
-                </Button>
-
-                {/* Joker card button */}
-                {activeTeam && (
-                  <JokerCardButton
-                    jokerCardUsed={jokerCardUsed}
-                    onClick={handleUseJokerCard}
-                    className="w-full md:w-auto"
-                  />
-                )}
-              </>
-            ) : (
-              <>
-                {/* Login CTA button for guests */}
-                <div className="w-full">
-                  <Link href="/login">
-                    <Button
-                      className="w-full"
-                    >
-                      Log In to Save Team
-                    </Button>
-                  </Link>
-                  <p className="text-xs text-gray-500 mt-2 text-center">
-                    Create an account to save your team and compete in the 2025 fantasy league
-                  </p>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-
-        {isAuthenticated && activeTeam && (
-          <TeamPerformancePanel
-            teamType={activeTeam.teamType as "elite" | "junior"}
-            className="h-full"
-          />
-        )}
-      </div>
-    </div>
-  );
-  
-  const renderRiderSearch = () => (
-    <div>
-      <h3 className="font-heading font-bold text-xl text-secondary mb-4">SELECT RIDERS</h3>
-      
-      {/* Search input */}
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-        <Input
-          placeholder="Search riders..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
-        />
-      </div>
-      
-      {/* Tabs for filtering */}
-      <Tabs
-        value={selectedTab}
-        className="mb-4"
-        onValueChange={setSelectedTab}
-      >
-        <TabsList className="w-full">
-          <TabsTrigger value="all" className="flex-1">All</TabsTrigger>
-          <TabsTrigger value="male" className="flex-1">Men</TabsTrigger>
-          <TabsTrigger value="female" className="flex-1">Women</TabsTrigger>
-        </TabsList>
-      </Tabs>
-
-      <div className="flex flex-col gap-2 mb-3 text-sm text-gray-700">
-        <span className="flex items-center gap-2 font-medium">
-          <ArrowUpDown className="h-4 w-4" /> Sort by
-        </span>
-
-        {/* Mobile sort dropdown */}
-        <div className="lg:hidden">
-          <Select value={sortBy} onValueChange={(value: typeof sortBy) => setSortBy(value)}>
-            <SelectTrigger aria-label="Sort riders">
-              <SelectValue placeholder="Sort riders" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="rank">Rank</SelectItem>
-              <SelectItem value="name">Name (LASTNAME Firstname)</SelectItem>
-              <SelectItem value="cost">Price</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Desktop sort buttons */}
-        <div className="hidden lg:flex gap-2">
-          {[
-            { value: "rank" as const, label: "Rank" },
-            { value: "name" as const, label: "Name (LASTNAME Firstname)" },
-            { value: "cost" as const, label: "Price" },
-          ].map((option) => (
-            <Button
-              key={option.value}
-              variant={sortBy === option.value ? "default" : "outline"}
-              size="sm"
-              onClick={() => setSortBy(option.value)}
-            >
-              {option.label}
-            </Button>
-          ))}
-        </div>
-      </div>
-      
-      {/* Riders list */}
-      {ridersLoading ? (
-        <div className="flex justify-center items-center py-10">
-          <RefreshCw className="w-6 h-6 animate-spin text-primary" />
-          <span className="ml-2">Loading riders...</span>
-        </div>
-      ) : (
-        <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
-          {filteredRiders.length === 0 ? (
-            <div className="text-center py-10">
-              <p className="text-gray-500">No riders found</p>
-            </div>
-          ) : (
-            sortedRiders.map((rider: Rider) => (
-              <RiderCard
-                key={rider.id}
-                rider={rider}
-                selected={selectedRiders.some(r => r.id === rider.id)}
-                onClick={() => toggleRiderSelection(rider)}
-                disabled={
-                  (swapMode || benchMode) && selectedRiders.some(r => r.id === rider.id)
-                }
-                showSelectIcon
-              />
-            ))
+          {showMobileRiders && (
+            <RiderList
+              riders={sortedRiders}
+              isLoading={ridersLoading}
+              selectedTab={selectedTab}
+              onTabChange={setSelectedTab}
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              sortBy={sortBy}
+              onSortChange={setSortBy}
+              onSelectRider={handleRiderSelect}
+              isSelected={(rider) => selectedRiders.some((item) => item.id === rider.id)}
+              getDisabledReason={getDisabledReasonForRider}
+              isTeamLocked={isTeamLocked}
+              swapMode={swapMode}
+              benchMode={benchMode}
+            />
           )}
         </div>
-      )}
-    </div>
-  );
-
-  return (
-    <div className="min-h-screen bg-neutral">
-      <div className="container mx-auto px-4 py-8">
-        <h2 className="text-2xl md:text-3xl font-heading font-bold text-secondary mb-6">
-          TEAM BUILDER
-        </h2>
-        
-        {/* Guest banner */}
-        {!isAuthenticated && !authLoading && (
-          <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded-md">
-            <div className="flex items-start">
-              <div className="flex-shrink-0 mr-3">
-                <Info className="h-5 w-5 text-blue-500" />
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-blue-800">Guest Mode</h3>
-                <p className="text-sm text-blue-700 mt-1">
-                  You're building a team in guest mode. Create an account to save your team and join the 2025 fantasy league!
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {/* Mobile view - prioritize team over riders */}
-        <div className="lg:hidden">
-          {/* Team section for mobile */}
-          <div className="mb-6">
-            {teamLoading && isAuthenticated ? (
-              <div className="flex justify-center items-center py-10">
-                <RefreshCw className="w-6 h-6 animate-spin text-primary" />
-                <span className="ml-2">Loading your team...</span>
-              </div>
-            ) : (
-              renderTeamSection()
-            )}
-          </div>
-          
-          {/* Rider selection for mobile */}
-          {showRiderPicker && (
-            <div>
-              <Card>
-                <CardContent className="p-6">
-                  {renderRiderSearch()}
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        </div>
-        
-        {/* Desktop view - riders and team side by side */}
-        <div className="hidden lg:grid lg:grid-cols-12 lg:gap-6">
-          {/* Team section for desktop - primary */}
-          <div className={showRiderPicker ? "lg:col-span-7" : "lg:col-span-12"}>
-            {teamLoading && isAuthenticated ? (
-              <div className="flex justify-center items-center py-10">
-                <RefreshCw className="w-6 h-6 animate-spin text-primary" />
-                <span className="ml-2">Loading your team...</span>
-              </div>
-            ) : (
-              renderTeamSection()
-            )}
-          </div>
-
-          {/* Rider selection for desktop - right side */}
-          {showRiderPicker && (
-            <div className="lg:col-span-5">
-              <Card>
-                <CardContent className="p-6">
-                  {renderRiderSearch()}
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        </div>
-        
-        {/* Swap mode info - show on both mobile and desktop */}
-        {swapMode && (
-          <div className="mt-6">
-            <Alert>
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Swap Mode Active</AlertTitle>
-              <AlertDescription className="flex justify-between items-center">
-                <span>Selecting {swapRiderData ? formatRiderDisplayName(swapRiderData) || swapRiderData.name : ''}</span>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={cancelSwap}
-                >
-                  Cancel
-                </Button>
-              </AlertDescription>
-            </Alert>
-          </div>
-        )}
-
-        {benchMode && !swapMode && (
-          <div className="mt-6">
-            <Alert>
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Bench Selection Active</AlertTitle>
-              <AlertDescription className="flex justify-between items-center">
-                <span>Select a rider to set your bench.</span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={cancelBenchSelection}
-                >
-                  Cancel
-                </Button>
-              </AlertDescription>
-            </Alert>
-          </div>
-        )}
       </div>
-      
-      {/* Joker card dialog */}
+
+      <StickyMobileActions
+        isAuthenticated={isAuthenticated}
+        isTeamLocked={isTeamLocked}
+        primaryLabel={primaryActionLabel}
+        summaryLabel={summaryLabel}
+        canSave={canSave}
+        isSubmitting={isSubmitting}
+        onSave={handleSaveTeam}
+      />
+
       <JokerCardDialog
         open={showJokerDialog}
         onOpenChange={setShowJokerDialog}

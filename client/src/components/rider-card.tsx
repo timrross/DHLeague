@@ -13,6 +13,8 @@ interface RiderCardProps {
   showRemoveIcon?: boolean;
   disabled?: boolean;
   showSelectIcon?: boolean;
+  disabledReason?: string;
+  showLockedBadge?: boolean;
 }
 
 export default function RiderCard({ 
@@ -24,7 +26,9 @@ export default function RiderCard({
   onSwap, 
   showRemoveIcon,
   disabled,
-  showSelectIcon 
+  showSelectIcon,
+  disabledReason,
+  showLockedBadge = false,
 }: RiderCardProps) {
   // For backward compatibility, use either isSelected or selected
   const isRiderSelected = isSelected !== undefined ? isSelected : (selected || false);
@@ -48,11 +52,20 @@ export default function RiderCard({
       ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} 
       flex flex-col sm:flex-row justify-between relative`}
       onClick={disabled ? undefined : onClick}
+      aria-disabled={disabled}
     >
-      {/* Injured badge */}
-      {rider.injured && (
-        <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full px-2 py-1 shadow-sm z-10">
-          INJURED
+      {(rider.injured || showLockedBadge) && (
+        <div className="absolute -top-2 -right-2 z-10 flex flex-col items-end gap-1">
+          {rider.injured && (
+            <span className="bg-red-500 text-white text-[10px] font-bold rounded-full px-2 py-1 shadow-sm">
+              INJURED
+            </span>
+          )}
+          {showLockedBadge && (
+            <span className="bg-slate-700 text-white text-[10px] font-bold rounded-full px-2 py-1 shadow-sm">
+              LOCKED
+            </span>
+          )}
         </div>
       )}
       
@@ -82,7 +95,7 @@ export default function RiderCard({
         {/* Swap button when in swap mode */}
         {swapMode && isRiderSelected && onSwap && (
           <button 
-            className="bg-blue-500 text-white w-8 h-8 rounded-full flex items-center justify-center transition duration-200 hover:bg-blue-600"
+            className="bg-blue-500 text-white w-11 h-11 rounded-full flex items-center justify-center transition duration-200 hover:bg-blue-600"
             onClick={(e) => {
               e.stopPropagation(); // Prevent event bubbling
               onSwap();
@@ -97,17 +110,26 @@ export default function RiderCard({
         {/* Standard add/remove button */}
         {(!swapMode || !isRiderSelected || !onSwap) && (
           <button 
-            className={`${isRiderSelected ? 'bg-green-500' : 'bg-primary'} text-white w-8 h-8 rounded-full flex items-center justify-center transition duration-200 ${isRiderSelected ? 'hover:bg-green-600' : 'hover:bg-red-700'}`}
+            className={`${isRiderSelected ? 'bg-green-500' : 'bg-primary'} text-white w-11 h-11 rounded-full flex items-center justify-center transition duration-200 ${isRiderSelected ? 'hover:bg-green-600' : 'hover:bg-red-700'}`}
             onClick={(e) => {
               e.stopPropagation(); // Prevent event bubbling
-              onClick();
+              if (!disabled) {
+                onClick();
+              }
             }}
             disabled={disabled}
+            aria-label={isRiderSelected ? "Selected" : "Add rider"}
+            title={disabledReason || undefined}
           >
             {isRiderSelected ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
           </button>
         )}
       </div>
+      {disabledReason && (
+        <div className="mt-2 text-xs font-semibold text-amber-600">
+          {disabledReason}
+        </div>
+      )}
     </div>
   );
 }
