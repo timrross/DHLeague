@@ -21,6 +21,7 @@ type RiderListProps = {
   isTeamLocked: boolean;
   swapMode: boolean;
   benchMode: boolean;
+  rosterFull: boolean;
 };
 
 export default function RiderList({
@@ -38,7 +39,10 @@ export default function RiderList({
   isTeamLocked,
   swapMode,
   benchMode,
+  rosterFull,
 }: RiderListProps) {
+  const showRosterFull = rosterFull && !benchMode && !swapMode;
+
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
       <div className="flex items-center justify-between gap-2">
@@ -46,11 +50,18 @@ export default function RiderList({
           <h3 className="font-heading text-lg font-bold text-secondary">Rider List</h3>
           <p className="text-xs text-gray-500">Add riders to build your starters and bench.</p>
         </div>
-        {(swapMode || benchMode) && (
-          <span className="text-xs font-semibold uppercase text-amber-600">
-            {swapMode ? "Swap Mode" : "Bench Mode"}
-          </span>
-        )}
+        <div className="flex flex-col items-end gap-1">
+          {showRosterFull && (
+            <span className="rounded-full bg-amber-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-amber-700">
+              Roster full
+            </span>
+          )}
+          {(swapMode || benchMode) && (
+            <span className="text-xs font-semibold uppercase text-amber-600">
+              {swapMode ? "Swap Mode" : "Bench Mode"}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="relative mt-4">
@@ -119,6 +130,10 @@ export default function RiderList({
           ) : (
             riders.map((rider) => {
               const disabledReason = getDisabledReason(rider);
+              const displayReason =
+                showRosterFull && disabledReason === "Roster full"
+                  ? null
+                  : disabledReason;
               const selected = isSelected(rider);
               return (
                 <RiderCard
@@ -127,7 +142,7 @@ export default function RiderList({
                   selected={selected}
                   onClick={() => onSelectRider(rider)}
                   disabled={Boolean(disabledReason)}
-                  disabledReason={disabledReason ?? undefined}
+                  disabledReason={displayReason ?? undefined}
                   showSelectIcon
                   showLockedBadge={isTeamLocked && selected}
                 />

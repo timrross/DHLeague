@@ -202,6 +202,8 @@ export default function TeamBuilder() {
     budgetState,
   });
 
+  const rosterFull = selectedRiders.length >= TEAM_SIZE;
+
   const isTeamValid =
     selectedRiders.length === TEAM_SIZE &&
     maleRidersCount === MALE_SLOTS &&
@@ -732,6 +734,7 @@ export default function TeamBuilder() {
               isTeamLocked={isTeamLocked}
               swapMode={swapMode}
               benchMode={benchMode}
+              rosterFull={rosterFull}
             />
           </div>
         </div>
@@ -761,6 +764,7 @@ export default function TeamBuilder() {
               isTeamLocked={isTeamLocked}
               swapMode={swapMode}
               benchMode={benchMode}
+              rosterFull={rosterFull}
             />
           )}
         </div>
