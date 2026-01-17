@@ -7,6 +7,9 @@ import ridersRoutes from "../routes/riders.routes";
 import authRoutes from "../routes/auth.routes";
 import leaderboardRoutes from "../routes/leaderboard.routes";
 import seasonsRoutes from "../routes/seasons.routes";
+import featuresRoutes from "../routes/features.routes";
+import meRoutes from "../routes/me.routes";
+import roundsRoutes from "../routes/rounds.routes";
 import { requireAuth } from "../auth";
 import { isAdmin } from "../middleware/auth.middleware";
 import { downloadImage, processImage, upload } from "../imageUpload";
@@ -23,6 +26,9 @@ export async function createFantasyLeagueService() {
   app.use(express.urlencoded({ extended: true }));
 
   app.use("/admin", adminRoutes);
+  app.use("/features", featuresRoutes);
+  app.use("/me", meRoutes);
+  app.use("/rounds", roundsRoutes);
   app.use("/teams", teamsRoutes);
   app.use("/races", racesRoutes);
   app.use("/seasons", seasonsRoutes);

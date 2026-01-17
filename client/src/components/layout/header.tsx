@@ -15,7 +15,7 @@ import { safeImageUrl } from "@/lib/utils";
 
 const navigation = [
   { name: "Home", href: "/" },
-  { name: "My Team", href: "/team-builder" },
+  { name: "My Team", href: "/my-team" },
   { name: "Races", href: "/races" },
   { name: "Leaderboard", href: "/leaderboard" },
   { name: "Rules", href: "/rules" },

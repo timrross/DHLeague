@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Rider, TeamWithRiders } from "@shared/schema";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useFeatures } from "@/hooks/useFeatures";
 import JokerCardDialog from "@/components/joker-card-dialog";
 import JokerCardButton from "@/components/joker-card-button";
 import TeamStatusPanel from "@/components/team-builder/TeamStatusPanel";
@@ -30,7 +31,9 @@ import {
 
 export default function TeamBuilder() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { juniorTeamEnabled } = useFeatures();
   const { toast } = useToast();
+  const [location] = useLocation();
   
   const [selectedTab, setSelectedTab] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
@@ -46,6 +49,15 @@ export default function TeamBuilder() {
   const [sortBy, setSortBy] = useState<"rank" | "name" | "cost">("rank");
   const [showMobileRiders, setShowMobileRiders] = useState(false);
   const [lockCountdownLabel, setLockCountdownLabel] = useState("Lock time TBD");
+
+  const searchParams = useMemo(
+    () => new URLSearchParams(location.split("?")[1] ?? ""),
+    [location],
+  );
+  const teamTypeParam = searchParams.get("teamType")?.toLowerCase();
+  const requestedTeamType = teamTypeParam === "junior" ? "junior" : "elite";
+  const teamType =
+    juniorTeamEnabled && requestedTeamType === "junior" ? "junior" : "elite";
 
   // Fetch all races
   const { data: races } = useRacesQuery();
@@ -77,14 +89,15 @@ export default function TeamBuilder() {
     selectedTab === "all" ? undefined : selectedTab;
 
   const { data: riders, isLoading: ridersLoading } = useRidersQueryWithParams({
-    category: "elite",
+    category: teamType,
     gender: normalizedGender,
     pageSize: 200,
     search: normalizedSearch ? normalizedSearch : undefined,
   });
   const safeRiders = Array.isArray(riders) ? (riders as Rider[]) : [];
 
-  const userTeamQueryKey = "/api/teams/user";
+  const userTeamQueryKey =
+    teamType === "junior" ? "/api/teams/user?teamType=junior" : "/api/teams/user";
 
   // Fetch user's teams if authenticated
   const { data: userTeam } = useQuery<TeamWithRiders | null>({
@@ -100,7 +113,7 @@ export default function TeamBuilder() {
 
   // Create team mutation
   const createTeam = useMutation({
-    mutationFn: async (data: { name: string, riderIds: number[], benchRiderId?: number | null, useJokerCard?: boolean }) => {
+    mutationFn: async (data: { name: string, riderIds: number[], benchRiderId?: number | null, useJokerCard?: boolean, teamType?: string }) => {
       return apiRequest('/api/teams', {
         method: 'POST',
         body: JSON.stringify(data),
@@ -180,7 +193,8 @@ export default function TeamBuilder() {
   });
 
   // Calculate budget and team stats
-  const totalBudget = 2000000;
+  const defaultBudgetCap = teamType === "junior" ? 500000 : 2000000;
+  const totalBudget = activeTeam?.budgetCap ?? defaultBudgetCap;
   const startersBudget = selectedRiders.reduce((sum, rider) => sum + rider.cost, 0);
   const benchBudget = benchRider?.cost ?? 0;
   const usedBudget = startersBudget + benchBudget;
@@ -279,6 +293,16 @@ export default function TeamBuilder() {
       setDraftInitialized(true);
     }
   }, [activeTeam, draftInitialized]);
+
+  useEffect(() => {
+    setDraftInitialized(false);
+    setSelectedRiders([]);
+    setBenchRider(null);
+    setTeamName("My DH Team");
+    setBenchMode(false);
+    setSwapMode(false);
+    setSwapRiderData(null);
+  }, [teamType]);
 
   useEffect(() => {
     if (!lockDate) {
@@ -489,7 +513,7 @@ export default function TeamBuilder() {
     if (!isTeamValid) {
       toast({
         title: "Invalid team",
-        description: "Your team must include 4 men and 2 women within the $2,000,000 budget.",
+        description: `Your team must include 4 men and 2 women within the $${totalBudget.toLocaleString()} budget.`,
         variant: "destructive",
       });
       return;
@@ -522,6 +546,7 @@ export default function TeamBuilder() {
           name: teamName,
           riderIds,
           benchRiderId,
+          teamType,
         });
         
         // Show immediate feedback toast
@@ -586,6 +611,7 @@ export default function TeamBuilder() {
       riderIds,
       benchRiderId,
       useJokerCard: true,
+      teamType,
     });
     
     setShowJokerDialog(false);

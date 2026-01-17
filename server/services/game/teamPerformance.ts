@@ -44,6 +44,7 @@ export type TeamPerformanceRound = {
   raceName: string;
   location: string;
   country: string;
+  discipline: string;
   startDate: Date;
   endDate: Date;
   gameStatus: string;
@@ -78,8 +79,9 @@ const parseJsonValue = <T>(value: unknown, fallback: T): T => {
 export async function getTeamPerformance(
   userId: string,
   teamTypeInput: string,
+  seasonIdInput?: number,
 ): Promise<TeamPerformanceSummary | null> {
-  const seasonId = await getActiveSeasonId();
+  const seasonId = seasonIdInput ?? (await getActiveSeasonId());
   const normalizedTeamType = normalizeTeamType(teamTypeInput);
   const dbTeamType = toDbTeamType(normalizedTeamType);
 
@@ -257,6 +259,7 @@ export async function getTeamPerformance(
       raceName: row.race.name,
       location: row.race.location,
       country: row.race.country,
+      discipline: row.race.discipline,
       startDate: row.race.startDate,
       endDate: row.race.endDate,
       gameStatus: row.race.gameStatus ?? "scheduled",

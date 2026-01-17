@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import TeamBuilder from "@/pages/team-builder";
+import MyTeam from "@/pages/my-team";
 import Races from "@/pages/races";
 import RaceDetail from "@/pages/race-detail";
 import Leaderboard from "@/pages/leaderboard";
@@ -25,6 +26,7 @@ function App() {
             <main className="flex-grow">
               <Switch>
                 <Route path="/" component={Home} />
+                <Route path="/my-team" component={MyTeam} />
                 <Route path="/team-builder" component={TeamBuilder} />
                 <Route path="/races" component={Races} />
                 <Route path="/races/:id">
