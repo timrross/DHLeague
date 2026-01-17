@@ -74,6 +74,7 @@ export default function TeamRosterPanel({
             role="img"
             aria-label={`${rider.country ?? ""} flag`}
             className={cn("fi", `fi-${flagCode}`, "h-4 w-4 rounded-full")}
+            style={{ backgroundSize: "cover", backgroundPosition: "center" }}
           />
         )}
         <span

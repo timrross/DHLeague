@@ -67,6 +67,7 @@ export function RiderAvatar({ rider, size = "md", className, highlight = false }
             role="img"
             aria-label={`${flagLabel} flag`}
             className={cn("fi", `fi-${flagCode}`, "w-full h-full rounded-full")}
+            style={{ backgroundSize: "cover", backgroundPosition: "center" }}
           />
         ) : (
           <span>{flagLabel}</span>

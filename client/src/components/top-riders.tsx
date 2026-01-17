@@ -19,6 +19,7 @@ function FlagBadge({ country }: { country?: string | null }) {
           role="img"
           aria-label={`${code} flag`}
           className={`fi fi-${flagCode} w-full h-full`}
+          style={{ backgroundSize: "cover", backgroundPosition: "center" }}
         />
       ) : (
         <span>{code}</span>
