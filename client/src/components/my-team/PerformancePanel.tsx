@@ -6,15 +6,13 @@ import { formatRaceDateRange } from "@/components/race-label";
 import PerformanceTrendMini from "@/components/my-team/PerformanceTrendMini";
 import { ChevronDown, ChevronUp, LineChart } from "lucide-react";
 import { formatRiderDisplayName } from "@shared/utils";
-import { type MyPerformanceResponse, type NextRound } from "@/services/myTeamApi";
+import { type MyPerformanceResponse } from "@/services/myTeamApi";
 
 type PerformancePanelProps = {
   data: MyPerformanceResponse | undefined;
   isLoading: boolean;
   isError: boolean;
   juniorEnabled: boolean;
-  nextRound: NextRound | null;
-  now: number;
 };
 
 const formatPoints = (value: number | null) =>
@@ -26,26 +24,11 @@ const formatStatus = (value: string | null) =>
 const formatTeamLabel = (teamType: "elite" | "junior") =>
   teamType === "elite" ? "Elite" : "Junior";
 
-const formatCountdown = (targetMs: number) => {
-  if (targetMs <= 0) return "0m";
-  const totalMinutes = Math.floor(targetMs / 60000);
-  const days = Math.floor(totalMinutes / (60 * 24));
-  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
-  const minutes = totalMinutes % 60;
-  const parts = [];
-  if (days > 0) parts.push(`${days}d`);
-  if (hours > 0 || days > 0) parts.push(`${hours}h`);
-  parts.push(`${minutes}m`);
-  return parts.join(" ");
-};
-
 export default function PerformancePanel({
   data,
   isLoading,
   isError,
   juniorEnabled,
-  nextRound,
-  now,
 }: PerformancePanelProps) {
   const [view, setView] = useState<"elite" | "combined" | "junior">("elite");
   const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
@@ -75,8 +58,10 @@ export default function PerformancePanel({
   }, [data, view]);
 
   const lastRoundPoints = useMemo(() => {
-    if (!filteredRounds.length) return null;
-    return filteredRounds[filteredRounds.length - 1].totalPoints ?? null;
+    const recent = [...filteredRounds]
+      .reverse()
+      .find((round) => round.totalPoints !== null);
+    return recent?.totalPoints ?? null;
   }, [filteredRounds]);
 
   const hasScores = useMemo(
@@ -95,14 +80,9 @@ export default function PerformancePanel({
     );
   };
 
-  const lockCountdown =
-    nextRound?.lockAt
-      ? `Next lock in ${formatCountdown(new Date(nextRound.lockAt).getTime() - now)}`
-      : null;
-
   return (
     <Card>
-      <CardHeader className="space-y-3">
+      <CardHeader className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <CardTitle className="text-lg">Performance</CardTitle>
           {availableTabs.length > 1 && (
@@ -122,32 +102,32 @@ export default function PerformancePanel({
             </div>
           )}
         </div>
-        <div className="flex flex-wrap items-center gap-6">
-          <div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="rounded-lg border border-gray-200 bg-white p-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
               Season Total
             </p>
-            <p className="font-heading text-2xl font-bold text-secondary">
+            <p className="font-heading text-3xl font-bold text-secondary">
               {totalPoints} pts
             </p>
           </div>
-          <div>
+          <div className="rounded-lg border border-gray-200 bg-white p-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-              Last Round
+              Last Race
             </p>
-            <p className="text-base font-semibold text-secondary">
+            <p className="font-heading text-2xl font-bold text-secondary">
               {lastRoundPoints === null ? "-" : `${lastRoundPoints} pts`}
             </p>
           </div>
-          {hasScores && (
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Trend
-              </p>
-              <PerformanceTrendMini values={trendValues} className="mt-2" />
-            </div>
-          )}
         </div>
+        {hasScores && (
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Trend
+            </p>
+            <PerformanceTrendMini values={trendValues} className="mt-2" />
+          </div>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         {isLoading && (
@@ -174,11 +154,6 @@ export default function PerformancePanel({
             <p className="mt-1 text-sm text-gray-600">
               Points will appear after the first race locks/settles.
             </p>
-            {lockCountdown && (
-              <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                {lockCountdown}
-              </p>
-            )}
           </div>
         )}
 

@@ -1,6 +1,3 @@
-import { Link } from "wouter";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatRiderDisplayName } from "@shared/utils";
 import { type TeamWithRiders } from "@shared/schema";
@@ -9,14 +6,11 @@ import GenderSlotsIndicator from "@/components/team-builder/GenderSlotsIndicator
 import { getGenderCounts } from "@/lib/team-builder";
 import { cn } from "@/lib/utils";
 import { getFlagCode } from "@/lib/flags";
-import { type NextRound } from "@/services/myTeamApi";
 import { Armchair, Zap } from "lucide-react";
 
 type TeamRosterPanelProps = {
   team: TeamWithRiders | null;
   teamType: "elite" | "junior";
-  nextRound: NextRound | null;
-  showBuilderLink: boolean;
 };
 
 const defaultBudgetCap = (teamType: "elite" | "junior") =>
@@ -36,29 +30,12 @@ const renderSlots = (riders: TeamWithRiders["riders"], total: number) => {
 export default function TeamRosterPanel({
   team,
   teamType,
-  nextRound,
-  showBuilderLink,
 }: TeamRosterPanelProps) {
   const starters = team?.riders ?? [];
   const bench = team?.benchRider ?? null;
   const { maleCount, femaleCount } = getGenderCounts(starters);
   const budgetCap = team?.budgetCap ?? defaultBudgetCap(teamType);
   const totalCost = team?.totalCost ?? 0;
-  const statusCopy = nextRound
-    ? nextRound.editingOpen
-      ? "Applies to the next round."
-      : "Changes won't affect scoring until the next lock window."
-    : "No upcoming round scheduled yet.";
-  const statusBadge = nextRound
-    ? nextRound.editingOpen
-      ? "Editing Open"
-      : "Locked"
-    : "TBD";
-  const lockedSnapshotLabel =
-    nextRound && !nextRound.editingOpen
-      ? `Locked snapshot for ${nextRound.name}`
-      : null;
-
   const maleStarters = starters.filter((rider) => rider.gender === "male");
   const femaleStarters = starters.filter((rider) => rider.gender === "female");
 
@@ -97,15 +74,6 @@ export default function TeamRosterPanel({
           <CardTitle className="text-lg">
             {formatTeamLabel(teamType)} Team
           </CardTitle>
-          <Badge variant={nextRound?.editingOpen ? "outline" : "secondary"}>
-            {statusBadge}
-          </Badge>
-        </div>
-        <div className="space-y-1">
-          {lockedSnapshotLabel && (
-            <Badge variant="secondary">{lockedSnapshotLabel}</Badge>
-          )}
-          <p className="text-xs text-gray-500">{statusCopy}</p>
         </div>
       </CardHeader>
       <CardContent className="space-y-5">
@@ -201,13 +169,6 @@ export default function TeamRosterPanel({
           </div>
         )}
 
-        {showBuilderLink && (
-          <Link href={`/team-builder?teamType=${teamType.toUpperCase()}`}>
-            <Button className="w-full mt-4">
-              Go to Team Builder
-            </Button>
-          </Link>
-        )}
       </CardContent>
     </Card>
   );
