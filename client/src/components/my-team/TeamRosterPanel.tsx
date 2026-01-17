@@ -203,7 +203,7 @@ export default function TeamRosterPanel({
 
         {showBuilderLink && (
           <Link href={`/team-builder?teamType=${teamType.toUpperCase()}`}>
-            <Button variant="outline" className="w-full mt-4">
+            <Button className="w-full mt-4">
               Go to Team Builder
             </Button>
           </Link>
