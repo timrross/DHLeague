@@ -12,8 +12,10 @@ type CostUpdateResult = {
   delta: number;
 };
 
-const roundUpToThousand = (value: number) =>
-  Math.ceil(value / 1000) * 1000;
+const roundUpToThousand = (value: number) => {
+  const rounded = Math.round(value);
+  return Math.ceil(rounded / 1000) * 1000;
+};
 
 export const calculateUpdatedCost = (
   currentCost: number,

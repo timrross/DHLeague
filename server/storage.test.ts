@@ -84,7 +84,7 @@ describe("DatabaseStorage.getRaceResults", () => {
       {
         ...joinedRow.result,
         rider: joinedRow.rider,
-        points: 80,
+        points: 160,
       },
     ]);
     assert.equal(getRiderMock.mock.callCount(), 0);
@@ -108,7 +108,7 @@ describe("DatabaseStorage.getRaceResults", () => {
       {
         ...presentRow.result,
         rider: presentRow.rider,
-        points: 80,
+        points: 160,
       },
     ]);
     assert.equal(warnMock.mock.callCount(), 1);

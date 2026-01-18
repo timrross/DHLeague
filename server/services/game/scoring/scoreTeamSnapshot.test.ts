@@ -49,7 +49,12 @@ describe("scoreTeamSnapshot", () => {
 
   it("skips substitution when starter is DSQ only", () => {
     const results = new Map([
+      ["m1", { uciId: "m1", status: "FIN", position: 3 }],
+      ["m2", { uciId: "m2", status: "FIN", position: 7 }],
+      ["m3", { uciId: "m3", status: "FIN", position: 12 }],
+      ["m4", { uciId: "m4", status: "FIN", position: 18 }],
       ["f1", { uciId: "f1", status: "DSQ" }],
+      ["f2", { uciId: "f2", status: "FIN", position: 4 }],
       ["bf1", { uciId: "bf1", status: "FIN", position: 8 }],
     ]);
 
@@ -64,7 +69,12 @@ describe("scoreTeamSnapshot", () => {
 
   it("skips substitution when finisher places outside top 20", () => {
     const results = new Map([
+      ["m1", { uciId: "m1", status: "FIN", position: 2 }],
+      ["m2", { uciId: "m2", status: "FIN", position: 9 }],
+      ["m3", { uciId: "m3", status: "FIN", position: 13 }],
+      ["m4", { uciId: "m4", status: "FIN", position: 16 }],
       ["f1", { uciId: "f1", status: "FIN", position: 25 }],
+      ["f2", { uciId: "f2", status: "FIN", position: 6 }],
       ["bf1", { uciId: "bf1", status: "FIN", position: 2 }],
     ]);
 
