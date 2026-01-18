@@ -14,14 +14,12 @@ interface JokerCardDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
-  isTeamValid: boolean;
 }
 
 export default function JokerCardDialog({ 
   open, 
   onOpenChange, 
-  onConfirm,
-  isTeamValid 
+  onConfirm
 }: JokerCardDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -43,18 +41,12 @@ export default function JokerCardDialog({
               <p className="font-medium text-amber-800">Important:</p>
               <ul className="list-disc pl-5 mt-1 text-amber-700 space-y-1">
                 <li>Your current team will be completely deleted</li>
+                <li>You'll rebuild your team after the reset</li>
                 <li>You can only use the joker card once per season</li>
                 <li>Your new team must still follow all rules</li>
               </ul>
             </div>
           </div>
-          
-          {!isTeamValid && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-3 text-sm text-red-600">
-              Your team selection is not valid. Please ensure you have selected 6 riders, 
-              have at least 2 female riders, and stay within the budget.
-            </div>
-          )}
         </div>
         <DialogFooter className="flex flex-col sm:flex-row sm:justify-between sm:space-x-2">
           <Button 
@@ -66,7 +58,6 @@ export default function JokerCardDialog({
           </Button>
           <Button 
             onClick={onConfirm}
-            disabled={!isTeamValid}
             className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600"
           >
             Confirm Joker Card Use

@@ -214,6 +214,62 @@ export async function updateTeam(req: any, res: Response) {
 }
 
 /**
+ * Use joker card to reset an existing team
+ */
+export async function useJokerCard(req: any, res: Response) {
+  try {
+    const userId = req.oidc?.user?.sub;
+    if (!userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    const teamId = Number(req.params.id);
+    if (isNaN(teamId)) {
+      return res.status(400).json({ message: "Invalid team ID" });
+    }
+
+    const team = await storage.getTeam(teamId);
+    if (!team) {
+      return res.status(404).json({ message: "Team not found" });
+    }
+
+    if (team.userId !== userId) {
+      return res.status(403).json({ message: "Not authorized to reset this team" });
+    }
+
+    if (team.isLocked) {
+      return res.status(400).json({
+        message: "Team is locked for the upcoming race. Use the swap feature instead.",
+      });
+    }
+
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.jokerCardUsed) {
+      return res.status(400).json({ message: "Joker card already used" });
+    }
+
+    const deleted = await storage.deleteTeam(teamId);
+    if (!deleted) {
+      return res.status(500).json({ message: "Failed to delete team" });
+    }
+
+    await storage.updateUser(userId, { jokerCardUsed: true });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error using joker card:", error);
+    res.status(500).json({
+      message: "Failed to use joker card",
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
+/**
  * Delete a team
  */
 export async function deleteTeam(req: any, res: Response) {

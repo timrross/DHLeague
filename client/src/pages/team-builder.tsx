@@ -110,6 +110,15 @@ export default function TeamBuilder() {
   const invalidateUserTeams = () => {
     queryClient.invalidateQueries({ queryKey: [userTeamQueryKey] });
   };
+  const resetDraft = () => {
+    setDraftInitialized(false);
+    setSelectedRiders([]);
+    setBenchRider(null);
+    setTeamName("My DH Team");
+    setBenchMode(false);
+    setSwapMode(false);
+    setSwapRiderData(null);
+  };
 
   // Create team mutation
   const createTeam = useMutation({
@@ -161,6 +170,33 @@ export default function TeamBuilder() {
         variant: "destructive",
       });
     }
+  });
+
+  const useJokerCardMutation = useMutation({
+    mutationFn: async (teamId: number) => {
+      return apiRequest(`/api/teams/${teamId}/joker`, {
+        method: "POST",
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Joker card used",
+        description: "Your team has been reset. Build a new team to continue.",
+        variant: "default",
+      });
+      setJokerCardUsed(true);
+      setShowJokerDialog(false);
+      resetDraft();
+      invalidateUserTeams();
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to use joker card",
+        description: error.message || "Please try again later.",
+        variant: "destructive",
+      });
+    },
   });
 
   // Swap rider mutation
@@ -295,13 +331,7 @@ export default function TeamBuilder() {
   }, [activeTeam, draftInitialized]);
 
   useEffect(() => {
-    setDraftInitialized(false);
-    setSelectedRiders([]);
-    setBenchRider(null);
-    setTeamName("My DH Team");
-    setBenchMode(false);
-    setSwapMode(false);
-    setSwapRiderData(null);
+    resetDraft();
   }, [teamType]);
 
   useEffect(() => {
@@ -569,6 +599,15 @@ export default function TeamBuilder() {
       });
       return;
     }
+
+    if (isTeamLocked) {
+      toast({
+        title: "Team locked",
+        description: "You cannot reset your team while it is locked.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     if (!isAuthenticated) {
       toast({
@@ -585,42 +624,34 @@ export default function TeamBuilder() {
   
   // Handle confirm joker card use
   const handleConfirmJokerCard = () => {
-    // Use joker card to create a new team
-    if (selectedRiders.length !== 6) {
+    if (jokerCardUsed) {
       toast({
-        title: "Invalid team",
-        description: "Please select exactly 6 riders for your team.",
+        title: "Joker card already used",
+        description: "You have already used your joker card for this season.",
         variant: "destructive",
       });
       return;
     }
-    
-    if (!isTeamValid) {
+
+    if (!activeTeam) {
       toast({
-        title: "Invalid team",
-        description: "Your team must include 4 men and 2 women within budget.",
+        title: "No active team",
+        description: "You do not have a saved team to reset.",
         variant: "destructive",
       });
       return;
     }
-    
-    const riderIds = selectedRiders.map(r => r.id);
-    const benchRiderId = benchRider ? benchRider.id : null;
-    createTeam.mutate({
-      name: teamName,
-      riderIds,
-      benchRiderId,
-      useJokerCard: true,
-      teamType,
-    });
-    
-    setShowJokerDialog(false);
-    
-    toast({
-      title: "Creating new team...",
-      description: "Your joker card is being used to create a new team.",
-      variant: "default",
-    });
+
+    if (isTeamLocked) {
+      toast({
+        title: "Team locked",
+        description: "You cannot reset your team while it is locked.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    useJokerCardMutation.mutate(activeTeam.id);
   };
 
   return (
@@ -810,7 +841,6 @@ export default function TeamBuilder() {
         open={showJokerDialog}
         onOpenChange={setShowJokerDialog}
         onConfirm={handleConfirmJokerCard}
-        isTeamValid={isTeamValid}
       />
     </div>
   );

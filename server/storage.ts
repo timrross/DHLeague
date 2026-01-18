@@ -871,6 +871,10 @@ export class DatabaseStorage implements IStorage {
   async deleteTeam(id: number): Promise<boolean> {
     try {
       await db.transaction(async (tx) => {
+        await tx
+          .delete(teamMembers)
+          .where(eq(teamMembers.teamId, id));
+
         // Delete team-rider associations first
         await tx
           .delete(teamRiders)

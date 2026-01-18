@@ -6,6 +6,7 @@ import {
   createTeam,
   updateTeam,
   deleteTeam,
+  useJokerCard,
   swapTeamRider
 } from "../controllers/teams.controller";
 import { getUserTeamsBySeason, upsertUserTeam } from "../controllers/gameTeams.controller";
@@ -20,6 +21,7 @@ router.put("/:seasonId/:teamType", requireAuth, upsertUserTeam);
 router.post("/", requireAuth, createTeam);
 router.put("/:id", requireAuth, updateTeam);
 router.delete("/:id", requireAuth, deleteTeam);
+router.post("/:id/joker", requireAuth, useJokerCard);
 
 // Team swap route
 router.post("/:id/swap", requireAuth, swapTeamRider);
