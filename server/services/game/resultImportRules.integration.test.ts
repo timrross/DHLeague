@@ -7,6 +7,7 @@ import {
   raceResultSets,
   raceScores,
   raceSnapshots,
+  riderCostUpdates,
   races,
   seasons,
   users,
@@ -85,6 +86,7 @@ if (hasDb) {
 
     afterEach(async () => {
       await db.delete(raceScores).where(eq(raceScores.raceId, raceId));
+      await db.delete(riderCostUpdates).where(eq(riderCostUpdates.raceId, raceId));
       await db.delete(raceResultSets).where(eq(raceResultSets.raceId, raceId));
       await db.delete(raceResults).where(eq(raceResults.raceId, raceId));
       await db.delete(raceResultImports).where(eq(raceResultImports.raceId, raceId));

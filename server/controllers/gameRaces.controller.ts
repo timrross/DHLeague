@@ -7,6 +7,7 @@ import { runGameTick } from "../services/game/tick";
 import { unlockRace } from "../services/game/unlockRace";
 import { importUciRaceResults } from "../services/game/uciResults";
 import { UserFacingError } from "../services/game/errors";
+import { FEATURES } from "../services/features";
 
 const parseFlag = (value: unknown) =>
   value === true || value === "true" || value === "1" || value === 1;
@@ -72,8 +73,13 @@ export async function importUciRaceResultsAdmin(req: Request, res: Response) {
     }
 
     const category = payload.category;
-    if (category !== "elite") {
-      return res.status(400).json({ message: "category must be elite" });
+    if (category !== "elite" && category !== "junior") {
+      return res
+        .status(400)
+        .json({ message: "category must be elite or junior" });
+    }
+    if (category === "junior" && !FEATURES.JUNIOR_TEAM_ENABLED) {
+      return res.status(404).json({ message: "Junior team is disabled" });
     }
 
     const isFinal = parseFlag(payload.isFinal);

@@ -9,8 +9,10 @@ import {
   type RiderIdentityRow,
 } from "./uciResultsMatch";
 import { UserFacingError } from "./errors";
+import { FEATURES } from "../features";
 import { assertRaceReadyForResults } from "./raceResultsValidation";
 import { getMissingFinalResultSets, resolveDisciplineCode } from "./resultImports";
+import { shouldRequireJuniorResults } from "./juniorRequirements";
 
 type UciResultEntry = {
   headerType?: string;
@@ -26,7 +28,7 @@ export type ImportUciRaceResultsInput = {
   raceId: number;
   sourceUrl: string;
   gender: Gender;
-  category: "elite";
+  category: "elite" | "junior";
   discipline?: string;
   isFinal?: boolean;
 };
@@ -48,6 +50,7 @@ const parseResultStatus = (value: string): ResultStatus => {
   const normalized = value.trim().toUpperCase();
   if (normalized === "DNF") return "DNF";
   if (normalized === "DNS") return "DNS";
+  if (normalized === "DNQ") return "DNQ";
   if (normalized === "DSQ" || normalized === "DQ") return "DSQ";
   if (!normalized) return "DNS";
   return "FIN";
@@ -106,6 +109,9 @@ export async function importUciRaceResults(
   const [race] = await db.select().from(races).where(eq(races.id, raceId));
   if (!race) {
     throw new UserFacingError(`Race ${raceId} not found`, 404);
+  }
+  if (category === "junior" && !FEATURES.JUNIOR_TEAM_ENABLED) {
+    throw new UserFacingError("Junior team is disabled", 404);
   }
   assertRaceReadyForResults(race);
   const discipline = resolveDisciplineCode(input.discipline, race.discipline);
@@ -227,7 +233,13 @@ export async function importUciRaceResults(
         ),
       );
 
-    const missingFinalSets = getMissingFinalResultSets(importRows);
+    const includeJunior = await shouldRequireJuniorResults({
+      raceId,
+      seasonId: race.seasonId,
+    });
+    const missingFinalSets = getMissingFinalResultSets(importRows, {
+      includeJunior,
+    });
     const nextStatus = missingFinalSets.length === 0 ? "final" : "provisional";
     await tx
       .update(races)

@@ -13,6 +13,8 @@ import { hashPayload } from "./hashing";
 import { scoreTeamSnapshot } from "./scoring/scoreTeamSnapshot";
 import { UserFacingError } from "./errors";
 import { getMissingFinalResultSets, resolveDisciplineCode } from "./resultImports";
+import { shouldRequireJuniorResults } from "./juniorRequirements";
+import { applyRiderCostUpdates } from "./costUpdates";
 
 export type SettleRaceOptions = {
   force?: boolean;
@@ -56,7 +58,13 @@ export async function settleRace(
           eq(raceResultImports.discipline, discipline),
         ),
       );
-    const missingFinalSets = getMissingFinalResultSets(importRows);
+    const includeJunior = await shouldRequireJuniorResults({
+      raceId,
+      seasonId: race.seasonId,
+    });
+    const missingFinalSets = getMissingFinalResultSets(importRows, {
+      includeJunior,
+    });
     if (missingFinalSets.length > 0) {
       throw new UserFacingError(
         `Race ${raceId} is missing final results for: ${missingFinalSets
@@ -147,8 +155,18 @@ export async function settleRace(
     let updatedScores = 0;
 
     for (const snapshot of snapshots) {
-      const starters = (snapshot.startersJson as Array<{ uciId: string; gender: "male" | "female" }>) ?? [];
-      const bench = (snapshot.benchJson as { uciId: string; gender: "male" | "female" } | null) ?? null;
+      const starters =
+        (snapshot.startersJson as Array<{
+          uciId: string;
+          gender: "male" | "female";
+          costAtLock?: number | null;
+        }>) ?? [];
+      const bench =
+        (snapshot.benchJson as {
+          uciId: string;
+          gender: "male" | "female";
+          costAtLock?: number | null;
+        } | null) ?? null;
 
       const scored = scoreTeamSnapshot({ starters, bench }, resultsByUciId);
 
@@ -190,6 +208,20 @@ export async function settleRace(
         await tx.insert(raceScores).values(values);
       }
       updatedScores += 1;
+    }
+
+    if (status === "final" || status === "settled") {
+      await applyRiderCostUpdates(
+        tx,
+        raceId,
+        resultsHash,
+        resultRows.map((row) => ({
+          uciId: row.uciId,
+          status: row.status as ResultStatus,
+          position: row.position ?? null,
+        })),
+        { force },
+      );
     }
 
     await tx

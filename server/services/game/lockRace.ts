@@ -2,6 +2,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { db } from "../../db";
 import { raceSnapshots, races, teamMembers, teams } from "@shared/schema";
 import { BUDGETS, GAME_VERSION, type TeamType } from "./config";
+import { FEATURES } from "../features";
 import { hashPayload } from "./hashing";
 import { toDbTeamType } from "./normalize";
 import { validateTeam, type TeamStarterInput } from "./validateTeam";
@@ -11,14 +12,14 @@ export type LockRaceOptions = {
   force?: boolean;
 };
 
-const LOCK_LEAD_MS = 24 * 60 * 60 * 1000;
+const LOCK_LEAD_MS = 48 * 60 * 60 * 1000;
 
 const buildSnapshotPayload = (params: {
   raceId: number;
   userId: string;
   teamType: TeamType;
-  starters: Array<{ uciId: string; gender: string }>;
-  bench: { uciId: string; gender: string } | null;
+  starters: Array<{ uciId: string; gender: string; costAtLock: number }>;
+  bench: { uciId: string; gender: string; costAtLock: number } | null;
   totalCostAtLock: number;
 }) => ({
   gameVersion: GAME_VERSION,
@@ -75,7 +76,9 @@ export async function lockRace(raceId: number, options: LockRaceOptions = {}) {
     let lockedTeams = 0;
     let skippedTeams = 0;
 
-    const teamTypes = Object.keys(BUDGETS) as TeamType[];
+    const teamTypes = FEATURES.JUNIOR_TEAM_ENABLED
+      ? (Object.keys(BUDGETS) as TeamType[])
+      : (["ELITE"] as TeamType[]);
 
     for (const teamType of teamTypes) {
       const dbTeamType = toDbTeamType(teamType);
@@ -158,6 +161,7 @@ export async function lockRace(raceId: number, options: LockRaceOptions = {}) {
           return {
             uciId: starter.uciId,
             gender: rider?.gender ?? "male",
+            costAtLock: rider?.cost ?? 0,
           };
         });
 
@@ -165,6 +169,7 @@ export async function lockRace(raceId: number, options: LockRaceOptions = {}) {
           ? {
               uciId: benchInput.uciId,
               gender: ridersByUciId.get(benchInput.uciId)?.gender ?? "male",
+              costAtLock: ridersByUciId.get(benchInput.uciId)?.cost ?? 0,
             }
           : null;
 

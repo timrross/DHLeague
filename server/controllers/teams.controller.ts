@@ -1,8 +1,10 @@
 import { Response } from "express";
 import { storage } from "../storage";
-import { riderDataClient } from "../services/riderDataClient";
+import { FEATURES } from "../services/features";
+import { getEditingWindow } from "../services/game/editingWindow";
 import { getActiveSeasonId } from "../services/game/seasons";
 import { getTeamPerformance } from "../services/game/teamPerformance";
+import { countTransfers } from "../services/game/transfers";
 
 /**
  * Get a user's team
@@ -16,6 +18,9 @@ export async function getUserTeam(req: any, res: Response) {
     }
 
     const teamType = req.query.teamType === "junior" ? "junior" : "elite";
+    if (teamType === "junior" && !FEATURES.JUNIOR_TEAM_ENABLED) {
+      return res.status(404).json({ message: "Junior team is disabled" });
+    }
     const team = await storage.getUserTeam(userId, teamType);
     res.json(team || null);
   } catch (error) {
@@ -62,6 +67,9 @@ export async function createTeam(req: any, res: Response) {
       benchRiderId,
     } = req.body;
     const normalizedTeamType = teamType === "junior" ? "junior" : "elite";
+    if (normalizedTeamType === "junior" && !FEATURES.JUNIOR_TEAM_ENABLED) {
+      return res.status(404).json({ message: "Junior team is disabled" });
+    }
 
     if (!name || !riderIds || !Array.isArray(riderIds)) {
       return res.status(400).json({ message: "Invalid request data" });
@@ -80,38 +88,44 @@ export async function createTeam(req: any, res: Response) {
       }
     }
 
-    // Check if user already has a team
-    const existingTeam = await storage.getUserTeam(userId, normalizedTeamType);
-    if (existingTeam && !useJokerCard) {
-      return res.status(400).json({ 
-        message: `You already have a ${normalizedTeamType} team. Update your existing team instead.` 
+    const seasonId = await getActiveSeasonId();
+    const editingWindow = await getEditingWindow(seasonId);
+    if (!editingWindow.editingOpen || !editingWindow.nextRace) {
+      return res.status(400).json({
+        message: "Team is locked for the upcoming race.",
       });
     }
 
+    if (useJokerCard) {
+      return res.status(400).json({
+        message: "Use the joker card endpoint before rebuilding your team.",
+      });
+    }
+
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (
+      user.jokerActiveRaceId &&
+      user.jokerActiveRaceId !== editingWindow.nextRace.id
+    ) {
+      await storage.updateUser(userId, {
+        jokerActiveRaceId: null,
+        jokerActiveTeamType: null,
+      });
+    }
+
+    // Check if user already has a team
+    const existingTeam = await storage.getUserTeam(userId, normalizedTeamType);
     if (existingTeam) {
-      if (existingTeam.isLocked) {
-        return res.status(400).json({
-          message:
-            "Team is locked for the upcoming race. Use the swap feature instead.",
-        });
-      }
-
-      const updatedTeam = await storage.updateTeam(
-        existingTeam.id,
-        { name },
-        riderIds,
-        parsedBenchRiderId,
-      );
-
-      if (useJokerCard) {
-        await storage.updateUser(userId, { jokerCardUsed: true });
-      }
-
-      return res.status(200).json(updatedTeam);
+      return res.status(400).json({
+        message: `You already have a ${normalizedTeamType} team. Update your existing team instead.`,
+      });
     }
 
     // Create the team
-    const seasonId = await getActiveSeasonId();
     const budgetCap = normalizedTeamType === "junior" ? 500000 : 2000000;
     const teamData = {
       name,
@@ -120,6 +134,8 @@ export async function createTeam(req: any, res: Response) {
       seasonId,
       budgetCap,
       swapsUsed: 0,
+      swapsRemaining: 2,
+      currentRaceId: editingWindow.nextRace.id,
       isLocked: false,
       totalPoints: 0
     };
@@ -129,11 +145,6 @@ export async function createTeam(req: any, res: Response) {
       riderIds,
       parsedBenchRiderId ?? null,
     );
-
-    // If using joker card, update the user record
-    if (useJokerCard) {
-      await storage.updateUser(userId, { jokerCardUsed: true });
-    }
 
     res.status(201).json(team);
   } catch (error) {
@@ -171,12 +182,35 @@ export async function updateTeam(req: any, res: Response) {
       return res.status(403).json({ message: "Not authorized to update this team" });
     }
 
-    // Check if team is locked
-    if (team.isLocked) {
-      return res.status(400).json({ 
-        message: "Team is locked for the upcoming race. Use the swap feature instead." 
+    if (team.teamType === "junior" && !FEATURES.JUNIOR_TEAM_ENABLED) {
+      return res.status(404).json({ message: "Junior team is disabled" });
+    }
+
+    const editingWindow = await getEditingWindow(team.seasonId);
+    if (!editingWindow.editingOpen || !editingWindow.nextRace) {
+      return res.status(400).json({
+        message: "Team is locked for the upcoming race.",
       });
     }
+
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (
+      user.jokerActiveRaceId &&
+      user.jokerActiveRaceId !== editingWindow.nextRace.id
+    ) {
+      await storage.updateUser(userId, {
+        jokerActiveRaceId: null,
+        jokerActiveTeamType: null,
+      });
+    }
+
+    const jokerActive =
+      user.jokerActiveRaceId === editingWindow.nextRace.id &&
+      user.jokerActiveTeamType === team.teamType;
 
     const { name, riderIds, benchRiderId } = req.body;
     if (!name || !riderIds || !Array.isArray(riderIds)) {
@@ -196,10 +230,49 @@ export async function updateTeam(req: any, res: Response) {
       }
     }
 
+    const existingRoster = await storage.getTeamWithRiders(teamId);
+    if (!existingRoster) {
+      return res.status(404).json({ message: "Team not found" });
+    }
+
+    const transferWindowRaceId = editingWindow.nextRace.id;
+    const windowChanged = team.currentRaceId !== transferWindowRaceId;
+    const priorTransfersUsed = windowChanged ? 0 : team.swapsUsed ?? 0;
+
+    const transferCount = countTransfers(
+      {
+        starters: existingRoster.riders.map((rider) => rider.id),
+        benchId: existingRoster.benchRider?.id ?? null,
+      },
+      {
+        starters: riderIds,
+        benchId: parsedBenchRiderId ?? null,
+      },
+    );
+
+    const enforceTransfers = editingWindow.hasSettledRounds && !jokerActive;
+    if (enforceTransfers && priorTransfersUsed + transferCount > 2) {
+      return res.status(400).json({
+        message: "No transfers remaining for this round.",
+      });
+    }
+
+    const nextTransfersUsed = enforceTransfers
+      ? priorTransfersUsed + transferCount
+      : 0;
+    const nextTransfersRemaining = enforceTransfers
+      ? Math.max(0, 2 - nextTransfersUsed)
+      : 2;
+
     // Update the team
     const updatedTeam = await storage.updateTeam(
       teamId,
-      { name },
+      {
+        name,
+        swapsUsed: nextTransfersUsed,
+        swapsRemaining: nextTransfersRemaining,
+        currentRaceId: transferWindowRaceId,
+      },
       riderIds,
       parsedBenchRiderId,
     );
@@ -237,15 +310,26 @@ export async function useJokerCard(req: any, res: Response) {
       return res.status(403).json({ message: "Not authorized to reset this team" });
     }
 
-    if (team.isLocked) {
+    if (team.teamType === "junior" && !FEATURES.JUNIOR_TEAM_ENABLED) {
+      return res.status(404).json({ message: "Junior team is disabled" });
+    }
+
+    const editingWindow = await getEditingWindow(team.seasonId);
+    if (!editingWindow.editingOpen || !editingWindow.nextRace) {
       return res.status(400).json({
-        message: "Team is locked for the upcoming race. Use the swap feature instead.",
+        message: "Joker can only be used between settlement and the next lock.",
       });
     }
 
     const user = await storage.getUser(userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
+    }
+
+    if (!editingWindow.hasSettledRounds) {
+      return res.status(400).json({
+        message: "Joker can only be used after a round has settled.",
+      });
     }
 
     if (user.jokerCardUsed) {
@@ -257,7 +341,11 @@ export async function useJokerCard(req: any, res: Response) {
       return res.status(500).json({ message: "Failed to delete team" });
     }
 
-    await storage.updateUser(userId, { jokerCardUsed: true });
+    await storage.updateUser(userId, {
+      jokerCardUsed: true,
+      jokerActiveRaceId: editingWindow.nextRace.id,
+      jokerActiveTeamType: team.teamType,
+    });
 
     res.json({ success: true });
   } catch (error) {
@@ -322,109 +410,9 @@ export async function swapTeamRider(req: any, res: Response) {
       return res.status(401).json({ message: "Not authenticated" });
     }
 
-    const teamId = Number(req.params.id);
-    if (isNaN(teamId)) {
-      return res.status(400).json({ message: "Invalid team ID" });
-    }
-
-    // Check if team exists and belongs to the user
-    const team = await storage.getTeamWithRiders(teamId);
-    if (!team) {
-      return res.status(404).json({ message: "Team not found" });
-    }
-
-    if (team.userId !== userId) {
-      return res.status(403).json({ message: "Not authorized to update this team" });
-    }
-
-    // Check if team is locked - we allow swaps when locked
-    if (!team.isLocked) {
-      return res.status(400).json({ 
-        message: "Team is not locked. Update your team directly instead of using the swap feature." 
-      });
-    }
-
-    // Check swaps remaining
-    const currentSwapsUsed = team.swapsUsed || 0;
-    if (currentSwapsUsed >= 2) {
-      return res.status(400).json({ message: "No swaps remaining for this race" });
-    }
-
-    const { removedRiderId, addedRiderId } = req.body;
-    if (!removedRiderId || !addedRiderId) {
-      return res.status(400).json({ message: "Both removedRiderId and addedRiderId are required" });
-    }
-
-    // Check if removed rider is on the team
-    if (!team.riders.some(r => r.id === removedRiderId)) {
-      return res.status(400).json({ message: "Cannot remove a rider that is not on the team" });
-    }
-
-    // Get the rider being added
-    const addedRider = await riderDataClient.getRider(addedRiderId);
-    if (!addedRider) {
-      return res.status(404).json({ message: "Added rider not found" });
-    }
-
-    const teamType = team.teamType === "junior" ? "junior" : "elite";
-    if (addedRider.category !== teamType) {
-      return res.status(400).json({
-        message:
-          teamType === "junior"
-            ? "You can only add junior riders to your junior team"
-            : "You can only add elite riders to your elite team",
-      });
-    }
-
-    // Check if added rider is already on the team
-    if (team.riders.some(r => r.id === addedRiderId)) {
-      return res.status(400).json({ message: "Cannot add a rider that is already on the team" });
-    }
-
-    // Check team composition rules
-    const removedRider = team.riders.find(r => r.id === removedRiderId);
-    if (!removedRider) {
-      return res.status(400).json({ message: "Removed rider not found on team" });
-    }
-
-    // Check gender balance
-    const removingMale = removedRider.gender === "male";
-    const addingMale = addedRider.gender === "male";
-    const currentMaleCount = team.riders.filter(r => r.gender === "male").length;
-    const currentFemaleCount = team.riders.filter(r => r.gender === "female").length;
-
-    const newMaleCount =
-      currentMaleCount - (removingMale ? 1 : 0) + (addingMale ? 1 : 0);
-    const newFemaleCount =
-      currentFemaleCount - (removingMale ? 0 : 1) + (addingMale ? 0 : 1);
-
-    if (newMaleCount !== 4 || newFemaleCount !== 2) {
-      return res
-        .status(400)
-        .json({ message: "Team must have exactly 4 male and 2 female riders" });
-    }
-
-    // Check budget
-    const newTotalCost = team.totalCost - removedRider.cost + addedRider.cost;
-    const budgetCap = team.budgetCap ?? 2000000;
-    if (newTotalCost > budgetCap) {
-      return res
-        .status(400)
-        .json({ message: `Swap would exceed the budget of ${budgetCap}` });
-    }
-
-    // Prepare new rider IDs list
-    const newRiderIds = team.riders.map(r => r.id === removedRiderId ? addedRiderId : r.id);
-
-    // Update the team with the new rider and increment swaps used
-    const currentSwaps = team.swapsUsed || 0;
-    const updatedTeam = await storage.updateTeam(
-      teamId, 
-      { swapsUsed: currentSwaps + 1 }, 
-      newRiderIds
-    );
-
-    res.json(updatedTeam);
+    return res.status(400).json({
+      message: "Swaps are not supported. Use transfers before lock.",
+    });
   } catch (error) {
     console.error("Error swapping team rider:", error);
     res.status(500).json({

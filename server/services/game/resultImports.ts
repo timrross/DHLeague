@@ -2,13 +2,18 @@ import type { RaceResultImport } from "@shared/schema";
 
 export type ResultSetDefinition = {
   gender: "male" | "female";
-  category: "elite";
+  category: "elite" | "junior";
   label: string;
 };
 
-export const REQUIRED_RESULT_SETS: ResultSetDefinition[] = [
+const ELITE_RESULT_SETS: ResultSetDefinition[] = [
   { gender: "male", category: "elite", label: "Men Elite" },
   { gender: "female", category: "elite", label: "Women Elite" },
+];
+
+const JUNIOR_RESULT_SETS: ResultSetDefinition[] = [
+  { gender: "male", category: "junior", label: "Men Junior" },
+  { gender: "female", category: "junior", label: "Women Junior" },
 ];
 
 const buildKey = (gender: string, category: string) =>
@@ -24,15 +29,12 @@ export function resolveDisciplineCode(
   const normalized = normalizeDisciplineInput(String(discipline ?? ""));
 
   if (normalized === "DOWNHILL") return "DHI";
-  if (normalized === "CROSS-COUNTRY") {
-    return "XCO";
-  }
-  if (normalized === "DHI" || normalized === "XCO") {
+  if (normalized === "DHI") {
     return normalized;
   }
 
   const fallbackValue = normalizeDisciplineInput(String(fallback ?? ""));
-  if (fallbackValue === "DHI" || fallbackValue === "XCO") {
+  if (fallbackValue === "DHI") {
     return fallbackValue;
   }
 
@@ -41,6 +43,7 @@ export function resolveDisciplineCode(
 
 export function getMissingFinalResultSets(
   imports: Pick<RaceResultImport, "gender" | "category" | "isFinal">[],
+  options: { includeJunior?: boolean } = {},
 ): ResultSetDefinition[] {
   const finalKeys = new Set(
     imports
@@ -48,7 +51,11 @@ export function getMissingFinalResultSets(
       .map((row) => buildKey(row.gender, row.category)),
   );
 
-  return REQUIRED_RESULT_SETS.filter(
+  const requiredSets = options.includeJunior
+    ? [...ELITE_RESULT_SETS, ...JUNIOR_RESULT_SETS]
+    : ELITE_RESULT_SETS;
+
+  return requiredSets.filter(
     (set) => !finalKeys.has(buildKey(set.gender, set.category)),
   );
 }

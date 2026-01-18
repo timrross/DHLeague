@@ -17,6 +17,7 @@ export type RaceResultInput = {
 export type SnapshotRider = {
   uciId: string;
   gender: Gender;
+  costAtLock?: number | null;
 };
 
 export type TeamSnapshotInput = {
@@ -40,7 +41,11 @@ export type SubstitutionBreakdown = {
   applied: boolean;
   benchUciId: string | null;
   replacedStarterIndex: number | null;
-  reason: "DNS_AUTO_SUB_SAME_GENDER" | "NO_VALID_SUB" | "NO_BENCH" | "NO_DNS";
+  reason:
+    | "AUTO_SUB_SAME_GENDER"
+    | "NO_VALID_SUB"
+    | "NO_BENCH"
+    | "NO_ELIGIBLE_STARTER";
 };
 
 export type TeamScoreBreakdown = {
@@ -84,9 +89,6 @@ export const scoreRiderResult = (
       ? getQualBonus(result?.qualificationPosition ?? null)
       : 0;
     finalPoints = basePoints + qualBonus;
-  } else if (status === "DSQ") {
-    penalties = SCORING.DSQ_PENALTY;
-    finalPoints = penalties;
   }
 
   return {
@@ -153,23 +155,35 @@ export function scoreTeamSnapshot(
       reason: "NO_BENCH",
     };
   } else {
-    const dnsIndexes = starters
-      .map((starter, index) => ({ starter, index }))
+    const eligibleStatuses: ResultStatus[] = ["DNS", "DNF", "DNQ"];
+    const eligibleStarters = starters
+      .map((starter, index) => ({
+        starter,
+        index,
+        costAtLock: snapshot.starters[index]?.costAtLock ?? 0,
+      }))
       .filter(
         ({ starter }) =>
-          starter.status === "DNS" && starter.gender === snapshot.bench?.gender,
-      )
-      .map(({ index }) => index);
+          eligibleStatuses.includes(starter.status) &&
+          starter.gender === snapshot.bench?.gender,
+      );
 
-    if (dnsIndexes.length === 0) {
+    if (eligibleStarters.length === 0) {
+      const hasEligibleStatus = starters.some((starter) =>
+        eligibleStatuses.includes(starter.status),
+      );
       substitution = {
         ...substitution,
-        reason: starters.some((starter) => starter.status === "DNS")
-          ? "NO_VALID_SUB"
-          : "NO_DNS",
+        reason: hasEligibleStatus ? "NO_VALID_SUB" : "NO_ELIGIBLE_STARTER",
       };
     } else {
-      const replacedIndex = Math.min(...dnsIndexes);
+      const replaced = eligibleStarters.sort((a, b) => {
+        if (b.costAtLock !== a.costAtLock) {
+          return b.costAtLock - a.costAtLock;
+        }
+        return a.index - b.index;
+      })[0];
+      const replacedIndex = replaced.index;
       const benchPoints = bench?.finalPoints ?? 0;
       starters[replacedIndex] = {
         ...starters[replacedIndex],
@@ -179,7 +193,7 @@ export function scoreTeamSnapshot(
         applied: true,
         benchUciId: snapshot.bench.uciId,
         replacedStarterIndex: replacedIndex,
-        reason: "DNS_AUTO_SUB_SAME_GENDER",
+        reason: "AUTO_SUB_SAME_GENDER",
       };
     }
   }

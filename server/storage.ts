@@ -739,6 +739,17 @@ export class DatabaseStorage implements IStorage {
 
     // Update team in transaction if riderIds are provided
     if (riderIds && riderIds.length > 0) {
+      const existingMembers = await db
+        .select()
+        .from(teamMembers)
+        .where(eq(teamMembers.teamId, id));
+      const previousCostByUciId = new Map<string, number>();
+      for (const member of existingMembers) {
+        if (member.costAtSave !== null && member.costAtSave !== undefined) {
+          previousCostByUciId.set(member.uciId, member.costAtSave);
+        }
+      }
+
       // Validate team composition
       const selectedRiders = await Promise.all(
         riderIds.map(id => this.getRider(id))
@@ -785,10 +796,29 @@ export class DatabaseStorage implements IStorage {
         );
       }
 
+      const costAtSaveByUciId = new Map<string, number>();
+      const starterCostTotal = riders.reduce((sum, rider) => {
+        const previousCost = previousCostByUciId.get(rider.uciId);
+        const costAtSave = previousCost !== undefined
+          ? Math.min(previousCost, rider.cost)
+          : rider.cost;
+        costAtSaveByUciId.set(rider.uciId, costAtSave);
+        return sum + costAtSave;
+      }, 0);
+
+      const benchCostAtSave = benchRider
+        ? (() => {
+            const previousCost = previousCostByUciId.get(benchRider.uciId);
+            const costAtSave = previousCost !== undefined
+              ? Math.min(previousCost, benchRider.cost)
+              : benchRider.cost;
+            costAtSaveByUciId.set(benchRider.uciId, costAtSave);
+            return costAtSave;
+          })()
+        : 0;
+
       // Check budget
-      const totalCost =
-        riders.reduce((sum, rider) => sum + rider.cost, 0) +
-        (benchRider?.cost ?? 0);
+      const totalCost = starterCostTotal + benchCostAtSave;
       const budgetCap =
         team.budgetCap ?? (teamType === "junior" ? 500000 : 2000000);
       if (totalCost > budgetCap) {
@@ -834,7 +864,7 @@ export class DatabaseStorage implements IStorage {
             role: "STARTER",
             starterIndex: index,
             gender: rider.gender,
-            costAtSave: rider.cost,
+            costAtSave: costAtSaveByUciId.get(rider.uciId) ?? rider.cost,
             createdAt: new Date(),
             updatedAt: new Date(),
           });
@@ -847,7 +877,7 @@ export class DatabaseStorage implements IStorage {
             role: "BENCH",
             starterIndex: null,
             gender: benchRider.gender,
-            costAtSave: benchRider.cost,
+            costAtSave: costAtSaveByUciId.get(benchRider.uciId) ?? benchRider.cost,
             createdAt: new Date(),
             updatedAt: new Date(),
           });
@@ -981,7 +1011,7 @@ export class DatabaseStorage implements IStorage {
     const seasonId = processedRace.seasonId ?? await getSeasonIdForDate(startDate);
     const lockAt = processedRace.lockAt
       ? new Date(processedRace.lockAt)
-      : new Date(startDate.getTime() - 24 * 60 * 60 * 1000);
+      : new Date(startDate.getTime() - 48 * 60 * 60 * 1000);
     const discipline = (processedRace.discipline ?? "DHI").toUpperCase();
 
     const result = await db
@@ -1012,7 +1042,7 @@ export class DatabaseStorage implements IStorage {
     }
 
     if (processedData.startDate instanceof Date) {
-      processedData.lockAt = new Date(processedData.startDate.getTime() - 24 * 60 * 60 * 1000);
+      processedData.lockAt = new Date(processedData.startDate.getTime() - 48 * 60 * 60 * 1000);
       processedData.seasonId = await getSeasonIdForDate(processedData.startDate);
     }
 

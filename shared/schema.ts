@@ -10,6 +10,8 @@ export const users = pgTable("users", {
   isAdmin: boolean("is_admin").default(false),
   isActive: boolean("is_active").default(true),
   jokerCardUsed: boolean("joker_card_used").default(false),
+  jokerActiveRaceId: integer("joker_active_race_id"),
+  jokerActiveTeamType: text("joker_active_team_type"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -208,6 +210,23 @@ export const raceScores = pgTable("race_scores", {
 
 export type RaceScore = typeof raceScores.$inferSelect;
 export type InsertRaceScore = typeof raceScores.$inferInsert;
+
+// Rider cost updates (post-settlement)
+export const riderCostUpdates = pgTable("rider_cost_updates", {
+  id: serial("id").primaryKey(),
+  raceId: integer("race_id").notNull().references(() => races.id),
+  uciId: text("uci_id").notNull().references(() => riders.uciId),
+  status: text("status").notNull(),
+  position: integer("position"),
+  previousCost: integer("previous_cost").notNull(),
+  updatedCost: integer("updated_cost").notNull(),
+  delta: integer("delta").notNull(),
+  resultsHash: text("results_hash").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type RiderCostUpdate = typeof riderCostUpdates.$inferSelect;
+export type InsertRiderCostUpdate = typeof riderCostUpdates.$inferInsert;
 
 // Team swap history
 export const teamSwaps = pgTable("team_swaps", {

@@ -45,7 +45,7 @@ export async function upsertRaceResults(input: UpsertRaceResultsInput) {
 
     for (const result of input.results) {
       const rawStatus = String(result.status ?? "").toUpperCase();
-      const status = (["FIN", "DNF", "DNS", "DSQ"].includes(rawStatus)
+      const status = (["FIN", "DNF", "DNS", "DNQ", "DSQ"].includes(rawStatus)
         ? rawStatus
         : "DNS") as ResultStatus;
       await tx

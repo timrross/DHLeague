@@ -23,6 +23,7 @@ export function validateTeam(
   bench: TeamBenchInput,
   ridersByUciId: Map<string, RiderProfile>,
   budgetCap: number,
+  options: { budgetOverrides?: Map<string, number> } = {},
 ): { ok: boolean; errors: TeamValidationError[] } {
   const errors: TeamValidationError[] = [];
   const expectedTeamSize = TEAM_RULES.TEAM_SIZE;
@@ -74,7 +75,8 @@ export function validateTeam(
     }
 
     genderCounts[rider.gender] += 1;
-    totalCost += rider.cost;
+    const overriddenCost = options.budgetOverrides?.get(starter.uciId);
+    totalCost += overriddenCost ?? rider.cost;
 
     if (!(rider.category === "both" || rider.category === teamCategory)) {
       errors.push({
@@ -118,7 +120,8 @@ export function validateTeam(
         message: `Bench rider ${bench.uciId} not found.`,
       });
     } else {
-      totalCost += rider.cost;
+      const overriddenCost = options.budgetOverrides?.get(bench.uciId);
+      totalCost += overriddenCost ?? rider.cost;
       if (!(rider.category === "both" || rider.category === teamCategory)) {
         errors.push({
           code: "CATEGORY_INELIGIBLE",

@@ -80,6 +80,29 @@ describe("validateTeam", () => {
     assert.ok(result.errors.some((error) => error.code === "BUDGET_EXCEEDED"));
   });
 
+  it("uses budget overrides for retained riders", () => {
+    const overrides = new Map<string, number>([
+      ["m1", 150000],
+      ["m2", 150000],
+      ["m3", 150000],
+      ["m4", 150000],
+      ["f1", 150000],
+      ["f2", 150000],
+      ["b1", 100000],
+    ]);
+
+    const result = validateTeam(
+      "ELITE",
+      starters,
+      { uciId: "b1" },
+      toMap(baseRiders),
+      1_200_000,
+      { budgetOverrides: overrides },
+    );
+
+    assert.equal(result.ok, true);
+  });
+
   it("rejects category-ineligible riders", () => {
     const riders = baseRiders.map((rider) =>
       rider.uciId === "m1" ? { ...rider, category: "elite" } : rider,

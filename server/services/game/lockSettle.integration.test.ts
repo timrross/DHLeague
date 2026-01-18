@@ -4,6 +4,7 @@ import { eq, inArray } from "drizzle-orm";
 import {
   riders,
   races,
+  riderCostUpdates,
   raceResults,
   raceResultImports,
   raceResultSets,
@@ -180,6 +181,7 @@ if (hasDb) {
 
   afterEach(async () => {
     await db.delete(raceScores).where(eq(raceScores.raceId, raceId));
+    await db.delete(riderCostUpdates).where(eq(riderCostUpdates.raceId, raceId));
     await db.delete(raceResultSets).where(eq(raceResultSets.raceId, raceId));
     await db.delete(raceResults).where(eq(raceResults.raceId, raceId));
     await db.delete(raceResultImports).where(eq(raceResultImports.raceId, raceId));
@@ -242,10 +244,31 @@ if (hasDb) {
       .from(raceScores)
       .where(eq(raceScores.raceId, raceId));
     assert.equal(scoresAfterFirst.length, 1);
-    assert.equal(scoresAfterFirst[0].totalPoints, 240);
+    assert.equal(scoresAfterFirst[0].totalPoints, 500);
+
+    const costRows = await db
+      .select({ uciId: riders.uciId, cost: riders.cost })
+      .from(riders)
+      .where(inArray(riders.uciId, uciIds));
+    const costsByUciId = new Map(costRows.map((row) => [row.uciId, row.cost]));
+    assert.equal(costsByUciId.get(uciIds[0]), 110000);
+    assert.equal(costsByUciId.get(uciIds[1]), 101000);
+    assert.equal(costsByUciId.get(uciIds[2]), 90000);
 
     const secondSettle = await settleRace(raceId);
     assert.equal(secondSettle.updatedScores, 0);
+
+    const costsAfterSecond = await db
+      .select({ uciId: riders.uciId, cost: riders.cost })
+      .from(riders)
+      .where(inArray(riders.uciId, uciIds));
+    const costsAfterSecondByUciId = new Map(
+      costsAfterSecond.map((row) => [row.uciId, row.cost]),
+    );
+    assert.equal(
+      costsAfterSecondByUciId.get(uciIds[0]),
+      costsByUciId.get(uciIds[0]),
+    );
 
     await upsertRaceResults({
       raceId,

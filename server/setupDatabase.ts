@@ -11,6 +11,8 @@ const schemaStatements = [
     is_admin BOOLEAN DEFAULT FALSE,
     is_active BOOLEAN DEFAULT TRUE,
     joker_card_used BOOLEAN DEFAULT FALSE,
+    joker_active_race_id INTEGER,
+    joker_active_team_type VARCHAR,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
   )`,
@@ -77,6 +79,8 @@ const schemaStatements = [
   `UPDATE riders SET image_source = 'placeholder' WHERE image_source IS NULL`,
   `ALTER TABLE riders ALTER COLUMN image_source SET DEFAULT 'placeholder'`,
   `ALTER TABLE riders ALTER COLUMN image_source SET NOT NULL`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS joker_active_race_id INTEGER`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS joker_active_team_type VARCHAR`,
   `CREATE TABLE IF NOT EXISTS races (
     id SERIAL PRIMARY KEY,
     season_id INTEGER NOT NULL REFERENCES seasons(id) ON DELETE CASCADE,
@@ -98,7 +102,7 @@ const schemaStatements = [
   `ALTER TABLE races ADD COLUMN IF NOT EXISTS needs_resettle BOOLEAN`,
   `UPDATE races SET season_id = (SELECT id FROM seasons ORDER BY start_at ASC LIMIT 1) WHERE season_id IS NULL`,
   `UPDATE races SET discipline = 'DHI' WHERE discipline IS NULL`,
-  `UPDATE races SET lock_at = start_date - interval '1 day' WHERE lock_at IS NULL`,
+  `UPDATE races SET lock_at = start_date - interval '2 days' WHERE lock_at IS NULL`,
   `UPDATE races SET game_status = 'scheduled' WHERE game_status IS NULL`,
   `UPDATE races SET needs_resettle = FALSE WHERE needs_resettle IS NULL`,
   `ALTER TABLE races ALTER COLUMN season_id SET NOT NULL`,
@@ -212,6 +216,20 @@ const schemaStatements = [
   )`,
   `CREATE INDEX IF NOT EXISTS idx_race_scores_race_id ON race_scores(race_id)`,
   `CREATE INDEX IF NOT EXISTS idx_race_scores_user_id ON race_scores(user_id)`,
+  `CREATE TABLE IF NOT EXISTS rider_cost_updates (
+    id SERIAL PRIMARY KEY,
+    race_id INTEGER NOT NULL REFERENCES races(id) ON DELETE CASCADE,
+    uci_id TEXT NOT NULL REFERENCES riders(uci_id) ON DELETE CASCADE,
+    status TEXT NOT NULL,
+    position INTEGER,
+    previous_cost INTEGER NOT NULL,
+    updated_cost INTEGER NOT NULL,
+    delta INTEGER NOT NULL,
+    results_hash TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE (race_id, uci_id)
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_rider_cost_updates_race_id ON rider_cost_updates(race_id)`,
   `CREATE TABLE IF NOT EXISTS team_swaps (
     id SERIAL PRIMARY KEY,
     team_id INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,

@@ -1,5 +1,6 @@
 import { Response } from "express";
 import { TeamRosterValidationError, getUserTeamsForSeason, upsertTeamRoster } from "../services/game/teams";
+import { UserFacingError } from "../services/game/errors";
 
 export async function getUserTeamsBySeason(req: any, res: Response) {
   try {
@@ -53,6 +54,9 @@ export async function upsertUserTeam(req: any, res: Response) {
   } catch (error) {
     if (error instanceof TeamRosterValidationError) {
       return res.status(400).json({ message: error.message, errors: error.errors });
+    }
+    if (error instanceof UserFacingError) {
+      return res.status(error.status).json({ message: error.message });
     }
 
     console.error("Error upserting team roster:", error);

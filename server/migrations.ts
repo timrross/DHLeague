@@ -185,6 +185,40 @@ export async function runMigrations() {
     } else {
       console.log('joker_card_used column already exists, skipping migration.');
     }
+
+    const checkJokerActiveRaceColumn = await db.execute(sql`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name = 'users' AND column_name = 'joker_active_race_id'
+    `);
+
+    if (checkJokerActiveRaceColumn.rows.length === 0) {
+      console.log('Adding joker_active_race_id column to users table...');
+      await db.execute(sql`
+        ALTER TABLE users
+        ADD COLUMN joker_active_race_id INTEGER
+      `);
+      console.log('joker_active_race_id column added successfully.');
+    } else {
+      console.log('joker_active_race_id column already exists, skipping migration.');
+    }
+
+    const checkJokerActiveTeamTypeColumn = await db.execute(sql`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name = 'users' AND column_name = 'joker_active_team_type'
+    `);
+
+    if (checkJokerActiveTeamTypeColumn.rows.length === 0) {
+      console.log('Adding joker_active_team_type column to users table...');
+      await db.execute(sql`
+        ALTER TABLE users
+        ADD COLUMN joker_active_team_type VARCHAR
+      `);
+      console.log('joker_active_team_type column added successfully.');
+    } else {
+      console.log('joker_active_team_type column already exists, skipping migration.');
+    }
     
     // Check if swaps_remaining column exists in teams table
     const checkSwapsRemainingColumn = await db.execute(sql`
@@ -298,6 +332,26 @@ export async function runMigrations() {
         console.log(`Index ${riderIndex.name} already exists, skipping.`);
       }
     }
+
+    console.log('Ensuring rider_cost_updates table exists...');
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS rider_cost_updates (
+        id SERIAL PRIMARY KEY,
+        race_id INTEGER NOT NULL REFERENCES races(id) ON DELETE CASCADE,
+        uci_id TEXT NOT NULL REFERENCES riders(uci_id) ON DELETE CASCADE,
+        status TEXT NOT NULL,
+        position INTEGER,
+        previous_cost INTEGER NOT NULL,
+        updated_cost INTEGER NOT NULL,
+        delta INTEGER NOT NULL,
+        results_hash TEXT NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await db.execute(sql`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_rider_cost_updates_race_uci
+      ON rider_cost_updates(race_id, uci_id)
+    `);
 
     // Ensure there is at least one upcoming race so clients and scoring
     // consumers have something to reference.

@@ -18,6 +18,7 @@ import type {
 type SnapshotRider = {
   uciId: string;
   gender: "male" | "female";
+  costAtLock?: number | null;
 };
 
 export type RiderSummary = {
