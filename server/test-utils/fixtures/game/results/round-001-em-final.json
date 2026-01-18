@@ -1,0 +1,12 @@
+{
+  "roundId": "round-001",
+  "event": "EM",
+  "isFinal": true,
+  "results": [
+    { "uciId": "uci-m1", "status": "FIN", "position": 2 },
+    { "uciId": "uci-m2", "status": "DNS", "position": null },
+    { "uciId": "uci-m3", "status": "DSQ", "position": null },
+    { "uciId": "uci-m4", "status": "FIN", "position": 25 },
+    { "uciId": "uci-bm", "status": "FIN", "position": 10 }
+  ]
+}

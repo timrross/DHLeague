@@ -1,0 +1,14 @@
+{
+  "roundId": "round-001",
+  "teamType": "ELITE",
+  "expected": {
+    "totalPoints": 330,
+    "substitution": {
+      "applied": true,
+      "benchUciId": "uci-bm",
+      "replacedStarterUciId": "uci-m2",
+      "replacedStarterSlotIndex": 1,
+      "reason": "DNS_DNF_DNQ_ONLY_SAME_GENDER_HIGHEST_SNAPSHOT_COST"
+    }
+  }
+}

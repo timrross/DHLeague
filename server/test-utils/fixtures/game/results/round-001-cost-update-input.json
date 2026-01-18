@@ -1,0 +1,10 @@
+{
+  "roundId": "round-001",
+  "costUpdates": [
+    { "uciId": "uci-m1", "event": "EM", "status": "FIN", "position": 1, "currentCost": 400000 },
+    { "uciId": "uci-bm", "event": "EM", "status": "FIN", "position": 10, "currentCost": 200000 },
+    { "uciId": "uci-m2", "event": "EM", "status": "DNS", "position": null, "currentCost": 380000 },
+    { "uciId": "uci-m3", "event": "EM", "status": "DSQ", "position": null, "currentCost": 360000 },
+    { "uciId": "uci-f1", "event": "EW", "status": "FIN", "position": 11, "currentCost": 300000 }
+  ]
+}

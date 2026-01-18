@@ -1,0 +1,5 @@
+{
+  "roundId": "round-001",
+  "given": { "EM": { "isFinal": true }, "EW": { "isFinal": true } },
+  "expected": { "status": "settled" }
+}

@@ -1,0 +1,11 @@
+{
+  "roundId": "round-001",
+  "teamType": "ELITE",
+  "expected": {
+    "totalPoints": 270,
+    "substitution": {
+      "applied": false,
+      "reason": "NO_SAME_GENDER_ELIGIBLE_STARTER"
+    }
+  }
+}

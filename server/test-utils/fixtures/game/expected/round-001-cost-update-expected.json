@@ -1,0 +1,10 @@
+{
+  "roundId": "round-001",
+  "expected": [
+    { "uciId": "uci-m1", "newCost": 440000, "rule": "1st => +10%" },
+    { "uciId": "uci-bm", "newCost": 202000, "rule": "10th => +1% then round up" },
+    { "uciId": "uci-m2", "newCost": 342000, "rule": "DNS => -10% then round up" },
+    { "uciId": "uci-m3", "newCost": 324000, "rule": "DSQ => -10% then round up" },
+    { "uciId": "uci-f1", "newCost": 300000, "rule": "11th => no change" }
+  ]
+}

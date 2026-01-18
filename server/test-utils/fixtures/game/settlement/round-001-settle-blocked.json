@@ -1,0 +1,9 @@
+{
+  "roundId": "round-001",
+  "given": { "EM": { "isFinal": true }, "EW": { "isFinal": false } },
+  "expected": {
+    "status": "blocked",
+    "reason": "MISSING_FINAL_RESULTS",
+    "missingEvents": ["EW"]
+  }
+}

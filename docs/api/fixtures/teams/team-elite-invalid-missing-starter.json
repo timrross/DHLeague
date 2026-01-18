@@ -1,0 +1,11 @@
+{
+  "teamType": "ELITE",
+  "starters": [
+    { "slotIndex": 0, "uciId": "uci-m1" },
+    { "slotIndex": 1, "uciId": "uci-m2" },
+    { "slotIndex": 2, "uciId": "uci-m3" },
+    { "slotIndex": 4, "uciId": "uci-f1" },
+    { "slotIndex": 5, "uciId": "uci-f2" }
+  ],
+  "bench": null
+}
