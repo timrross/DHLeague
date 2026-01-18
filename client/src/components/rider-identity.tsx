@@ -62,7 +62,11 @@ export default function RiderIdentity({
             <span
               role="img"
               aria-label={`${countryLabel ?? ""} flag`}
-              className={cn("fi", `fi-${flagCode}`, "h-4 w-4 rounded-full")}
+              className={cn(
+                "fi",
+                `fi-${flagCode}`,
+                "h-4 w-4 rounded-full border border-gray-200",
+              )}
               style={{ backgroundSize: "cover", backgroundPosition: "center" }}
             />
           ) : countryLabel ? (
