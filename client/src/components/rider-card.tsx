@@ -1,7 +1,6 @@
 import { Rider } from "@shared/schema";
 import { Check, Plus } from "lucide-react";
-import { formatRiderDisplayName } from "@shared/utils";
-import { RiderAvatar } from "@/components/rider-avatar";
+import RiderIdentity from "@/components/rider-identity";
 
 interface RiderCardProps {
   rider: Rider;
@@ -32,7 +31,6 @@ export default function RiderCard({
 }: RiderCardProps) {
   // For backward compatibility, use either isSelected or selected
   const isRiderSelected = isSelected !== undefined ? isSelected : (selected || false);
-  const displayName = formatRiderDisplayName(rider) || rider.name;
   // Format cost as currency
   const formatCost = (cost: number) => {
     return `$${cost.toLocaleString()}`;
@@ -70,24 +68,11 @@ export default function RiderCard({
       )}
       
       <div className="flex items-center mb-2 sm:mb-0">
-        <RiderAvatar
+        <RiderIdentity
           rider={rider}
-          size="sm"
-          className="mr-3 flex-shrink-0"
-          highlight={isRiderSelected || rider.injured}
+          avatarSize="sm"
+          avatarHighlight={isRiderSelected || rider.injured}
         />
-        <div className="min-w-0 flex-1">
-          <h4 className="font-heading normal-case font-bold text-secondary truncate">{displayName}</h4>
-          <div className="flex flex-wrap items-center text-sm">
-            <span className={`${rider.gender === 'male' ? 'text-blue-600' : 'text-pink-600'} font-medium mr-2`}>
-              {rider.gender === 'male' ? 'Male' : 'Female'}
-            </span>
-            <span className="text-gray-600 truncate">{rider.team}</span>
-            {rider.injured && (
-              <span className="ml-2 text-red-600 font-medium text-xs">Injured</span>
-            )}
-          </div>
-        </div>
       </div>
       <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto mt-2 sm:mt-0">
         <span className="font-accent font-bold text-primary text-lg mr-3">{formatCost(rider.cost)}</span>

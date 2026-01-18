@@ -1,13 +1,11 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatRiderDisplayName } from "@shared/utils";
 import { type TeamWithRiders } from "@shared/schema";
 import BudgetBar from "@/components/team-builder/BudgetBar";
 import GenderSlotsIndicator from "@/components/team-builder/GenderSlotsIndicator";
 import { getGenderCounts } from "@/lib/team-builder";
-import { cn } from "@/lib/utils";
-import { getFlagCode } from "@/lib/flags";
+import RiderIdentity from "@/components/rider-identity";
 import { Armchair, Zap } from "lucide-react";
 
 type TeamRosterPanelProps = {
@@ -49,31 +47,6 @@ export default function TeamRosterPanel({
   const maleSlots = renderSlots(maleStarters, 4);
   const femaleSlots = renderSlots(femaleStarters, 2);
 
-  const renderRiderMeta = (rider: TeamWithRiders["riders"][number]) => {
-    const flagCode = getFlagCode(rider.country);
-    return (
-      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
-        {flagCode && (
-          <span
-            role="img"
-            aria-label={`${rider.country ?? ""} flag`}
-            className={cn("fi", `fi-${flagCode}`, "h-4 w-4 rounded-full")}
-            style={{ backgroundSize: "cover", backgroundPosition: "center" }}
-          />
-        )}
-        <span
-          className={cn(
-            "h-2 w-2 rounded-full",
-            rider.gender === "male" ? "bg-blue-500" : "bg-pink-500",
-          )}
-          aria-hidden="true"
-        />
-        <span>{rider.gender === "male" ? "Male" : "Female"}</span>
-        <span className="truncate">{rider.team}</span>
-      </div>
-    );
-  };
-
   return (
     <Card>
       <CardHeader className="space-y-2">
@@ -105,12 +78,11 @@ export default function TeamRosterPanel({
                         className="min-h-[44px] rounded-md border border-gray-200 bg-white px-3 py-2 text-sm"
                       >
                         {rider ? (
-                          <>
-                            <p className="font-semibold text-secondary">
-                              {formatRiderDisplayName(rider) || rider.name}
-                            </p>
-                            {renderRiderMeta(rider)}
-                          </>
+                          <RiderIdentity
+                            rider={rider}
+                            avatarSize="sm"
+                            nameClassName="text-sm"
+                          />
                         ) : (
                           <p className="text-xs text-gray-500">Empty slot</p>
                         )}
@@ -127,12 +99,11 @@ export default function TeamRosterPanel({
                         className="min-h-[44px] rounded-md border border-gray-200 bg-white px-3 py-2 text-sm"
                       >
                         {rider ? (
-                          <>
-                            <p className="font-semibold text-secondary">
-                              {formatRiderDisplayName(rider) || rider.name}
-                            </p>
-                            {renderRiderMeta(rider)}
-                          </>
+                          <RiderIdentity
+                            rider={rider}
+                            avatarSize="sm"
+                            nameClassName="text-sm"
+                          />
                         ) : (
                           <p className="text-xs text-gray-500">Empty slot</p>
                         )}
@@ -154,10 +125,11 @@ export default function TeamRosterPanel({
                 </p>
                 {bench ? (
                   <div className="min-h-[44px] rounded-md border border-gray-200 bg-white px-3 py-2 text-sm">
-                    <p className="font-semibold text-secondary">
-                      {formatRiderDisplayName(bench) || bench.name}
-                    </p>
-                    {renderRiderMeta(bench)}
+                    <RiderIdentity
+                      rider={bench}
+                      avatarSize="sm"
+                      nameClassName="text-sm"
+                    />
                   </div>
                 ) : (
                   <p className="text-sm text-gray-500">No bench rider selected.</p>

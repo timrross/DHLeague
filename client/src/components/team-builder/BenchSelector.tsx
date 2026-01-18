@@ -1,7 +1,7 @@
 import { Rider } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { RiderAvatar } from "@/components/rider-avatar";
+import RiderIdentity from "@/components/rider-identity";
 import { formatRiderDisplayName } from "@shared/utils";
 import { X } from "lucide-react";
 
@@ -51,18 +51,14 @@ export default function BenchSelector({
           </div>
         ) : (
           <div className="flex flex-col justify-between gap-3 rounded-md border border-gray-200 bg-white p-3 sm:flex-row sm:items-center">
-            <div className="flex items-center gap-3 min-w-0">
-              <RiderAvatar rider={benchRider} size="sm" />
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="truncate font-heading text-sm font-bold text-secondary">
-                    {formatRiderDisplayName(benchRider) || benchRider.name}
-                  </p>
-                  <Badge variant="secondary" className="text-[10px]">Bench</Badge>
-                </div>
-                <p className="text-xs text-gray-500 truncate">
-                  {benchRider.gender === "male" ? "Male" : "Female"} · {benchRider.team}
-                </p>
+          <div className="flex items-center gap-3 min-w-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <RiderIdentity
+                  rider={benchRider}
+                  avatarSize="sm"
+                  nameClassName="text-sm"
+                />
+                <Badge variant="secondary" className="text-[10px]">Bench</Badge>
               </div>
             </div>
             <div className="flex items-center justify-between gap-3 sm:justify-end">

@@ -1,7 +1,7 @@
 import { Rider } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { RiderAvatar } from "@/components/rider-avatar";
+import RiderIdentity from "@/components/rider-identity";
 import { formatRiderDisplayName } from "@shared/utils";
 import { cn } from "@/lib/utils";
 import { FEMALE_SLOTS, MALE_SLOTS, TEAM_SIZE, getGenderCounts } from "@/lib/team-builder";
@@ -89,17 +89,13 @@ export default function SelectedRidersList({
                     highlight ? "border-amber-300 bg-amber-50" : "",
                   )}
                 >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <RiderAvatar rider={rider} size="sm" />
-                    <div className="min-w-0">
-                      <p className="truncate font-heading text-sm font-bold text-secondary">
-                        {displayName}
-                      </p>
-                      <p className="text-xs text-gray-500 truncate">
-                        {rider.gender === "male" ? "Male" : "Female"} · {rider.team}
-                      </p>
-                    </div>
-                  </div>
+                <div className="flex items-center gap-3 min-w-0">
+                    <RiderIdentity
+                      rider={rider}
+                      avatarSize="sm"
+                      nameClassName="text-sm"
+                    />
+                </div>
                   <div className="flex items-center justify-between gap-3 sm:justify-end">
                     <span className="text-sm font-semibold text-primary">
                       ${rider.cost.toLocaleString()}

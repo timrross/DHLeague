@@ -10,6 +10,7 @@ type RiderAvatarProps = {
   size?: "sm" | "md" | "lg";
   className?: string;
   highlight?: boolean;
+  showFlagBadge?: boolean;
 };
 
 const sizeMap: Record<NonNullable<RiderAvatarProps["size"]>, string> = {
@@ -18,7 +19,13 @@ const sizeMap: Record<NonNullable<RiderAvatarProps["size"]>, string> = {
   lg: "w-16 h-16",
 };
 
-export function RiderAvatar({ rider, size = "md", className, highlight = false }: RiderAvatarProps) {
+export function RiderAvatar({
+  rider,
+  size = "md",
+  className,
+  highlight = false,
+  showFlagBadge = true,
+}: RiderAvatarProps) {
   const displayName = useMemo(
     () => formatRiderDisplayName(rider) || rider.name || rider.riderId || "Rider",
     [rider],
@@ -52,27 +59,29 @@ export function RiderAvatar({ rider, size = "md", className, highlight = false }
           {initials || "?"}
         </AvatarFallback>
       </Avatar>
-      <div
-        className={cn(
-          "absolute flex items-center justify-center rounded-full border border-white bg-slate-900 text-[10px] font-bold text-white",
-          size === "lg"
-            ? "w-7 h-7 -bottom-1.5 -right-1.5"
-            : size === "sm"
-              ? "w-5 h-5 -bottom-1 -right-1"
-              : "w-6 h-6 -bottom-1.5 -right-1.5",
-        )}
-      >
-        {flagCode ? (
-          <span
-            role="img"
-            aria-label={`${flagLabel} flag`}
-            className={cn("fi", `fi-${flagCode}`, "w-full h-full rounded-full")}
-            style={{ backgroundSize: "cover", backgroundPosition: "center" }}
-          />
-        ) : (
-          <span>{flagLabel}</span>
-        )}
-      </div>
+      {showFlagBadge && (
+        <div
+          className={cn(
+            "absolute flex items-center justify-center rounded-full border border-white bg-slate-900 text-[10px] font-bold text-white",
+            size === "lg"
+              ? "w-7 h-7 -bottom-1.5 -right-1.5"
+              : size === "sm"
+                ? "w-5 h-5 -bottom-1 -right-1"
+                : "w-6 h-6 -bottom-1.5 -right-1.5",
+          )}
+        >
+          {flagCode ? (
+            <span
+              role="img"
+              aria-label={`${flagLabel} flag`}
+              className={cn("fi", `fi-${flagCode}`, "w-full h-full rounded-full")}
+              style={{ backgroundSize: "cover", backgroundPosition: "center" }}
+            />
+          ) : (
+            <span>{flagLabel}</span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
