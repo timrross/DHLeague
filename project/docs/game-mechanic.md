@@ -1,416 +1,383 @@
-# DHLeague Game Mechanics
-**File:** `project/docs/game-mechanic.md`  
-**Status:** Authoritative Source of Truth  
-**Audience:** AI / coding agents implementing scoring, locking, settlement, and standings  
-**Scope:** Exact rules for team structure, race lifecycle, and per-race point allocation
+Below is the complete, final, deterministic game-mechanic.md, incorporating all decisions and the final DSQ rule.
+You can copy this verbatim into the repo.
 
----
+⸻
 
-## 1) Core Principles
+DHLeague – Game Mechanic (Deterministic Spec)
 
-1. **Deterministic**  
-   Given identical inputs (teams, snapshots, results), outputs must be identical.
+Discipline: Downhill (DHI)
+Version: 1.0 (Authoritative)
+Junior Team: Feature-flagged (FEATURE_JUNIOR_TEAM_ENABLED), currently OFF
 
-2. **Snapshot-based**  
-   All scoring uses immutable team snapshots taken at race lock.
+This document is the single source of truth for scoring, transfers, locking, substitution, and rider cost logic.
+Any implementation must conform to this specification.
 
-3. **Canonical identity**  
-   Riders are always identified by `uciId`.
+⸻
 
-4. **Gender-aware mechanics**  
-   Gender is a first-class constraint in team composition and substitutions.
+1. Core Concepts
 
----
+1.1 Season
 
-## 2) Entities
+A season consists of an ordered sequence of Rounds.
+User scores accumulate across rounds to produce a season total.
 
-### 2.1 Season
-A **Season** is an ordered collection of Races.
-- `seasonId`
-- `startAt`, `endAt`
+⸻
 
----
+1.2 Round
 
-### 2.2 Race
-A **Race** represents a single competitive event (imported from the UCI API). Races are the source of truth for schedule and lock timing.
+A Round represents a race weekend.
 
-Attributes:
-- `raceId`
-- `discipline`: `DHI` | `XCO`
-- `startDate`, `endDate`
-- `lockAt` (defaults to `startDate - 1 day`)
-- `gameStatus`:  
-  `scheduled | locked | provisional | final | settled`
-- `needsResettle` (boolean)
+Each round contains the following events:
+	•	Elite Men (EM)
+	•	Elite Women (EW)
+	•	Junior Men (JM) (only when Junior feature enabled)
+	•	Junior Women (JW) (only when Junior feature enabled)
 
-A Race is scored for **both team types**. Category eligibility is enforced by rider eligibility on the team (Elite vs Junior).
+Each event produces a final race result used for scoring.
 
----
+A round can only be settled once all required events have final results.
 
-### 2.3 Rider
-- `uciId` (canonical, string)
-- `gender`: `male | female`
-- `categoryEligibility`: `elite | junior | both`
-- `cost`
-- `injured` (boolean)
+⸻
 
----
+1.3 Rider Identity
+	•	Riders are uniquely identified by UCI ID (uciId).
+	•	Internal database IDs may exist but scoring and snapshots are keyed by uciId.
 
-### 2.4 User
-A User participates in a Season by creating **up to two teams**:
-- **Elite Team**
-- **Junior Team**
+⸻
 
-Each team scores independently per race.
+2. Teams
 
----
-
-## 3) Team Structure
-
-### 3.1 Team Types
+2.1 Team Types
 
 Each user may have:
+	•	Elite Team (mandatory)
+	•	Junior Team (optional, feature-flagged)
 
-| Team Type | Category | Budget |
-|---------|----------|--------|
-| Elite Team | Elite Men + Elite Women | 2,000,000 |
-| Junior Team | Junior Men + Junior Women | 500,000 |
+When the Junior feature is disabled:
+	•	Users cannot create Junior teams
+	•	Junior points are not calculated
+	•	Combined score equals Elite score only
 
----
+⸻
 
-### 3.2 Team Composition (Starters)
+2.2 Team Composition
 
-Each team has exactly **6 starters**:
+A valid saved team must have:
 
-| Gender | Slots |
-|------|------|
-| Male | 4 |
-| Female | 2 |
-| **Total** | **6** |
+Starters
+	•	Exactly 6 riders
+	•	Exactly 4 men
+	•	Exactly 2 women
 
-Rules:
-- Gender slots are strict.
-- Riders must be eligible for the team category (Elite/Junior).
-- No duplicate riders.
+Bench
+	•	Optional
+	•	At most 1 rider
+	•	Can be male or female
 
----
+A team cannot be saved unless it is valid.
+Bench may be empty.
 
-### 3.3 Bench
+⸻
 
-Each team also has **1 bench rider**.
+3. Budgets & Rider Costs
 
-Bench rules:
-- Bench rider may be **male or female**
-- Bench does **not** score unless substituted in
-- Bench counts toward budget
+3.1 Budget Caps
+	•	Elite Team: 2,000,000
+	•	Junior Team: 500,000 (when enabled)
 
----
+Budget applies to:
+	•	Starters + Bench (if present)
 
-### 3.4 Budget Enforcement
+A team cannot be saved if it exceeds the budget cap.
 
-At save time and lock time:
-- Sum of **starters + bench** must not exceed team budget
-- Budget is enforced **per team**, not per user
+⸻
 
----
+3.2 Cost Snapshots
 
-## 4) Race Lifecycle
+At round lock time, the system snapshots:
+	•	Team roster
+	•	Rider costs at that moment (snapshot cost)
 
-### 4.1 Roster Lock
+Snapshot costs are immutable for that round and used for:
+	•	Bench substitution priority
+	•	Auditing and resettlement
 
-At `race.lockAt`:
+⸻
 
-- Both Elite and Junior teams (if present) are locked
-- A **Team Snapshot** is created per team per race
+3.3 Over-Budget via Cost Inflation
 
-If a user has:
-- no team of that type → scores 0 for that team type
-- an invalid team → snapshot is not created → scores 0
+After a round settles, rider costs may increase, causing an already-locked team to exceed budget.
 
----
-
-### 4.2 Team Snapshot
-
-A snapshot contains:
-
-- `raceId`
-- `userId`
-- `teamType`: `elite | junior`
-- `starters`: list of 6 `uciId`s
-- `bench`: optional `uciId`
-- gender of each rider
-- total cost
-- snapshot hash
-- timestamp
-
-**All scoring uses the snapshot only.**
-
----
-
-## 5) Scoring Inputs
-
-### 5.1 Results
-
-For a given race, results are provided as rows:
-
-- `uciId`
-- `position` (integer)
-- `status`: `FIN | DNF | DNS | DSQ`
-- optional:
-  - `qualificationPosition`
-
-Missing rider → treated as `DNS`.
-
----
-
-## 6) Base Scoring Model
-
-### 6.1 Base Finish Points (Final Result)
-
-Top 30 scoring table:
-
-| Place | Pts | Place | Pts |
-|------:|----:|------:|----:|
-| 1 | 100 | 16 | 15 |
-| 2 | 80 | 17 | 14 |
-| 3 | 70 | 18 | 13 |
-| 4 | 60 | 19 | 12 |
-| 5 | 55 | 20 | 11 |
-| 6 | 50 | 21 | 10 |
-| 7 | 45 | 22 | 9 |
-| 8 | 40 | 23 | 8 |
-| 9 | 35 | 24 | 7 |
-| 10 | 30 | 25 | 6 |
-| 11 | 25 | 26 | 5 |
-| 12 | 22 | 27 | 4 |
-| 13 | 20 | 28 | 3 |
-| 14 | 18 | 29 | 2 |
-| 15 | 16 | 30 | 1 |
-
-Positions > 30 score **0**.
-
----
-
-### 6.2 Status Handling
-
-| Status | Points |
-|------|--------|
-| FIN | Base + bonuses |
-| DNF | 0 |
-| DNS | 0 |
-| DSQ | -10 |
-
----
-
-### 6.3 Qualification Bonus (if enabled)
-
-If qualification results exist:
-
-| Qual Position | Bonus |
-|--------------|-------|
-| 1 | +10 |
-| 2 | +8 |
-| 3 | +6 |
-| 4–10 | +3 |
-| 11–20 | +1 |
-
-Else: +0.
-
----
-
-## 7) Bench & Auto-Substitution
-
-### 7.1 Auto-Sub Rules
-
-Auto-substitution is **enabled**.
+This is allowed.
 
 Rules:
-1. Only triggers if a **starter is DNS**
-2. Bench rider may replace **one starter only**
-3. **Gender must match**
-   - Male bench → male starter
-   - Female bench → female starter
-4. Only **one substitution per team per race**
-5. Bench rider takes full scoring of substituted slot
+	•	Users cannot exploit inflated values to exceed the cap when rebuilding
+	•	Effective free budget is always capped at the team budget
+	•	Selling an inflated rider removes the inflated value
 
-Priority:
-- Substitute the **lowest starter slot index** (0..5) among same-gender DNS starters
+⸻
 
-If no valid substitution exists → bench does not score.
+4. Editing, Locks & Transfers
 
----
+4.1 Round Locking
 
-## 8) Per-Race Scoring Algorithm (Exact)
+Each round has:
+	•	startAt (official race weekend start)
+	•	lockAt = startAt - 48 hours
 
-For each `raceId` and each `teamSnapshot`:
+The lock time is stored in the database.
 
----
+Admins may apply a manual early lock.
 
-### Step 1: Resolve Results
+⸻
 
-For each starter + bench rider:
-- Lookup result by `uciId`
-- If missing → `status = DNS`
+4.2 Pre-Season / Before Round 1
+	•	Unlimited changes allowed
+	•	Applies until Round 1 lockAt
 
----
+⸻
 
-### Step 2: Compute Raw Rider Points
+4.3 Post-Round Editing
 
-For each rider:
-- FIN → base points + qual bonus
-- DNF/DNS → 0
-- DSQ → -10
+After a round is settled, editing unlocks for the next round.
 
----
+From Round 2 onward:
+	•	Users receive 2 transfers per round
 
-### Step 3: Apply Auto-Sub
+⸻
 
-If:
-- at least one starter has `DNS`
-- bench rider exists
-- genders match
+4.4 Transfer Definition & Accounting
 
-Then:
-- Replace **one DNS starter** with bench rider
-- Bench rider’s points count
-- Replaced starter’s points are discarded
+A transfer is:
 
----
+Removing a rider from the team (starter or bench) and replacing them with a different rider, then clicking Save.
 
-### Step 4: Sum Team Points
+Rules:
+	•	Bench changes count as transfers
+	•	Transfers are consumed on Save
+	•	Team must be valid on Save
 
-Team race score =
-- Sum of **6 final active riders** after substitution
+Revert rule
+	•	If a rider is removed and later re-added so the saved team is unchanged compared to the previous save, no transfer is consumed
 
-No rounding beyond integer arithmetic.
+Transfer count is based on the difference between the last saved roster and the newly saved roster.
 
----
+⸻
 
-### Step 5: Persist Breakdown
+4.5 Joker (Wildcard)
 
-Store:
-- per-rider contributions
-- substitution details (who replaced whom)
-- total team points
+Each user has exactly one Joker per season.
 
----
+Joker rules:
+	•	Can be played only after a round has settled and before the next lock
+	•	When played:
+	•	Team is cleared
+	•	User may make unlimited changes until the next lock
+	•	After the next round locks, normal transfer rules resume (2 transfers)
 
-## 9) User Race Allocation
+If the user fails to save a valid team before lock, they score 0 for that round.
 
-For each race:
+⸻
 
-- Elite team score is calculated if an Elite snapshot exists
-- Junior team score is calculated if a Junior snapshot exists
+5. Scoring
 
-Users may score:
-- in both team types for the same race
-- or only one
-- or zero (if no valid snapshot)
+5.1 Scoring Basis
+	•	Finals race results only
+	•	Qualifying results are ignored
 
----
+Each rider scores points from their own event:
+	•	Elite Men → EM results
+	•	Elite Women → EW results
+	•	Junior equivalents when enabled
 
-## 10) Standings
+⸻
 
-### 10.1 Season Total
+5.2 Points Table (Top 20)
 
-For each user:
+Position	Points
+1	200
+2	160
+3	140
+4	120
+5	110
+6	100
+7	90
+8	80
+9	70
+10	60
+11	55
+12	50
+13	45
+14	40
+15	35
+16	30
+17	25
+18	20
+19	15
+20	10
+>20	0
 
-seasonTotal =
-- sum(all Elite race scores)
-- sum(all Junior race scores)
 
-Elite and Junior points contribute equally to the overall league.
+⸻
 
----
+5.3 Non-Finishing Statuses
 
-### 10.2 Tie-Breakers
+Status	Points	Eligible for Sub
+DNS	0	✅
+DNF	0	✅
+DNQ	0	✅
+DSQ	0	❌
 
-If season totals tie:
 
-1. Most race wins
-2. Highest single-race score
-3. Most podium finishes
-4. Earliest team creation timestamp
-5. Stable userId order
+⸻
 
----
+6. Bench Substitution (Final Rule)
 
-## 11) Corrections & Re-Settlement
+Bench substitution is automatic and occurs at settlement.
 
-- Settlement must be idempotent
-- If results change:
-  - mark race `needs_resettle`
-  - recompute all affected team scores
-  - update standings
+6.1 Eligibility
 
-Persist:
-- `resultsHash`
-- `snapshotHash`
-- `settledAt`
+A bench substitution occurs only if:
+	1.	A bench rider exists
+	2.	A starter of the same gender has status DNS, DNF, or DNQ
+	3.	The starter is not DSQ
+	4.	At most one substitution per team per round
 
----
+Finishers are never substituted, even if they score 0 due to placing outside the top 20.
 
-## 12) Validation Rules (Strict)
+⸻
 
-### Team Save
-- Correct gender slots
-- Correct category eligibility
-- Budget respected
-- Exactly 6 starters + 1 bench
+6.2 Substitution Selection
 
-### Lock Time
-- Invalid teams → no snapshot → score 0
-- No auto-correction
+If multiple starters are eligible:
+	1.	Select the starter with the highest snapshot cost
+	2.	Tie-break using lowest starter slot index
 
----
+⸻
 
-## 13) Example
+6.3 Substitution Effect
+	•	The selected starter’s points are replaced by the bench rider’s points
+	•	Bench rider points are calculated normally from their own event
+	•	Bench never adds extra points; it only replaces one starter
 
-Elite DHI race.
+⸻
 
-Team:
-- 4 male starters
-- 2 female starters
-- 1 female bench
+7. Round Scores
 
-Results:
-- One female starter = DNS
-- Bench female finishes 8th (40 pts)
+7.1 Elite Team Score
 
-Outcome:
-- Bench auto-subs in
-- Team still has 4M / 2F
-- Bench contributes 40 pts
+Elite round score =
+	•	Sum of Elite Men starter points
+	•	Sum of Elite Women starter points
+	•	Apply bench substitution if eligible
 
----
+⸻
 
-## 14) Default Config (Copy/Paste)
+7.2 Junior Team Score
 
-```ts
-export const TEAM_RULES = {
-  TEAM_SIZE: 6,
-  BENCH_SIZE: 1,
-  GENDER_SLOTS: { male: 4, female: 2 },
-  AUTO_SUB_ENABLED: true
-};
+When enabled and present:
+	•	Calculated identically using Junior Men + Junior Women events
 
-export const BUDGETS = {
-  ELITE: 2_000_000,
-  JUNIOR: 500_000
-};
+⸻
 
-export const SCORING = {
-  DSQ_PENALTY: -10,
-  QUAL_BONUS_ENABLED: true
-};
-```
+7.3 User Round Total
 
----
+User round score =
+	•	Elite score
+	•		•	Junior score (if enabled and roster exists)
 
-15) Out of Scope (Explicit)
-- Transfers mid-race
-- Chips / boosts
-- Captain multipliers
-- Partial race scoring
+⸻
 
-These require a versioned amendment if added.
+7.4 Season Total
+
+Season total =
+	•	Sum of all settled round totals
+
+⸻
+
+8. Settlement Rules
+
+8.1 Snapshots
+
+At lock time, snapshot:
+	•	Starters
+	•	Bench
+	•	Snapshot costs
+	•	Snapshot hash
+
+Users without a saved valid team produce no snapshot and score 0.
+
+⸻
+
+8.2 Blocking Settlement
+
+A round cannot be settled until:
+	•	Elite Men and Elite Women finals are final
+	•	Junior Men and Junior Women finals are final (if junior enabled)
+
+⸻
+
+8.3 Idempotency
+
+Settlement must be repeatable:
+	•	Use snapshot hash + results hash
+	•	If unchanged, settlement is a no-op
+	•	If changed, overwrite round scores
+
+⸻
+
+9. Rider Cost Updates
+
+9.1 Timing
+
+Applied after round settlement.
+
+⸻
+
+9.2 Update Rules
+
+Based on final race position:
+	•	Top 10 finishers:
+	•	Increase cost by (11 - finishing position)%
+	•	Example:
+	•	1st: +10%
+	•	2nd: +9%
+	•	10th: +1%
+	•	11th or worse: no change
+	•	DNS / DNF / DNQ: −10%
+	•	DSQ: treated as 0 → −10%
+
+After applying change:
+	•	Round up to nearest 1,000
+
+⸻
+
+9.3 Isolation
+
+Cost updates:
+	•	Do not affect locked snapshots
+	•	Do not affect substitution priority for past rounds
+
+⸻
+
+10. Validation & Failure Modes
+	•	Invalid teams cannot be saved
+	•	Users with no saved team at lock score 0
+	•	Over-budget due to inflation is allowed but not exploitable
+	•	All scoring is deterministic and auditable
+
+⸻
+
+11. Design Guarantees
+
+This mechanic guarantees:
+	•	Deterministic scoring
+	•	Idempotent settlement
+	•	No ambiguous substitution
+	•	Fair cost evolution
+	•	Safe future extension (qualifier bonuses, split times, etc.)
+
+⸻
+
+End of specification.
+
