@@ -241,8 +241,15 @@ const schemaStatements = [
 ];
 
 export async function ensureDatabaseSchema() {
-  for (const statement of schemaStatements) {
-    await pool.query(statement);
+  const client = await pool.connect();
+  try {
+    await client.query("SELECT pg_advisory_lock($1)", [781964321]);
+    for (const statement of schemaStatements) {
+      await client.query(statement);
+    }
+    log("database schema verified");
+  } finally {
+    await client.query("SELECT pg_advisory_unlock($1)", [781964321]);
+    client.release();
   }
-  log("database schema verified");
 }
