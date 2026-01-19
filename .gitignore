@@ -7,3 +7,5 @@ vite.config.ts.*
 .env
 tmp
 *.har
+.claude
+.claude/
