@@ -1,0 +1,43 @@
+{
+  "meta": {
+    "name": "bench-sub-gender-mismatch",
+    "seed": "gender-test",
+    "featureFlags": {
+      "juniorTeamEnabled": false
+    }
+  },
+  "seedData": {
+    "season": {
+      "name": "Season 2026",
+      "startAt": "2026-01-01T00:00:00Z",
+      "endAt": "2026-12-31T23:59:59Z"
+    },
+    "ridersFixture": "fixtures/teams/riders-catalog.json",
+    "users": [
+      { "id": "user-gender-test", "email": "gender@example.com", "firstName": "Gender", "lastName": "Test" }
+    ]
+  },
+  "rounds": [
+    {
+      "roundId": "round-001",
+      "name": "Gender Mismatch Test",
+      "location": "Test Location",
+      "country": "USA",
+      "discipline": "DHI",
+      "startAt": "2026-05-10T09:00:00Z",
+      "lockAt": "2026-05-08T09:00:00Z",
+      "teamsBeforeLock": {
+        "user-gender-test": {
+          "ELITE": "fixtures/teams/gender/round-001-team.json"
+        }
+      },
+      "finalResults": {
+        "EM": "fixtures/results/gender/round-001-em.json",
+        "EW": "fixtures/results/gender/round-001-ew.json"
+      }
+    }
+  ],
+  "assertions": {
+    "expectedScoreboard": "fixtures/expected/bench-sub-gender-scoreboard.json"
+  }
+}

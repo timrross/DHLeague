@@ -13,6 +13,12 @@ type CostUpdateResult = {
   delta: number;
 };
 
+export type CostUpdateResponse = {
+  applied: boolean;
+  reason?: "already_applied" | "hash_mismatch" | "no_results" | "no_updates";
+  updates: CostUpdateResult[];
+};
+
 const roundUpToThousand = (value: number) => {
   const rounded = Math.round(value);
   return Math.ceil(rounded / 1000) * 1000;
@@ -54,7 +60,7 @@ export async function applyRiderCostUpdates(
   resultsHash: string,
   results: Array<Pick<RaceResult, "uciId" | "status" | "position">>,
   options: { force?: boolean } = {},
-) {
+): Promise<CostUpdateResponse> {
   const existing = await tx
     .select()
     .from(riderCostUpdates)
@@ -64,14 +70,16 @@ export async function applyRiderCostUpdates(
     const sameHash = existing.every(
       (entry) => entry.resultsHash === resultsHash,
     );
-    if (sameHash && !options.force) {
-      return { applied: false, updates: [] as CostUpdateResult[] };
-    }
 
     if (!options.force) {
-      return { applied: false, updates: [] as CostUpdateResult[] };
+      // Not forcing: return early with appropriate reason
+      if (sameHash) {
+        return { applied: false, reason: "already_applied", updates: [] };
+      }
+      return { applied: false, reason: "hash_mismatch", updates: [] };
     }
 
+    // force=true: rollback existing costs before re-applying
     for (const entry of existing) {
       await tx
         .update(riders)
@@ -85,7 +93,7 @@ export async function applyRiderCostUpdates(
   }
 
   if (results.length === 0) {
-    return { applied: false, updates: [] as CostUpdateResult[] };
+    return { applied: false, reason: "no_results", updates: [] };
   }
 
   const uciIds = Array.from(new Set(results.map((result) => result.uciId)));
@@ -121,7 +129,7 @@ export async function applyRiderCostUpdates(
   }
 
   if (updates.length === 0) {
-    return { applied: false, updates };
+    return { applied: false, reason: "no_updates", updates };
   }
 
   const now = clockNow();

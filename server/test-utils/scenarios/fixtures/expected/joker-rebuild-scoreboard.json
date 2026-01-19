@@ -1,0 +1,14 @@
+{
+  "seasonId": 1,
+  "seasonName": "Season 2026",
+  "users": [
+    {
+      "userId": "user-joker",
+      "totalPoints": 1320,
+      "rounds": [
+        { "roundId": "round-001", "points": 645 },
+        { "roundId": "round-002", "points": 675 }
+      ]
+    }
+  ]
+}

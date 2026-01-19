@@ -1,0 +1,44 @@
+{
+  "meta": {
+    "name": "no-team-scores-zero",
+    "seed": "no-team-test",
+    "featureFlags": {
+      "juniorTeamEnabled": false
+    }
+  },
+  "seedData": {
+    "season": {
+      "name": "Season 2026",
+      "startAt": "2026-01-01T00:00:00Z",
+      "endAt": "2026-12-31T23:59:59Z"
+    },
+    "ridersFixture": "fixtures/teams/riders-catalog.json",
+    "users": [
+      { "id": "user-with-team", "email": "with@example.com", "firstName": "With", "lastName": "Team" },
+      { "id": "user-no-team", "email": "without@example.com", "firstName": "No", "lastName": "Team" }
+    ]
+  },
+  "rounds": [
+    {
+      "roundId": "round-001",
+      "name": "No Team Test Round",
+      "location": "Test Location",
+      "country": "USA",
+      "discipline": "DHI",
+      "startAt": "2026-05-10T09:00:00Z",
+      "lockAt": "2026-05-08T09:00:00Z",
+      "teamsBeforeLock": {
+        "user-with-team": {
+          "ELITE": "fixtures/teams/noteam/round-001-team.json"
+        }
+      },
+      "finalResults": {
+        "EM": "fixtures/results/noteam/round-001-em.json",
+        "EW": "fixtures/results/noteam/round-001-ew.json"
+      }
+    }
+  ],
+  "assertions": {
+    "expectedScoreboard": "fixtures/expected/no-team-scoreboard.json"
+  }
+}

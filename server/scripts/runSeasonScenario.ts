@@ -21,7 +21,6 @@ import { setFeatureFlags } from "../services/features";
 import { lockRace } from "../services/game/lockRace";
 import { upsertRaceResults } from "../services/game/races";
 import { settleRace } from "../services/game/settleRace";
-import { applyRiderCostUpdates } from "../services/game/costUpdates";
 import { upsertTeamRoster } from "../services/game/teams";
 import { countTransfers, type TransferRoster } from "../services/game/transfers";
 import { useJokerCardForUser } from "../services/game/joker";
@@ -202,6 +201,74 @@ const mapEventToResultSet = (event: string) => {
     return { gender: "female", category: "junior" } as const;
   }
   throw new Error(`Unsupported event code: ${event}`);
+};
+
+type RaceStatus = "scheduled" | "locked" | "provisional" | "final" | "settled";
+
+const assertRaceStatus = async (
+  raceId: number,
+  expectedStatus: RaceStatus,
+  context: string,
+) => {
+  const [race] = await db.select().from(races).where(eq(races.id, raceId));
+  if (!race) {
+    throw new Error(`Race ${raceId} not found when asserting status (${context})`);
+  }
+  if (race.gameStatus !== expectedStatus) {
+    throw new Error(
+      `Race status assertion failed (${context}): expected "${expectedStatus}", got "${race.gameStatus}"`,
+    );
+  }
+};
+
+const assertJokerApplied = async (
+  userId: string,
+  teamType: string,
+  seasonId: number,
+  context: string,
+) => {
+  // Verify team still exists
+  const dbTeamType = toDbTeamType(teamType as "ELITE" | "JUNIOR");
+  const [team] = await db
+    .select()
+    .from(teams)
+    .where(
+      and(
+        eq(teams.userId, userId),
+        eq(teams.seasonId, seasonId),
+        eq(teams.teamType, dbTeamType),
+      ),
+    );
+
+  if (!team) {
+    throw new Error(`Joker assertion failed (${context}): team was deleted instead of roster being cleared`);
+  }
+
+  // Verify roster is empty
+  const members = await db
+    .select()
+    .from(teamMembers)
+    .where(eq(teamMembers.teamId, team.id));
+
+  if (members.length > 0) {
+    throw new Error(
+      `Joker assertion failed (${context}): expected empty roster, found ${members.length} members`,
+    );
+  }
+
+  // Verify user joker state
+  const [userRow] = await db.select().from(users).where(eq(users.id, userId));
+  if (!userRow) {
+    throw new Error(`Joker assertion failed (${context}): user not found`);
+  }
+  if (!userRow.jokerCardUsed) {
+    throw new Error(`Joker assertion failed (${context}): jokerCardUsed should be true`);
+  }
+  if (userRow.jokerActiveTeamType !== dbTeamType) {
+    throw new Error(
+      `Joker assertion failed (${context}): jokerActiveTeamType expected "${dbTeamType}", got "${userRow.jokerActiveTeamType}"`,
+    );
+  }
 };
 
 const collectRoster = async (teamId: number): Promise<TransferRoster<string>> => {
@@ -614,6 +681,9 @@ export async function runScenario(scenarioPath: string) {
   setFeatureFlags({ JUNIOR_TEAM_ENABLED: juniorEnabled });
   const teamTypes = juniorEnabled ? ["ELITE", "JUNIOR"] : ["ELITE"];
 
+  // Set test mode flag before reset to skip placeholder race seeding
+  setTestNow(new Date().toISOString());
+
   await resetDatabase();
 
   const existingSeason = await db
@@ -719,6 +789,7 @@ export async function runScenario(scenarioPath: string) {
     if (!lockResult.locked && lockResult.status !== "locked") {
       throw new Error(`Race ${round.roundId} did not lock as expected`);
     }
+    await assertRaceStatus(raceId, "locked", `after locking ${round.roundId}`);
 
     const snapshots = await db
       .select()
@@ -751,27 +822,14 @@ export async function runScenario(scenarioPath: string) {
     for (const [event, fixturePath] of resultEntries.slice(1)) {
       await ingestResults({ scenarioPath, raceId, event, fixturePath });
     }
+    await assertRaceStatus(raceId, "final", `after ingesting results for ${round.roundId}`);
 
-    const firstSettle = await settleRace(raceId);
+    // Settle the race (this also applies rider cost updates internally)
     await settleRace(raceId);
-
-    const resultRows = await db
-      .select()
-      .from(raceResults)
-      .where(eq(raceResults.raceId, raceId));
-    await db.transaction(async (tx) => {
-      await applyRiderCostUpdates(
-        tx,
-        raceId,
-        firstSettle.resultsHash,
-        resultRows.map((row) => ({
-          uciId: row.uciId,
-          status: row.status,
-          position: row.position ?? null,
-        })),
-        { force: false },
-      );
-    });
+    await assertRaceStatus(raceId, "settled", `after settling ${round.roundId}`);
+    // Call again to verify idempotency
+    await settleRace(raceId);
+    await assertRaceStatus(raceId, "settled", `after idempotent re-settle of ${round.roundId}`);
 
     const nextRound = scenario.rounds[i + 1];
     if (round.postRoundActions && nextRound) {
@@ -792,6 +850,12 @@ export async function runScenario(scenarioPath: string) {
       const jokers = round.postRoundActions.joker ?? {};
       for (const [userId, jokerConfig] of Object.entries(jokers)) {
         await useJokerCardForUser(userId, jokerConfig.teamType, seasonId);
+        await assertJokerApplied(
+          userId,
+          jokerConfig.teamType,
+          seasonId,
+          `after joker for ${userId} in ${round.roundId}`,
+        );
       }
     }
 

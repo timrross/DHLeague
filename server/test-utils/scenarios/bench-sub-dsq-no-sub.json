@@ -1,0 +1,43 @@
+{
+  "meta": {
+    "name": "bench-sub-dsq-no-sub",
+    "seed": "dsq-test",
+    "featureFlags": {
+      "juniorTeamEnabled": false
+    }
+  },
+  "seedData": {
+    "season": {
+      "name": "Season 2026",
+      "startAt": "2026-01-01T00:00:00Z",
+      "endAt": "2026-12-31T23:59:59Z"
+    },
+    "ridersFixture": "fixtures/teams/riders-catalog.json",
+    "users": [
+      { "id": "user-dsq-test", "email": "dsq@example.com", "firstName": "DSQ", "lastName": "Test" }
+    ]
+  },
+  "rounds": [
+    {
+      "roundId": "round-001",
+      "name": "DSQ Test Round",
+      "location": "Test Location",
+      "country": "USA",
+      "discipline": "DHI",
+      "startAt": "2026-05-10T09:00:00Z",
+      "lockAt": "2026-05-08T09:00:00Z",
+      "teamsBeforeLock": {
+        "user-dsq-test": {
+          "ELITE": "fixtures/teams/dsq/round-001-team.json"
+        }
+      },
+      "finalResults": {
+        "EM": "fixtures/results/dsq/round-001-em.json",
+        "EW": "fixtures/results/dsq/round-001-ew.json"
+      }
+    }
+  ],
+  "assertions": {
+    "expectedScoreboard": "fixtures/expected/bench-sub-dsq-scoreboard.json"
+  }
+}

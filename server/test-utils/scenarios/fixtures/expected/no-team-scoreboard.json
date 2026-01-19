@@ -1,0 +1,20 @@
+{
+  "seasonId": 1,
+  "seasonName": "Season 2026",
+  "users": [
+    {
+      "userId": "user-with-team",
+      "totalPoints": 980,
+      "rounds": [
+        { "roundId": "round-001", "points": 980 }
+      ]
+    },
+    {
+      "userId": "user-no-team",
+      "totalPoints": 0,
+      "rounds": [
+        { "roundId": "round-001", "points": 0 }
+      ]
+    }
+  ]
+}

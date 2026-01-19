@@ -101,9 +101,14 @@ If you remove a rider and later re-add the same rider before saving:
 Each player gets one Joker per season.
 
 When you play your Joker:
-	•	Your team is cleared
-	•	You can make unlimited changes until the next lock
-	•	After that round locks, normal transfer rules resume
+	•	Your team roster is cleared (all riders removed)
+	•	You can pick 6 new starters and a new bench
+	•	Unlimited changes allowed until the next lock
+	•	After that round locks, normal transfer rules resume (2 per round)
+
+What stays the same:
+	•	Your team name
+	•	Your accumulated season points
 
 The Joker can only be played:
 	•	After a round has finished

@@ -108,12 +108,21 @@ Snapshot costs are immutable for that round and used for:
 
 After a round settles, rider costs may increase, causing an already-locked team to exceed budget.
 
-This is allowed.
+This is allowed. Teams are not invalidated retroactively.
 
-Rules:
-	•	Users cannot exploit inflated values to exceed the cap when rebuilding
-	•	Effective free budget is always capped at the team budget
-	•	Selling an inflated rider removes the inflated value
+Editing an over-budget team:
+	•	Users CAN make changes to a team that is currently over budget
+	•	The final saved team must not exceed the budget cap
+	•	Budget is calculated using current market prices at save time
+	•	Selling a rider removes their current (possibly inflated) value
+	•	Buying a rider uses their current market price
+
+Example:
+	•	User has team valued at 2.1M (over 2M cap due to inflation)
+	•	User sells rider worth 200K, freeing 200K
+	•	User buys rider worth 150K
+	•	New team value: 2.1M - 200K + 150K = 2.05M (still over budget, cannot save)
+	•	User must continue selling until team is at or below 2M to save
 
 ⸻
 
@@ -171,9 +180,16 @@ Each user has exactly one Joker per season.
 Joker rules:
 	•	Can be played only after a round has settled and before the next lock
 	•	When played:
-	•	Team is cleared
-	•	User may make unlimited changes until the next lock
-	•	After the next round locks, normal transfer rules resume (2 transfers)
+	•	Team roster is cleared (all starters and bench removed)
+	•	Team record is preserved (name, accumulated points remain)
+	•	User may select 6 new starters and optionally a new bench
+	•	Unlimited changes allowed until the next lock (no transfer limit)
+	•	After the next round locks, normal transfer rules resume (2 transfers per round)
+
+Joker does NOT:
+	•	Delete the team
+	•	Reset accumulated season points
+	•	Change the team name
 
 If the user fails to save a valid team before lock, they score 0 for that round.
 

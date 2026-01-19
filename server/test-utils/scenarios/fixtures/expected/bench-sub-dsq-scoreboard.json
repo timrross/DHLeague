@@ -1,0 +1,13 @@
+{
+  "seasonId": 1,
+  "seasonName": "Season 2026",
+  "users": [
+    {
+      "userId": "user-dsq-test",
+      "totalPoints": 445,
+      "rounds": [
+        { "roundId": "round-001", "points": 445 }
+      ]
+    }
+  ]
+}

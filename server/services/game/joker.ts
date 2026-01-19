@@ -1,3 +1,6 @@
+import { eq } from "drizzle-orm";
+import { teams, teamMembers, teamRiders, users } from "@shared/schema";
+import { db } from "../../db";
 import { storage } from "../../storage";
 import { FEATURES } from "../features";
 import { getEditingWindow } from "./editingWindow";
@@ -51,21 +54,46 @@ export async function useJokerCardForTeam(
     throw new UserFacingError("Joker card already used", 400);
   }
 
-  const deleted = await storage.deleteTeam(teamId);
-  if (!deleted) {
-    throw new UserFacingError("Failed to delete team", 500);
-  }
+  const nextRaceId = editingWindow.nextRace.id;
+  const teamType = team.teamType;
 
-  await storage.updateUser(userId, {
-    jokerCardUsed: true,
-    jokerActiveRaceId: editingWindow.nextRace.id,
-    jokerActiveTeamType: team.teamType,
+  // Wrap roster clearing and user update in a single transaction
+  // to prevent data loss if either operation fails
+  await db.transaction(async (tx) => {
+    // Clear team members (starters and bench)
+    await tx.delete(teamMembers).where(eq(teamMembers.teamId, teamId));
+
+    // Clear team-rider associations
+    await tx.delete(teamRiders).where(eq(teamRiders.teamId, teamId));
+
+    // Reset team swaps (joker grants unlimited changes)
+    // Keep team record, name, and accumulated points
+    await tx
+      .update(teams)
+      .set({
+        swapsUsed: 0,
+        swapsRemaining: 0, // Will be ignored during joker window
+        currentRaceId: nextRaceId,
+        updatedAt: new Date(),
+      })
+      .where(eq(teams.id, teamId));
+
+    // Mark joker as used
+    await tx
+      .update(users)
+      .set({
+        jokerCardUsed: true,
+        jokerActiveRaceId: nextRaceId,
+        jokerActiveTeamType: teamType,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId));
   });
 
   return {
     success: true,
-    nextRaceId: editingWindow.nextRace.id,
-    teamType: team.teamType,
+    nextRaceId,
+    teamType,
   };
 }
 
