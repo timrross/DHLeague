@@ -1,10 +1,27 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Rider } from "@shared/schema";
 import RiderForm from "./RiderForm";
 import { SimpleRiderForm } from "./SimpleRiderForm";
+
+// Debounce hook for search input
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
 
 import {
   Card,
@@ -52,16 +69,27 @@ export default function RiderManagement() {
 
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearch = useDebounce(searchQuery, 300);
 
-  // Fetch riders
-  const ridersQueryKey = ["/api/riders", "admin"];
+  // Fetch riders via server-side search
+  const ridersQueryKey = ["/api/riders", "admin", debouncedSearch];
   const {
     data: ridersData,
     isLoading: isLoadingRiders,
+    isFetching: isFetchingRiders,
     error: ridersError,
   } = useQuery({
     queryKey: ridersQueryKey,
-    queryFn: () => apiRequest("/api/riders?includeLastRoundPoints=true"),
+    queryFn: () => {
+      const params = new URLSearchParams({
+        includeLastRoundPoints: "true",
+        pageSize: "100",
+      });
+      if (debouncedSearch.trim()) {
+        params.set("search", debouncedSearch.trim());
+      }
+      return apiRequest(`/api/riders?${params.toString()}`);
+    },
   });
 
   const riderList = useMemo(() => {
@@ -72,22 +100,12 @@ export default function RiderManagement() {
     return [];
   }, [ridersData]);
 
-  const filteredRiders = useMemo(() => {
-    const riderArray = riderList;
-    const query = searchQuery.toLowerCase().trim();
-
-    if (!query) {
-      return riderArray;
+  const totalRiders = useMemo(() => {
+    if (ridersData && typeof (ridersData as { total?: number }).total === "number") {
+      return (ridersData as { total?: number }).total;
     }
-
-    return riderArray.filter(
-      rider =>
-        (rider.name ? rider.name.toLowerCase().includes(query) : false) ||
-        (rider.team ? rider.team.toLowerCase().includes(query) : false) ||
-        (rider.country ? rider.country.toLowerCase().includes(query) : false) ||
-        (rider.riderId ? rider.riderId.toLowerCase().includes(query) : false),
-    );
-  }, [riderList, searchQuery]);
+    return riderList.length;
+  }, [ridersData, riderList]);
 
   // Add rider mutation
   const addRiderMutation = useMutation({
@@ -319,6 +337,9 @@ export default function RiderManagement() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
+              {isFetchingRiders && (
+                <Loader2 className="absolute right-10 top-2.5 h-4 w-4 animate-spin text-muted-foreground" />
+              )}
               {searchQuery && (
                 <Button
                   variant="ghost"
@@ -330,12 +351,19 @@ export default function RiderManagement() {
                 </Button>
               )}
             </div>
-            {searchQuery && (
-              <p className="text-sm text-muted-foreground mt-1">
-                Found {filteredRiders.length} rider
-                {filteredRiders.length !== 1 ? "s" : ""}
-              </p>
-            )}
+            <p className="text-sm text-muted-foreground mt-1">
+              {debouncedSearch ? (
+                <>
+                  Found {riderList.length} of {totalRiders} rider
+                  {totalRiders !== 1 ? "s" : ""} matching "{debouncedSearch}"
+                </>
+              ) : (
+                <>
+                  Showing {riderList.length} of {totalRiders} rider
+                  {totalRiders !== 1 ? "s" : ""}
+                </>
+              )}
+            </p>
           </div>
 
           {isLoadingRiders ? (
@@ -368,7 +396,7 @@ export default function RiderManagement() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredRiders.map((rider: any) => {
+                {riderList.map((rider: any) => {
                   const displayName = formatRiderDisplayName(rider) || rider.name;
 
                   return (
