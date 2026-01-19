@@ -11,7 +11,7 @@
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc",
     "lint:data": "tsc -p tsconfig.data.json",
-    "test": "tsx --test \"server/**/*.test.ts\"",
+    "test": "tsx --test $(find server -name \"*.test.ts\" -type f)",
     "db:push": "drizzle-kit push",
     "seed": "tsx server/scripts/seed.ts",
     "sync:uci-riders": "tsx server/scripts/sync-uci-riders.ts",
