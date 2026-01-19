@@ -1,5 +1,5 @@
 import assert from "node:assert";
-import { afterEach, beforeEach, describe, it } from "node:test";
+import { afterEach, before, beforeEach, describe, it } from "node:test";
 import { eq, inArray } from "drizzle-orm";
 import {
   riders,
@@ -22,12 +22,14 @@ let db: typeof import("../../db").db;
 let lockRace: typeof import("./lockRace").lockRace;
 let upsertRaceResults: typeof import("./races").upsertRaceResults;
 let settleRace: typeof import("./settleRace").settleRace;
+let ensureDatabaseSchema: typeof import("../../setupDatabase").ensureDatabaseSchema;
 
 if (hasDb) {
   ({ db } = await import("../../db"));
   ({ lockRace } = await import("./lockRace"));
   ({ upsertRaceResults } = await import("./races"));
   ({ settleRace } = await import("./settleRace"));
+  ({ ensureDatabaseSchema } = await import("../../setupDatabase"));
 }
 
 const now = new Date();
@@ -70,6 +72,10 @@ if (hasDb) {
   let teamId: number;
   let userId: string;
   let uciIds: string[];
+
+  before(async () => {
+    await ensureDatabaseSchema();
+  });
 
   beforeEach(async () => {
     const runId = `test-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
