@@ -1,0 +1,80 @@
+{
+  "roundId": "round-001",
+  "raceId": 1,
+  "users": [
+    {
+      "userId": "user-alpha",
+      "teamType": "ELITE",
+      "snapshot": {
+        "totalCostAtLock": 1890000,
+        "starters": [
+          { "uciId": "uci-m1", "gender": "male", "costAtLock": 350000 },
+          { "uciId": "uci-m2", "gender": "male", "costAtLock": 320000 },
+          { "uciId": "uci-m3", "gender": "male", "costAtLock": 300000 },
+          { "uciId": "uci-m4", "gender": "male", "costAtLock": 280000 },
+          { "uciId": "uci-f1", "gender": "female", "costAtLock": 240000 },
+          { "uciId": "uci-f2", "gender": "female", "costAtLock": 220000 }
+        ],
+        "bench": { "uciId": "uci-bm", "gender": "male", "costAtLock": 180000 }
+      },
+      "score": {
+        "totalPoints": 330,
+        "starters": [
+          { "slotIndex": 0, "uciId": "uci-m1", "status": "FIN", "position": 2, "finalPoints": 160 },
+          { "slotIndex": 1, "uciId": "uci-m2", "status": "DNS", "position": null, "finalPoints": 60 },
+          { "slotIndex": 2, "uciId": "uci-m3", "status": "DSQ", "position": null, "finalPoints": 0 },
+          { "slotIndex": 3, "uciId": "uci-m4", "status": "FIN", "position": 25, "finalPoints": 0 },
+          { "slotIndex": 4, "uciId": "uci-f1", "status": "FIN", "position": 5, "finalPoints": 110 },
+          { "slotIndex": 5, "uciId": "uci-f2", "status": "DNQ", "position": null, "finalPoints": 0 }
+        ],
+        "bench": { "uciId": "uci-bm", "status": "FIN", "position": 10, "finalPoints": 60 },
+        "substitution": {
+          "applied": true,
+          "benchUciId": "uci-bm",
+          "replacedStarterIndex": 1,
+          "reason": "AUTO_SUB_SAME_GENDER"
+        }
+      },
+      "seasonTotal": 330,
+      "transfersRemaining": 0,
+      "jokerUsed": false
+    },
+    {
+      "userId": "user-bravo",
+      "teamType": "ELITE",
+      "snapshot": {
+        "totalCostAtLock": 1580000,
+        "starters": [
+          { "uciId": "uci-m2", "gender": "male", "costAtLock": 320000 },
+          { "uciId": "uci-m3", "gender": "male", "costAtLock": 300000 },
+          { "uciId": "uci-m4", "gender": "male", "costAtLock": 280000 },
+          { "uciId": "uci-m5", "gender": "male", "costAtLock": 260000 },
+          { "uciId": "uci-f2", "gender": "female", "costAtLock": 220000 },
+          { "uciId": "uci-f3", "gender": "female", "costAtLock": 200000 }
+        ],
+        "bench": null
+      },
+      "score": {
+        "totalPoints": 140,
+        "starters": [
+          { "slotIndex": 0, "uciId": "uci-m2", "status": "DNS", "position": null, "finalPoints": 0 },
+          { "slotIndex": 1, "uciId": "uci-m3", "status": "DSQ", "position": null, "finalPoints": 0 },
+          { "slotIndex": 2, "uciId": "uci-m4", "status": "FIN", "position": 25, "finalPoints": 0 },
+          { "slotIndex": 3, "uciId": "uci-m5", "status": "FIN", "position": 7, "finalPoints": 90 },
+          { "slotIndex": 4, "uciId": "uci-f2", "status": "DNQ", "position": null, "finalPoints": 0 },
+          { "slotIndex": 5, "uciId": "uci-f3", "status": "FIN", "position": 12, "finalPoints": 50 }
+        ],
+        "bench": null,
+        "substitution": {
+          "applied": false,
+          "benchUciId": null,
+          "replacedStarterIndex": null,
+          "reason": "NO_BENCH"
+        }
+      },
+      "seasonTotal": 140,
+      "transfersRemaining": 1,
+      "jokerUsed": false
+    }
+  ]
+}

@@ -1,3 +1,11 @@
-export const FEATURES = {
+export type FeatureFlags = {
+  JUNIOR_TEAM_ENABLED: boolean;
+};
+
+export let FEATURES: FeatureFlags = {
   JUNIOR_TEAM_ENABLED: process.env.FEATURE_JUNIOR_TEAM_ENABLED === "true",
-} as const;
+};
+
+export function setFeatureFlags(overrides: Partial<FeatureFlags>) {
+  FEATURES = { ...FEATURES, ...overrides };
+}

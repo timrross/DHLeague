@@ -13,6 +13,7 @@ import { FEATURES } from "../features";
 import { assertRaceReadyForResults } from "./raceResultsValidation";
 import { getMissingFinalResultSets, resolveDisciplineCode } from "./resultImports";
 import { shouldRequireJuniorResults } from "./juniorRequirements";
+import { now as clockNow } from "../../utils/clock";
 
 type UciResultEntry = {
   headerType?: string;
@@ -174,7 +175,7 @@ export async function importUciRaceResults(
         );
     }
 
-    const now = new Date();
+    const now = clockNow();
     for (const result of results) {
       await tx
         .insert(raceResults)

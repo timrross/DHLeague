@@ -3,6 +3,7 @@ import { db } from "../../db";
 import { races } from "@shared/schema";
 import { lockRace } from "./lockRace";
 import { settleRace } from "./settleRace";
+import { now as clockNow } from "../../utils/clock";
 
 export type GameTickOptions = {
   allowProvisional?: boolean;
@@ -33,7 +34,7 @@ export type GameTickOutcome = {
 export async function runGameTick(
   options: GameTickOptions = {},
 ): Promise<GameTickOutcome> {
-  const now = new Date();
+  const now = clockNow();
   const locked: GameTickOutcome["locked"] = [];
   const settled: GameTickOutcome["settled"] = [];
   const errors: GameTickOutcome["errors"] = [];

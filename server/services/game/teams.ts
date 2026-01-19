@@ -8,6 +8,7 @@ import { normalizeTeamType, toDbTeamType } from "./normalize";
 import { fetchRiderProfiles } from "./riderProfiles";
 import { countTransfers, type TransferRoster } from "./transfers";
 import { UserFacingError } from "./errors";
+import { now as clockNow } from "../../utils/clock";
 import {
   validateTeam,
   type TeamBenchInput,
@@ -89,6 +90,7 @@ export async function upsertTeamRoster(
   teamTypeInput: string,
   roster: TeamRosterInput,
 ): Promise<TeamRoster> {
+  const now = clockNow();
   const teamType = normalizeTeamType(teamTypeInput);
   if (teamType === "JUNIOR" && !FEATURES.JUNIOR_TEAM_ENABLED) {
     throw new UserFacingError("Junior team is disabled", 404);
@@ -152,8 +154,8 @@ export async function upsertTeamRoster(
           teamType: dbTeamType,
           name: nextName,
           budgetCap,
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          createdAt: now,
+          updatedAt: now,
           swapsUsed: 0,
           swapsRemaining: 2,
           currentRaceId: nextRaceId,
@@ -182,7 +184,7 @@ export async function upsertTeamRoster(
         }
       }
       const updatePayload: Partial<Team> = {
-        updatedAt: new Date(),
+        updatedAt: now,
         budgetCap,
         currentRaceId: nextRaceId,
       };
@@ -249,7 +251,7 @@ export async function upsertTeamRoster(
           swapsUsed: nextTransfersUsed,
           swapsRemaining: nextTransfersRemaining,
           currentRaceId: nextRaceId,
-          updatedAt: new Date(),
+          updatedAt: now,
         })
         .where(eq(teams.id, team.id));
       team = {
@@ -272,8 +274,8 @@ export async function upsertTeamRoster(
         starterIndex: starter.starterIndex,
         gender: rider.gender,
         costAtSave: budgetOverrides.get(starter.uciId) ?? rider.cost,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: now,
+        updatedAt: now,
       });
     }
 
@@ -287,8 +289,8 @@ export async function upsertTeamRoster(
           starterIndex: null,
           gender: rider.gender,
           costAtSave: budgetOverrides.get(roster.bench.uciId) ?? rider.cost,
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          createdAt: now,
+          updatedAt: now,
         });
       }
     }

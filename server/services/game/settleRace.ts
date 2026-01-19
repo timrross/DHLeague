@@ -15,6 +15,7 @@ import { UserFacingError } from "./errors";
 import { getMissingFinalResultSets, resolveDisciplineCode } from "./resultImports";
 import { shouldRequireJuniorResults } from "./juniorRequirements";
 import { applyRiderCostUpdates } from "./costUpdates";
+import { now as clockNow } from "../../utils/clock";
 
 export type SettleRaceOptions = {
   force?: boolean;
@@ -105,7 +106,7 @@ export async function settleRace(
       .sort((a, b) => a.uciId.localeCompare(b.uciId));
 
     const resultsHash = hashPayload(buildResultsPayload(raceId, sortedResults));
-    const now = new Date();
+    const now = clockNow();
 
     await tx
       .insert(raceResultSets)

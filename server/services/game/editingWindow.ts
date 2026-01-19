@@ -1,6 +1,7 @@
 import { asc, eq } from "drizzle-orm";
 import { races, type Race } from "@shared/schema";
 import { db } from "../../db";
+import { now as clockNow } from "../../utils/clock";
 
 const CLOSED_STATUSES = new Set(["locked", "settled"]);
 
@@ -13,7 +14,7 @@ export type EditingWindow = {
 
 export async function getEditingWindow(
   seasonId: number,
-  now: Date = new Date(),
+  now: Date = clockNow(),
 ): Promise<EditingWindow> {
   const raceRows = await db
     .select()

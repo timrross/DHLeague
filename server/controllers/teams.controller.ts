@@ -5,6 +5,7 @@ import { getEditingWindow } from "../services/game/editingWindow";
 import { getActiveSeasonId } from "../services/game/seasons";
 import { getTeamPerformance } from "../services/game/teamPerformance";
 import { countTransfers } from "../services/game/transfers";
+import { useJokerCardForTeam } from "../services/game/joker";
 
 /**
  * Get a user's team
@@ -300,54 +301,8 @@ export async function useJokerCard(req: any, res: Response) {
     if (isNaN(teamId)) {
       return res.status(400).json({ message: "Invalid team ID" });
     }
-
-    const team = await storage.getTeam(teamId);
-    if (!team) {
-      return res.status(404).json({ message: "Team not found" });
-    }
-
-    if (team.userId !== userId) {
-      return res.status(403).json({ message: "Not authorized to reset this team" });
-    }
-
-    if (team.teamType === "junior" && !FEATURES.JUNIOR_TEAM_ENABLED) {
-      return res.status(404).json({ message: "Junior team is disabled" });
-    }
-
-    const editingWindow = await getEditingWindow(team.seasonId);
-    if (!editingWindow.editingOpen || !editingWindow.nextRace) {
-      return res.status(400).json({
-        message: "Joker can only be used between settlement and the next lock.",
-      });
-    }
-
-    const user = await storage.getUser(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    if (!editingWindow.hasSettledRounds) {
-      return res.status(400).json({
-        message: "Joker can only be used after a round has settled.",
-      });
-    }
-
-    if (user.jokerCardUsed) {
-      return res.status(400).json({ message: "Joker card already used" });
-    }
-
-    const deleted = await storage.deleteTeam(teamId);
-    if (!deleted) {
-      return res.status(500).json({ message: "Failed to delete team" });
-    }
-
-    await storage.updateUser(userId, {
-      jokerCardUsed: true,
-      jokerActiveRaceId: editingWindow.nextRace.id,
-      jokerActiveTeamType: team.teamType,
-    });
-
-    res.json({ success: true });
+    const result = await useJokerCardForTeam(userId, teamId);
+    res.json(result);
   } catch (error) {
     console.error("Error using joker card:", error);
     res.status(500).json({

@@ -7,6 +7,7 @@ import { hashPayload } from "./hashing";
 import { toDbTeamType } from "./normalize";
 import { validateTeam, type TeamStarterInput } from "./validateTeam";
 import { fetchRiderProfiles } from "./riderProfiles";
+import { now as clockNow } from "../../utils/clock";
 
 export type LockRaceOptions = {
   force?: boolean;
@@ -48,7 +49,7 @@ export async function lockRace(raceId: number, options: LockRaceOptions = {}) {
       throw new Error(`Race ${raceId} not found`);
     }
 
-    const now = new Date();
+    const now = clockNow();
     const lockAt = getLockAt(new Date(race.startDate), race.lockAt ?? null);
 
     let didLock = false;
@@ -202,7 +203,7 @@ export async function lockRace(raceId: number, options: LockRaceOptions = {}) {
             benchJson: bench,
             totalCostAtLock,
             snapshotHash,
-            createdAt: new Date(),
+            createdAt: now,
           });
           lockedTeams += 1;
           continue;

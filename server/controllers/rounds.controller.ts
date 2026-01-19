@@ -1,6 +1,7 @@
 import { type Response } from "express";
 import { storage } from "../storage";
 import { FEATURES } from "../services/features";
+import { now as clockNow } from "../utils/clock";
 
 const CLOSED_STATUSES = new Set(["locked", "settled"]);
 
@@ -8,7 +9,7 @@ const isEditingOpen = (lockAt: Date | null | undefined, gameStatus?: string | nu
   if (!lockAt) return false;
   const status = (gameStatus ?? "").toLowerCase();
   if (CLOSED_STATUSES.has(status)) return false;
-  return Date.now() < lockAt.getTime();
+  return clockNow().getTime() < lockAt.getTime();
 };
 
 type RoundPayload = {

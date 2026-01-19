@@ -1,0 +1,49 @@
+name: Season Scenario
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  scenario:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: dhleague_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/dhleague_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm install
+      - name: Lint data
+        run: npm run lint:data
+      - name: Typecheck
+        run: npm run check
+      - name: Run tests
+        run: npm test
+      - name: Run season scenario
+        run: node server/scripts/runSeasonScenario.js server/test-utils/scenarios/season-smoke-3round.json
+      - name: Upload scenario artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scenario-output
+          path: tmp/scenario

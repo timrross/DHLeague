@@ -1,0 +1,24 @@
+{
+  "seasonId": 1,
+  "seasonName": "Season 2026",
+  "users": [
+    {
+      "userId": "user-alpha",
+      "totalPoints": 1040,
+      "rounds": [
+        { "roundId": "round-001", "points": 330 },
+        { "roundId": "round-002", "points": 360 },
+        { "roundId": "round-003", "points": 350 }
+      ]
+    },
+    {
+      "userId": "user-bravo",
+      "totalPoints": 1005,
+      "rounds": [
+        { "roundId": "round-001", "points": 140 },
+        { "roundId": "round-002", "points": 250 },
+        { "roundId": "round-003", "points": 615 }
+      ]
+    }
+  ]
+}

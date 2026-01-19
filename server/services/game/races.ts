@@ -3,6 +3,7 @@ import { db } from "../../db";
 import { raceResults, races } from "@shared/schema";
 import type { ResultStatus } from "./config";
 import { assertRaceReadyForResults } from "./raceResultsValidation";
+import { now as clockNow } from "../../utils/clock";
 
 export type RaceResultInput = {
   uciId: string;
@@ -30,7 +31,7 @@ export async function listRaces(seasonId?: number) {
 }
 
 export async function upsertRaceResults(input: UpsertRaceResultsInput) {
-  const now = new Date();
+  const now = clockNow();
 
   return await db.transaction(async (tx) => {
     const [race] = await tx

@@ -1,0 +1,14 @@
+[
+  { "uciId": "uci-m1", "name": "Male One", "gender": "male", "team": "A", "cost": 350000 },
+  { "uciId": "uci-m2", "name": "Male Two", "gender": "male", "team": "B", "cost": 320000 },
+  { "uciId": "uci-m3", "name": "Male Three", "gender": "male", "team": "C", "cost": 300000 },
+  { "uciId": "uci-m4", "name": "Male Four", "gender": "male", "team": "D", "cost": 280000 },
+  { "uciId": "uci-m5", "name": "Male Five", "gender": "male", "team": "E", "cost": 260000 },
+
+  { "uciId": "uci-f1", "name": "Female One", "gender": "female", "team": "W", "cost": 240000 },
+  { "uciId": "uci-f2", "name": "Female Two", "gender": "female", "team": "X", "cost": 220000 },
+  { "uciId": "uci-f3", "name": "Female Three", "gender": "female", "team": "Y", "cost": 200000 },
+
+  { "uciId": "uci-bm", "name": "Bench Male", "gender": "male", "team": "BM", "cost": 180000 },
+  { "uciId": "uci-bf", "name": "Bench Female", "gender": "female", "team": "BF", "cost": 180000 }
+]

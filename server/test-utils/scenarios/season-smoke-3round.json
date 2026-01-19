@@ -1,0 +1,107 @@
+{
+  "meta": {
+    "name": "season-smoke-3round",
+    "seed": "season-2026-smoke",
+    "featureFlags": {
+      "juniorTeamEnabled": false
+    }
+  },
+  "seedData": {
+    "season": {
+      "name": "Season 2026",
+      "startAt": "2026-01-01T00:00:00Z",
+      "endAt": "2026-12-31T23:59:59Z"
+    },
+    "ridersFixture": "fixtures/teams/riders-catalog.json",
+    "users": [
+      { "id": "user-alpha", "email": "alpha@example.com", "firstName": "Alpha", "lastName": "One" },
+      { "id": "user-bravo", "email": "bravo@example.com", "firstName": "Bravo", "lastName": "Two" }
+    ]
+  },
+  "rounds": [
+    {
+      "roundId": "round-001",
+      "name": "Rotorua",
+      "location": "Rotorua",
+      "country": "NZL",
+      "discipline": "DHI",
+      "startAt": "2026-05-10T09:00:00Z",
+      "lockAt": "2026-05-08T09:00:00Z",
+      "teamsBeforeLock": {
+        "user-alpha": {
+          "ELITE": "fixtures/teams/round-001-user-alpha.json"
+        },
+        "user-bravo": {
+          "ELITE": "fixtures/teams/round-001-user-bravo.json"
+        }
+      },
+      "finalResults": {
+        "EM": "fixtures/results/round-001-em-final.json",
+        "EW": "fixtures/results/round-001-ew-final.json"
+      },
+      "postRoundActions": {
+        "transfers": {
+          "user-alpha": {
+            "ELITE": "fixtures/teams/round-002-user-alpha.json"
+          },
+          "user-bravo": {
+            "ELITE": "fixtures/teams/round-002-user-bravo.json"
+          }
+        }
+      }
+    },
+    {
+      "roundId": "round-002",
+      "name": "Leogang",
+      "location": "Leogang",
+      "country": "AUT",
+      "discipline": "DHI",
+      "startAt": "2026-06-07T09:00:00Z",
+      "lockAt": "2026-06-05T09:00:00Z",
+      "teamsBeforeLock": {
+        "user-alpha": {
+          "ELITE": "fixtures/teams/round-002-user-alpha.json"
+        },
+        "user-bravo": {
+          "ELITE": "fixtures/teams/round-002-user-bravo.json"
+        }
+      },
+      "finalResults": {
+        "EM": "fixtures/results/round-002-em-final.json",
+        "EW": "fixtures/results/round-002-ew-final.json"
+      },
+      "postRoundActions": {
+        "joker": {
+          "user-bravo": { "teamType": "ELITE" }
+        }
+      }
+    },
+    {
+      "roundId": "round-003",
+      "name": "Val di Sole",
+      "location": "Val di Sole",
+      "country": "ITA",
+      "discipline": "DHI",
+      "startAt": "2026-07-05T09:00:00Z",
+      "lockAt": "2026-07-03T09:00:00Z",
+      "teamsBeforeLock": {
+        "user-alpha": {
+          "ELITE": "fixtures/teams/round-003-user-alpha.json"
+        },
+        "user-bravo": {
+          "ELITE": "fixtures/teams/round-003-user-bravo.json"
+        }
+      },
+      "finalResults": {
+        "EM": "fixtures/results/round-003-em-final.json",
+        "EW": "fixtures/results/round-003-ew-final.json"
+      }
+    }
+  ],
+  "assertions": {
+    "expectedScoreboard": "fixtures/expected/season-smoke-3round-scoreboard.json",
+    "expectedRoundAudit": {
+      "round-001": "fixtures/expected/round-001-audit.json"
+    }
+  }
+}

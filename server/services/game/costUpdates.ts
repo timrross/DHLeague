@@ -2,6 +2,7 @@ import { eq, inArray } from "drizzle-orm";
 import { riderCostUpdates, riders, type RaceResult } from "@shared/schema";
 import { db } from "../../db";
 import type { ResultStatus } from "./config";
+import { now as clockNow } from "../../utils/clock";
 
 type CostUpdateResult = {
   uciId: string;
@@ -123,7 +124,7 @@ export async function applyRiderCostUpdates(
     return { applied: false, updates };
   }
 
-  const now = new Date();
+  const now = clockNow();
   for (const update of updates) {
     if (update.delta !== 0) {
       await tx

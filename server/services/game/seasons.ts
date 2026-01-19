@@ -1,6 +1,7 @@
 import { and, desc, gte, lte } from "drizzle-orm";
 import { db } from "../../db";
 import { seasons } from "@shared/schema";
+import { now as clockNow } from "../../utils/clock";
 
 export async function listSeasons() {
   return await db.select().from(seasons).orderBy(desc(seasons.startAt));
@@ -31,6 +32,7 @@ export async function getSeasonIdForDate(date: Date): Promise<number> {
   const year = date.getUTCFullYear();
   const startAt = new Date(Date.UTC(year, 0, 1));
   const endAt = new Date(Date.UTC(year, 11, 31, 23, 59, 59, 999));
+  const now = clockNow();
 
   const [created] = await db
     .insert(seasons)
@@ -38,8 +40,8 @@ export async function getSeasonIdForDate(date: Date): Promise<number> {
       name: `Season ${year}`,
       startAt,
       endAt,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: now,
+      updatedAt: now,
     })
     .returning();
 
@@ -47,7 +49,7 @@ export async function getSeasonIdForDate(date: Date): Promise<number> {
 }
 
 export async function getActiveSeasonId(): Promise<number> {
-  const now = new Date();
+  const now = clockNow();
 
   const active = await db
     .select()
@@ -73,6 +75,7 @@ export async function getActiveSeasonId(): Promise<number> {
   const year = now.getUTCFullYear();
   const startAt = new Date(Date.UTC(year, 0, 1));
   const endAt = new Date(Date.UTC(year, 11, 31, 23, 59, 59, 999));
+  const createdAt = clockNow();
 
   const [created] = await db
     .insert(seasons)
@@ -80,8 +83,8 @@ export async function getActiveSeasonId(): Promise<number> {
       name: `Season ${year}`,
       startAt,
       endAt,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt,
+      updatedAt: createdAt,
     })
     .returning();
 
