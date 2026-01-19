@@ -145,12 +145,20 @@ export async function lockRace(raceId: number, options: LockRaceOptions = {}) {
         const benchMember = members.find((member) => member.role === "BENCH");
         const benchInput = benchMember ? { uciId: benchMember.uciId } : null;
 
+        const budgetOverrides = new Map<string, number>();
+        for (const member of members) {
+          if (member.costAtSave !== null && member.costAtSave !== undefined) {
+            budgetOverrides.set(member.uciId, member.costAtSave);
+          }
+        }
+
         const validation = validateTeam(
           teamType,
           startersInput,
           benchInput,
           ridersByUciId,
           budgetCap,
+          { budgetOverrides },
         );
 
         if (!validation.ok) {
