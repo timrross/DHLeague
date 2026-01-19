@@ -4,7 +4,6 @@ import { fileURLToPath } from "node:url";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import {
   raceResultImports,
-  raceResults,
   raceScores,
   raceSnapshots,
   races,
