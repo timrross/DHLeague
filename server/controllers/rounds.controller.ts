@@ -1,6 +1,8 @@
 import { type Response } from "express";
 import { storage } from "../storage";
 import { FEATURES } from "../services/features";
+import { getEditingWindow } from "../services/game/editingWindow";
+import { getActiveSeasonId } from "../services/game/seasons";
 import { now as clockNow } from "../utils/clock";
 
 const CLOSED_STATUSES = new Set(["locked", "settled"]);
@@ -27,7 +29,11 @@ type RoundPayload = {
   editingOpen: boolean;
 };
 
-const buildRoundPayload = (race: any, teamType: "elite" | "junior"): RoundPayload | null => {
+const buildRoundPayload = (
+  race: any,
+  teamType: "elite" | "junior",
+  editingOpenOverride?: boolean,
+): RoundPayload | null => {
   if (!race) return null;
   const lockAt = race.lockAt ? new Date(race.lockAt) : null;
   const gameStatus = race.gameStatus ?? "scheduled";
@@ -43,16 +49,28 @@ const buildRoundPayload = (race: any, teamType: "elite" | "junior"): RoundPayloa
     gameStatus,
     status: race.status,
     teamType,
-    editingOpen: isEditingOpen(lockAt, gameStatus),
+    editingOpen:
+      editingOpenOverride ?? isEditingOpen(lockAt, gameStatus),
   };
 };
 
 export async function getNextRounds(_req: any, res: Response) {
   try {
     const { nextRace } = await storage.getRaceStatusBuckets();
-    const elite = buildRoundPayload(nextRace, "elite");
+    const now = clockNow();
+    let editingOpen = false;
+    if (nextRace) {
+      const seasonId = nextRace.seasonId ?? (await getActiveSeasonId());
+      const editingWindow = await getEditingWindow(seasonId, now);
+      editingOpen =
+        Boolean(editingWindow.nextRace) &&
+        editingWindow.nextRace?.id === nextRace.id &&
+        editingWindow.editingOpen;
+    }
+
+    const elite = buildRoundPayload(nextRace, "elite", editingOpen);
     const junior = FEATURES.JUNIOR_TEAM_ENABLED
-      ? buildRoundPayload(nextRace, "junior")
+      ? buildRoundPayload(nextRace, "junior", editingOpen)
       : null;
 
     res.json({ elite, junior });

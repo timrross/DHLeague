@@ -9,6 +9,12 @@ the DHLeague game mechanic end-to-end against Postgres.
 node server/scripts/runSeasonScenario.js server/test-utils/scenarios/season-smoke-3round.json
 ```
 
+### Database
+
+The scenario runner requires a dedicated database. Set `SCENARIO_DATABASE_URL`
+(or `TEST_DATABASE_URL`) before running. The runner resets the database before
+and after execution by default; set `SCENARIO_CLEANUP=false` to keep data.
+
 Outputs are written to:
 
 ```

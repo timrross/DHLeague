@@ -1,0 +1,15 @@
+{
+  "seasonId": 1,
+  "seasonName": "Season 2026",
+  "users": [
+    {
+      "userId": "user-transfers",
+      "totalPoints": 2320,
+      "rounds": [
+        { "roundId": "round-001", "points": 980 },
+        { "roundId": "round-002", "points": 430 },
+        { "roundId": "round-003", "points": 910 }
+      ]
+    }
+  ]
+}

@@ -8,6 +8,7 @@ import { toDbTeamType } from "./normalize";
 import { validateTeam, type TeamStarterInput } from "./validateTeam";
 import { fetchRiderProfiles } from "./riderProfiles";
 import { now as clockNow } from "../../utils/clock";
+import { UserFacingError } from "./errors";
 
 export type LockRaceOptions = {
   force?: boolean;
@@ -46,7 +47,7 @@ export async function lockRace(raceId: number, options: LockRaceOptions = {}) {
     const [race] = await tx.select().from(races).where(eq(races.id, raceId));
 
     if (!race) {
-      throw new Error(`Race ${raceId} not found`);
+      throw new UserFacingError(`Race ${raceId} not found`, 404);
     }
 
     const now = clockNow();
@@ -159,27 +160,37 @@ export async function lockRace(raceId: number, options: LockRaceOptions = {}) {
 
         const starters = startersInput.map((starter) => {
           const rider = ridersByUciId.get(starter.uciId);
+          if (!rider) {
+            throw new Error(
+              `Rider ${starter.uciId} not found after validation passed`,
+            );
+          }
           return {
             uciId: starter.uciId,
-            gender: rider?.gender ?? "male",
-            costAtLock: rider?.cost ?? 0,
+            gender: rider.gender,
+            costAtLock: rider.cost,
           };
         });
 
-        const bench = benchInput
-          ? {
-              uciId: benchInput.uciId,
-              gender: ridersByUciId.get(benchInput.uciId)?.gender ?? "male",
-              costAtLock: ridersByUciId.get(benchInput.uciId)?.cost ?? 0,
-            }
-          : null;
+        let bench: { uciId: string; gender: string; costAtLock: number } | null =
+          null;
+        if (benchInput) {
+          const benchRider = ridersByUciId.get(benchInput.uciId);
+          if (!benchRider) {
+            throw new Error(
+              `Bench rider ${benchInput.uciId} not found after validation passed`,
+            );
+          }
+          bench = {
+            uciId: benchInput.uciId,
+            gender: benchRider.gender,
+            costAtLock: benchRider.cost,
+          };
+        }
 
         const totalCostAtLock =
-          startersInput.reduce((sum, starter) => {
-            const rider = ridersByUciId.get(starter.uciId);
-            return sum + (rider?.cost ?? 0);
-          }, 0) +
-          (benchInput ? ridersByUciId.get(benchInput.uciId)?.cost ?? 0 : 0);
+          starters.reduce((sum, starter) => sum + starter.costAtLock, 0) +
+          (bench ? bench.costAtLock : 0);
 
         const payload = buildSnapshotPayload({
           raceId,
@@ -214,8 +225,9 @@ export async function lockRace(raceId: number, options: LockRaceOptions = {}) {
         }
 
         if (!force) {
-          throw new Error(
-            `Snapshot mismatch for user ${team.userId} (${teamType})`,
+          throw new UserFacingError(
+            `Snapshot mismatch for user ${team.userId} (${teamType}). Team changed after lock.`,
+            409,
           );
         }
 

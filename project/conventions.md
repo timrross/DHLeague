@@ -23,6 +23,8 @@
 - Add targeted tests for new server logic under `server/**/*.test.ts`; use the existing test utilities for setup.
 - Keep fixture data under `client/src/fixtures` or `server/scripts/data` depending on the consumer.
 - When touching authentication, verify flows against the configured `AUTH_*` environment variables and callback paths.
+- Tests run against `TEST_DATABASE_URL` and reset the schema before and after. Use a dedicated database (separate from any live/dev app DB).
+- Season scenarios use `SCENARIO_DATABASE_URL` (or `TEST_DATABASE_URL`) and also reset the schema before and after by default.
 
 ## Documentation and communication
 - Update relevant docs when behaviors change (`project/README.md`, `project/architecture.md`, `project/conventions.md`, or feature-specific notes). Keep environment variable requirements accurate.

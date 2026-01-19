@@ -53,6 +53,11 @@ type ScenarioSeedData = {
   users: ScenarioUser[];
 };
 
+type TransferConfig = {
+  fixture: string;
+  expectError?: string;
+};
+
 type ScenarioRound = {
   roundId: string;
   name: string;
@@ -64,7 +69,7 @@ type ScenarioRound = {
   teamsBeforeLock?: Record<string, Record<string, string>>;
   finalResults: Record<string, string>;
   postRoundActions?: {
-    transfers?: Record<string, Record<string, string>>;
+    transfers?: Record<string, Record<string, string | TransferConfig>>;
     joker?: Record<string, { teamType: string }>;
   };
 };
@@ -672,6 +677,7 @@ const diffJson = (expected: unknown, actual: unknown, pathLabel = "$"): string |
 };
 
 export async function runScenario(scenarioPath: string) {
+  const shouldCleanup = process.env.SCENARIO_CLEANUP !== "false";
   const scenario = await readJson<ScenarioDefinition>(scenarioPath);
   const scenarioName = scenario.meta.name;
 
@@ -683,7 +689,8 @@ export async function runScenario(scenarioPath: string) {
   // Set test mode flag before reset to skip placeholder race seeding
   setTestNow(new Date().toISOString());
 
-  await resetDatabase();
+  try {
+    await resetDatabase();
 
   const existingSeason = await db
     .select()
@@ -836,13 +843,40 @@ export async function runScenario(scenarioPath: string) {
 
       const transfers = round.postRoundActions.transfers ?? {};
       for (const [userId, teamEntries] of Object.entries(transfers)) {
-        for (const fixturePath of Object.values(teamEntries)) {
-          await saveTeamFromFixture({
-            scenarioPath,
-            seasonId,
-            userId,
-            fixturePath,
-          });
+        for (const entry of Object.values(teamEntries)) {
+          const config: TransferConfig =
+            typeof entry === "string" ? { fixture: entry } : entry;
+
+          if (config.expectError) {
+            try {
+              await saveTeamFromFixture({
+                scenarioPath,
+                seasonId,
+                userId,
+                fixturePath: config.fixture,
+              });
+              throw new Error(
+                `Expected transfer error "${config.expectError}" for ${userId} but succeeded`,
+              );
+            } catch (error) {
+              if (error instanceof Error) {
+                if (!error.message.includes(config.expectError)) {
+                  throw new Error(
+                    `Expected error containing "${config.expectError}" but got: ${error.message}`,
+                  );
+                }
+              } else {
+                throw error;
+              }
+            }
+          } else {
+            await saveTeamFromFixture({
+              scenarioPath,
+              seasonId,
+              userId,
+              fixturePath: config.fixture,
+            });
+          }
         }
       }
 
@@ -940,6 +974,15 @@ export async function runScenario(scenarioPath: string) {
       const diff = diffJson(expectedAudit, actualAudit);
       if (diff) {
         throw new Error(`Audit mismatch for ${roundId}: ${diff}`);
+      }
+    }
+  }
+  } finally {
+    if (shouldCleanup) {
+      try {
+        await resetDatabase();
+      } catch (error) {
+        console.error("Failed to reset database after scenario run", error);
       }
     }
   }

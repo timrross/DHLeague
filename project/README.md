@@ -35,6 +35,8 @@ Configure these repository or environment secrets so the deploy job can connect 
 At runtime the app expects the following environment variables:
 
 - `DATABASE_URL`: Postgres connection string used by both services.
+- `TEST_DATABASE_URL`: Dedicated Postgres connection string for `npm test` (schema is reset before/after).
+- `SCENARIO_DATABASE_URL`: Dedicated Postgres connection string for season scenarios (defaults to `TEST_DATABASE_URL`).
 - `SESSION_SECRET`: Session signing secret for auth flows.
 - `RIDER_DATA_BASE_URL`: Base URL where the rider data service is reachable; defaults to `http://localhost:5001/api/rider-data`
   when the services run together.

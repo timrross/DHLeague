@@ -31,6 +31,7 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dhleague_test
+      TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dhleague_test
       VITE_GA4_MEASUREMENT_ID: ${{ secrets.VITE_GA4_MEASUREMENT_ID }}
 
     steps:

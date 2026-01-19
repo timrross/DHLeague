@@ -177,12 +177,13 @@ export function scoreTeamSnapshot(
         reason: hasEligibleStatus ? "NO_VALID_SUB" : "NO_ELIGIBLE_STARTER",
       };
     } else {
-      const replaced = eligibleStarters.sort((a, b) => {
+      const sortedEligible = [...eligibleStarters].sort((a, b) => {
         if (b.costAtLock !== a.costAtLock) {
           return b.costAtLock - a.costAtLock;
         }
         return a.index - b.index;
-      })[0];
+      });
+      const replaced = sortedEligible[0];
       const replacedIndex = replaced.index;
       const benchPoints = bench?.finalPoints ?? 0;
       starters[replacedIndex] = {

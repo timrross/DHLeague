@@ -1,0 +1,93 @@
+{
+  "meta": {
+    "name": "transfer-limits",
+    "seed": "season-2026-transfers",
+    "featureFlags": {
+      "juniorTeamEnabled": false
+    }
+  },
+  "seedData": {
+    "season": {
+      "name": "Season 2026",
+      "startAt": "2026-01-01T00:00:00Z",
+      "endAt": "2026-12-31T23:59:59Z"
+    },
+    "ridersFixture": "fixtures/teams/riders-catalog-extended.json",
+    "users": [
+      { "id": "user-transfers", "email": "transfers@example.com", "firstName": "Transfer", "lastName": "User" }
+    ]
+  },
+  "rounds": [
+    {
+      "roundId": "round-001",
+      "name": "Rotorua",
+      "location": "Rotorua",
+      "country": "NZL",
+      "discipline": "DHI",
+      "startAt": "2026-05-10T09:00:00Z",
+      "lockAt": "2026-05-08T09:00:00Z",
+      "teamsBeforeLock": {
+        "user-transfers": {
+          "ELITE": "fixtures/teams/transfer-limits/round-001-initial.json"
+        }
+      },
+      "finalResults": {
+        "EM": "fixtures/results/transfer-limits/round-001-em.json",
+        "EW": "fixtures/results/transfer-limits/round-001-ew.json"
+      },
+      "postRoundActions": {
+        "transfers": {
+          "user-transfers": {
+            "ELITE": "fixtures/teams/transfer-limits/round-002-2transfers.json"
+          }
+        }
+      }
+    },
+    {
+      "roundId": "round-002",
+      "name": "Leogang",
+      "location": "Leogang",
+      "country": "AUT",
+      "discipline": "DHI",
+      "startAt": "2026-06-07T09:00:00Z",
+      "lockAt": "2026-06-05T09:00:00Z",
+      "teamsBeforeLock": {
+        "user-transfers": {
+          "ELITE": "fixtures/teams/transfer-limits/round-002-2transfers.json"
+        }
+      },
+      "finalResults": {
+        "EM": "fixtures/results/transfer-limits/round-002-em.json",
+        "EW": "fixtures/results/transfer-limits/round-002-ew.json"
+      },
+      "postRoundActions": {
+        "transfers": {
+          "user-transfers": {
+            "ELITE": "fixtures/teams/transfer-limits/round-003-1transfer.json"
+          }
+        }
+      }
+    },
+    {
+      "roundId": "round-003",
+      "name": "Val di Sole",
+      "location": "Val di Sole",
+      "country": "ITA",
+      "discipline": "DHI",
+      "startAt": "2026-07-05T09:00:00Z",
+      "lockAt": "2026-07-03T09:00:00Z",
+      "teamsBeforeLock": {
+        "user-transfers": {
+          "ELITE": "fixtures/teams/transfer-limits/round-003-1transfer.json"
+        }
+      },
+      "finalResults": {
+        "EM": "fixtures/results/transfer-limits/round-003-em.json",
+        "EW": "fixtures/results/transfer-limits/round-003-ew.json"
+      }
+    }
+  ],
+  "assertions": {
+    "expectedScoreboard": "fixtures/expected/transfer-limits-scoreboard.json"
+  }
+}

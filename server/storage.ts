@@ -21,6 +21,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, asc, desc, sql, gte, lte, ilike, or, inArray } from "drizzle-orm";
+import { getEditingWindow } from "./services/game/editingWindow";
 import { getActiveSeasonId, getSeasonIdForDate } from "./services/game/seasons";
 import { scoreRiderResult } from "./services/game/scoring/scoreTeamSnapshot";
 import type { ResultStatus } from "./services/game/config";
@@ -576,9 +577,16 @@ export class DatabaseStorage implements IStorage {
       );
     
     if (userTeamResult.length === 0) return undefined;
-    
+
     const team = userTeamResult[0];
-    return this.getTeamWithRiders(team.id);
+    const roster = await this.getTeamWithRiders(team.id);
+    if (!roster) return undefined;
+
+    const editingWindow = await getEditingWindow(resolvedSeasonId);
+    return {
+      ...roster,
+      isLocked: !editingWindow.editingOpen,
+    };
   }
 
   async createTeam(

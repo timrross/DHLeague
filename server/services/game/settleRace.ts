@@ -46,7 +46,7 @@ export async function settleRace(
     const [race] = await tx.select().from(races).where(eq(races.id, raceId));
 
     if (!race) {
-      throw new Error(`Race ${raceId} not found`);
+      throw new UserFacingError(`Race ${raceId} not found`, 404);
     }
 
     const discipline = resolveDisciplineCode(race.discipline, "DHI");
@@ -82,7 +82,10 @@ export async function settleRace(
       (allowProvisional && status === "provisional");
 
     if (!canSettle) {
-      throw new Error(`Race ${raceId} status ${status} is not ready to settle`);
+      throw new UserFacingError(
+        `Race ${raceId} status "${status}" is not ready to settle`,
+        400,
+      );
     }
 
     const resultRows = await tx

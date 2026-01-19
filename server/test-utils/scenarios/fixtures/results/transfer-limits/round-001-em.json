@@ -1,0 +1,15 @@
+{
+  "roundId": "round-001",
+  "event": "EM",
+  "isFinal": true,
+  "results": [
+    { "uciId": "uci-m1", "status": "FIN", "position": 1 },
+    { "uciId": "uci-m2", "status": "FIN", "position": 2 },
+    { "uciId": "uci-m3", "status": "FIN", "position": 3 },
+    { "uciId": "uci-m4", "status": "FIN", "position": 4 },
+    { "uciId": "uci-m5", "status": "FIN", "position": 5 },
+    { "uciId": "uci-m6", "status": "FIN", "position": 6 },
+    { "uciId": "uci-m7", "status": "FIN", "position": 10 },
+    { "uciId": "uci-bm", "status": "FIN", "position": 15 }
+  ]
+}
