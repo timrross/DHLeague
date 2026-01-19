@@ -356,23 +356,19 @@ export async function deleteTeam(req: any, res: Response) {
 
 /**
  * Swap a rider in a team
+ *
+ * @deprecated This endpoint is intentionally disabled. The game uses a transfer-based
+ * system where users can make up to 2 transfers per round before the race locks.
+ * Mid-race swaps are not supported. Use PUT /api/game/teams/:seasonId/:teamType
+ * to update your roster before the lock deadline.
  */
 export async function swapTeamRider(req: any, res: Response) {
-  try {
-    // User ID is attached to the request by the auth middleware
-    const userId = req.oidc?.user?.sub;
-    if (!userId) {
-      return res.status(401).json({ message: "Not authenticated" });
-    }
-
-    return res.status(400).json({
-      message: "Swaps are not supported. Use transfers before lock.",
-    });
-  } catch (error) {
-    console.error("Error swapping team rider:", error);
-    res.status(500).json({
-      message: "Failed to swap team rider",
-      error: error instanceof Error ? error.message : String(error)
-    });
+  const userId = req.oidc?.user?.sub;
+  if (!userId) {
+    return res.status(401).json({ message: "Not authenticated" });
   }
+
+  return res.status(400).json({
+    message: "Swaps are not supported. Use transfers before lock.",
+  });
 }
