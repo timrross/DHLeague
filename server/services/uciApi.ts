@@ -205,12 +205,15 @@ export class UCIApiService {
 
   /**
    * Fetch MTB downhill riders from UCI API
+   * @param year - The season year to fetch riders for (defaults to current year)
    */
-  async getMTBDownhillRiders(): Promise<any[]> {
+  async getMTBDownhillRiders(year?: number): Promise<any[]> {
+    const seasonYear = year ?? new Date().getFullYear();
+
     try {
       // Get riders from the first page to determine total pages
       const firstPageResponse = await axios.get(
-        "https://www.uci.org/api/riders/MTB/2026?page=1&pagesize=500",
+        `https://www.uci.org/api/riders/MTB/${seasonYear}?page=1&pagesize=500`,
       );
 
       // Extract pagination information (new format)
@@ -240,7 +243,7 @@ export class UCIApiService {
         console.log(`Fetching page ${page} of ${totalPages}`);
         try {
           const pageResponse = await axios.get(
-            `https://www.uci.org/api/riders/MTB/2025?page=${page}`,
+            `https://www.uci.org/api/riders/MTB/${seasonYear}?page=${page}&pagesize=500`,
           );
 
           if (pageResponse.data.items && Array.isArray(pageResponse.data.items)) {
