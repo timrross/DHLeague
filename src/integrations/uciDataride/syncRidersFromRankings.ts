@@ -3,6 +3,7 @@ import {
   type InsertRider,
   type Rider,
 } from "../../../shared/schema";
+import { FEATURES } from "../../../server/services/features";
 import { eq } from "drizzle-orm";
 
 import { BASE_URL, RACE_TYPES, SPORT } from "./constants";
@@ -397,6 +398,7 @@ async function upsertRiders(
       country: rider.country,
       points: rider.points,
       cost: rider.cost,
+      lastYearStanding: rider.lastYearStanding,
       image: rider.image,
     };
 
@@ -424,6 +426,7 @@ async function upsertRiders(
           country: rider.country,
           points: rider.points,
           cost: rider.cost,
+          lastYearStanding: rider.lastYearStanding,
           datarideObjectId: rider.datarideObjectId,
           datarideTeamCode: rider.datarideTeamCode,
         },
@@ -488,8 +491,11 @@ export async function syncRidersFromRankings(options: SyncOptions = {}): Promise
   const categories = await fetchCategories(httpClient, seasonId, log);
   log(`Fetched ${categories.size} categories`);
 
+  const allowedCategoryKeys = FEATURES.JUNIOR_TEAM_ENABLED
+    ? ["ELITE_MEN", "ELITE_WOMEN", "JUNIOR_MEN", "JUNIOR_WOMEN"]
+    : ["ELITE_MEN", "ELITE_WOMEN"];
   const relevantCategories = Array.from(categories.entries()).filter(([key]) =>
-    ["ELITE_MEN", "ELITE_WOMEN"].includes(key),
+    allowedCategoryKeys.includes(key),
   );
 
   log(

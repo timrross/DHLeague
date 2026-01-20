@@ -78,10 +78,44 @@ describe("normalizeRiderRow", () => {
     assert.equal(normalized.datarideTeamCode, "TCO");
   });
 
-  it("rounds points before computing cost", () => {
+  it("sets points to zero and calculates cost from standing", () => {
     const normalized = normalizeRiderRow(baseRow, "male");
 
-    assert.equal(normalized.points, 124);
-    assert.equal(normalized.cost, 124000);
+    // Riders start with zero points; points are earned from race results
+    assert.equal(normalized.points, 0);
+    // lastYearStanding is derived from UCI rank position
+    assert.equal(normalized.lastYearStanding, 1);
+    // Cost is 500,000 / (position ^ 0.7), minimum $10,000
+    // For position 1: 500000 / (1 ^ 0.7) = 500000
+    assert.equal(normalized.cost, 500000);
+  });
+
+  it("calculates cost correctly for lower standings", () => {
+    const row10 = { ...baseRow, Rank: 10 };
+    const row50 = { ...baseRow, Rank: 50 };
+    const row200 = { ...baseRow, Rank: 200 };
+
+    const normalized10 = normalizeRiderRow(row10, "male");
+    const normalized50 = normalizeRiderRow(row50, "male");
+    const normalized200 = normalizeRiderRow(row200, "male");
+
+    assert.equal(normalized10.lastYearStanding, 10);
+    assert.equal(normalized50.lastYearStanding, 50);
+    assert.equal(normalized200.lastYearStanding, 200);
+
+    // position 10: 500000 / (10 ^ 0.7) ≈ 99763
+    assert.equal(normalized10.cost, Math.round(500000 / Math.pow(10, 0.7)));
+    // position 50: 500000 / (50 ^ 0.7) ≈ 32338
+    assert.equal(normalized50.cost, Math.round(500000 / Math.pow(50, 0.7)));
+    // position 200: 500000 / (200 ^ 0.7) ≈ 12449
+    assert.equal(normalized200.cost, Math.round(500000 / Math.pow(200, 0.7)));
+  });
+
+  it("applies minimum cost for unranked riders", () => {
+    const unrankedRow = { ...baseRow, Rank: 0 };
+    const normalized = normalizeRiderRow(unrankedRow, "male");
+
+    assert.equal(normalized.lastYearStanding, 0);
+    assert.equal(normalized.cost, 10000);
   });
 });

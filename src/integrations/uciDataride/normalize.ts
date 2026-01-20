@@ -34,6 +34,7 @@ export type NormalizedRider = {
   country?: string;
   points: number;
   cost: number;
+  lastYearStanding: number;
   image: string;
 };
 
@@ -145,9 +146,16 @@ export function normalizeRiderRow(
   const displayName = stripLeadingAsterisk(row.DisplayName);
   const name = (cleanedFullName || displayName || "").trim();
   const team = row.TeamName ?? row.DisplayTeam ?? "";
-  // Points are floats in the feed; round to the nearest integer for storage.
-  const points = Math.round(Number(row.Points ?? 0));
-  const cost = points * 1000;
+  // Use UCI ranking position as lastYearStanding for cost calculation.
+  const lastYearStanding = row.Rank ?? 0;
+  // Riders start with zero points; points are earned from race results.
+  const points = 0;
+  // Cost is derived from standing using a power law: higher ranked = more expensive.
+  // Formula: 500,000 / (position ^ 0.7), minimum $10,000
+  const cost =
+    lastYearStanding > 0
+      ? Math.max(10000, Math.round(500000 / Math.pow(lastYearStanding, 0.7)))
+      : 10000;
   const uciId = String(row.UciId);
   const riderId = uciId;
   const nameParts = splitName(name);
@@ -166,6 +174,7 @@ export function normalizeRiderRow(
     country: row.CountryIsoCode2,
     points,
     cost,
+    lastYearStanding,
     image: DEFAULT_RIDER_IMAGE,
   };
 }
