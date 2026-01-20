@@ -3,9 +3,25 @@ import { SidebarAd } from "@/components/ui/google-ad";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useRacesQuery } from "@/services/riderDataApi";
+import { useMemo } from "react";
 
 export default function Races() {
   const { data: races, isLoading, isError, error, refetch } = useRacesQuery();
+  const scheduleLabel = useMemo(() => {
+    if (!races || races.length === 0) {
+      return `${new Date().getFullYear()} RACE SCHEDULE`;
+    }
+
+    const years = Array.from(
+      new Set(races.map(race => new Date(race.startDate).getFullYear()))
+    ).sort((a, b) => a - b);
+
+    if (years.length === 1) {
+      return `${years[0]} RACE SCHEDULE`;
+    }
+
+    return `${years[0]}-${years[years.length - 1]} RACE SCHEDULE`;
+  }, [races]);
 
   return (
     <div className="min-h-screen bg-neutral">
@@ -13,7 +29,7 @@ export default function Races() {
         <div className="flex flex-col md:flex-row gap-8">
           {/* Main content */}
           <div className="flex-1">
-            <h2 className="text-2xl md:text-3xl font-heading font-bold text-secondary mb-6">2025 RACE SCHEDULE</h2>
+            <h2 className="text-2xl md:text-3xl font-heading font-bold text-secondary mb-6">{scheduleLabel}</h2>
             
             {isLoading && (
               <div className="flex justify-center items-center h-64">
