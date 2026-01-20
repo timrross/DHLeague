@@ -114,7 +114,7 @@ jobs:
             shared/ \
             "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${APP_ROOT}/shared/"
 
-      - name: Install dependencies, run migrations, and restart service
+      - name: Install dependencies and restart service
         run: |
           APP_ROOT="${APP_ROOT}"
           SERVICE_NAME="${SERVICE_NAME}"
@@ -122,6 +122,5 @@ jobs:
           set -euo pipefail
           cd "$APP_ROOT"
           npm ci --omit=dev
-          npx drizzle-kit push --force
           sudo systemctl restart "$SERVICE_NAME"
           EOF
