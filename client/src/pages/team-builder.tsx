@@ -88,11 +88,18 @@ export default function TeamBuilder() {
   const normalizedGender =
     selectedTab === "all" ? undefined : selectedTab;
 
+  // Map frontend sort options to API sort fields
+  const apiSortBy = sortBy === "rank" ? "lastYearStanding" : sortBy;
+  // name: A-Z, rank: 1 first (asc), cost: highest first (desc)
+  const apiSortDir = sortBy === "cost" ? "desc" : "asc";
+
   const { data: riders, isLoading: ridersLoading } = useRidersQueryWithParams({
     category: teamType,
     gender: normalizedGender,
     pageSize: 200,
     search: normalizedSearch ? normalizedSearch : undefined,
+    sortBy: apiSortBy,
+    sortDir: apiSortDir,
   });
   const safeRiders = Array.isArray(riders) ? (riders as Rider[]) : [];
 
@@ -356,50 +363,8 @@ export default function TeamBuilder() {
     }
   }, [user]);
 
-  // Filter riders based on search and tab
-  const filteredRiders = safeRiders.filter((rider: Rider) => {
-    const searchValue = normalizedSearch.toLowerCase();
-    const matchesSearch = !searchValue
-      ? true
-      : [
-          rider.name,
-          rider.firstName,
-          rider.lastName,
-          rider.team,
-        ]
-          .filter(Boolean)
-          .some((value) =>
-            String(value).toLowerCase().includes(searchValue),
-          );
-    const matchesTab = selectedTab === "all" || rider.gender === selectedTab;
-    return matchesSearch && matchesTab;
-  });
-
-  const sortedRiders = [...filteredRiders].sort((a, b) => {
-    if (sortBy === "name") {
-      const aLast = a.lastName?.toLowerCase() || a.name.split(" ").pop()?.toLowerCase() || "";
-      const bLast = b.lastName?.toLowerCase() || b.name.split(" ").pop()?.toLowerCase() || "";
-      if (aLast !== bLast) return aLast.localeCompare(bLast);
-      const aFirst = a.firstName?.toLowerCase() || a.name.split(" ").slice(0, -1).join(" ").toLowerCase();
-      const bFirst = b.firstName?.toLowerCase() || b.name.split(" ").slice(0, -1).join(" ").toLowerCase();
-      return aFirst.localeCompare(bFirst);
-    }
-
-    if (sortBy === "cost") {
-      return b.cost - a.cost;
-    }
-
-    const aRank =
-      typeof a.lastYearStanding === "number" && a.lastYearStanding > 0
-        ? a.lastYearStanding
-        : Number.POSITIVE_INFINITY;
-    const bRank =
-      typeof b.lastYearStanding === "number" && b.lastYearStanding > 0
-        ? b.lastYearStanding
-        : Number.POSITIVE_INFINITY;
-    if (aRank !== bRank) return aRank - bRank;
-    return b.points - a.points;
-  });
+  // Server handles sorting; just filter by tab if needed (search is also server-side)
+  const sortedRiders = safeRiders;
 
   const handleAddStarter = (rider: Rider) => {
     const disabledReason = getAddDisabledReason({
