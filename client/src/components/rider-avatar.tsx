@@ -37,23 +37,27 @@ export function RiderAvatar({
   const shouldUsePlaceholder =
     rider.imageSource === "placeholder" || rider.imageSource === null || !currentImage;
   const imageSrc = shouldUsePlaceholder ? placeholderUrl : currentImage;
+  const usingPlaceholder = shouldUsePlaceholder && Boolean(placeholderUrl);
   const fallbackColor = getColorFromName(displayName);
 
   return (
     <div className={cn("relative inline-block", className)}>
       <Avatar
         className={cn(
-          "rounded-md bg-slate-800 text-white",
+          "rounded-md",
           sizeMap[size],
           highlight ? "ring-2 ring-primary" : "",
+          usingPlaceholder ? "" : "bg-slate-800 text-white",
         )}
       >
         {imageSrc ? (
           <AvatarImage src={imageSrc} alt={displayName} className="object-cover" />
         ) : null}
-      <AvatarFallback className={cn("text-white font-bold", fallbackColor)}>
-        {initials || "?"}
-      </AvatarFallback>
+        {!usingPlaceholder ? (
+          <AvatarFallback className={cn("text-white font-bold", fallbackColor)}>
+            {initials || "?"}
+          </AvatarFallback>
+        ) : null}
       </Avatar>
     </div>
   );
