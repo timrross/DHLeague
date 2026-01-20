@@ -3,7 +3,7 @@ import { pgTable, text, serial, varchar, timestamp, integer, jsonb, boolean } fr
 // User model
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().notNull(),
-  email: varchar("email").unique(),
+  email: varchar("email").unique("users_email_key"),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
@@ -63,8 +63,8 @@ export type InsertRace = typeof races.$inferInsert;
 // Rider model
 export const riders = pgTable("riders", {
   id: serial("id").primaryKey(),
-  riderId: text("rider_id").notNull().unique(), // Consistent ID across APIs based on name
-  uciId: text("uci_id").notNull().unique(), // Canonical rider identity from UCI Dataride
+  riderId: text("rider_id").notNull().unique("riders_rider_id_key"), // Consistent ID across APIs based on name
+  uciId: text("uci_id").notNull().unique("riders_uci_id_key"), // Canonical rider identity from UCI Dataride
   datarideObjectId: text("dataride_object_id"), // Optional unstable Dataride object identifier
   datarideTeamCode: text("dataride_team_code"),
   name: text("name").notNull(),
@@ -97,7 +97,7 @@ export const teams = pgTable("teams", {
   seasonId: integer("season_id").notNull().references(() => seasons.id),
   userId: varchar("user_id").notNull().references(() => users.id), // Teams are scoped by (user_id, team_type)
   teamType: text("team_type").notNull().default("elite"), // "elite" or "junior"
-  name: text("name").notNull().unique(), // Unique team names
+  name: text("name").notNull().unique("teams_name_key"), // Unique team names
   budgetCap: integer("budget_cap").notNull().default(2000000),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
