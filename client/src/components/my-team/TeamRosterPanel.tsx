@@ -154,7 +154,7 @@ export default function TeamRosterPanel({
             </div>
             {cta && (
               <Link href={cta.href}>
-                <Button className="w-full">{cta.label}</Button>
+                <Button className="w-full mt-4">{cta.label}</Button>
               </Link>
             )}
           </div>
