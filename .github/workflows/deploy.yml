@@ -50,9 +50,6 @@ jobs:
       - name: Lint data layer for unused code
         run: npm run lint:data
 
-      - name: Create test database
-        run: psql $DATABASE_URL -c "CREATE DATABASE dhleague_test;"
-
       - name: Ensure test database schema
         run: npx tsx server/scripts/ensure-db.ts
 
