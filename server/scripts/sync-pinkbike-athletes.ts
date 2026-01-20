@@ -2,6 +2,7 @@ import { db } from "../db";
 import { riders, type InsertRider, type Rider } from "../../shared/schema";
 import * as fs from "fs";
 import * as path from "path";
+import { activateTopRiders } from "./activate-top-riders";
 
 type PinkbikeAthlete = {
   name: string;
@@ -199,6 +200,9 @@ async function main() {
   try {
     const summary = await syncPinkbikeAthletes({ dryRun });
     console.log("\nPinkbike athletes synced successfully", summary);
+
+    const activationSummary = await activateTopRiders({ dryRun });
+    console.log("Top riders activation complete", activationSummary);
     process.exit(0);
   } catch (error) {
     console.error("Failed to sync Pinkbike athletes", error);

@@ -225,6 +225,7 @@ npx tsx server/scripts/sync-uci-riders.ts
 #   --dry-run       Preview changes without writing
 #   --debug         Enable debug logging
 ```
+This step now auto-activates the top 200 riders per gender when the sync finishes.
 
 ### Step 2: Sync Pinkbike Athletes (Secondary)
 ```bash
@@ -232,8 +233,9 @@ npx tsx server/scripts/sync-pinkbike-athletes.ts
 # Options:
 #   --dry-run       Preview changes without writing
 ```
+This step also re-runs the activation logic to keep the top riders list current.
 
-### Step 3: Activate Top Riders
+### Step 3: Activate Top Riders (Optional)
 ```bash
 npx tsx server/scripts/activate-top-riders.ts
 # Options:

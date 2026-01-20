@@ -5,6 +5,7 @@ import { rankingUciApiService } from "../services/rankingUciApi";
 import { generateRiderId } from "@shared/utils";
 import { type Rider } from "@shared/schema";
 import { upsertRaces, upsertRiders } from "../scripts/seed-utils";
+import { activateTopRiders } from "../scripts/activate-top-riders";
 import { syncRidersFromRankings } from "../../src/integrations/uciDataride/syncRidersFromRankings";
 
 /**
@@ -214,6 +215,10 @@ export async function streamDatarideRiderSync(req: Request, res: Response) {
 
   try {
     const summary = await syncRidersFromRankings({
+      log: message => sendEvent({ type: "log", message }),
+    });
+
+    await activateTopRiders({
       log: message => sendEvent({ type: "log", message }),
     });
 

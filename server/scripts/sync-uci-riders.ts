@@ -1,4 +1,5 @@
 import { syncRidersFromRankings } from "../../src/integrations/uciDataride/syncRidersFromRankings";
+import { activateTopRiders } from "./activate-top-riders";
 
 async function main() {
   const seasonArg = process.argv.find(arg => arg.startsWith("--season="));
@@ -20,6 +21,9 @@ async function main() {
       dryRun,
     });
     console.log("UCI riders synced successfully", summary);
+
+    const activationSummary = await activateTopRiders({ dryRun });
+    console.log("Top riders activation complete", activationSummary);
     process.exit(0);
   } catch (error) {
     console.error("Failed to sync UCI riders", error);
