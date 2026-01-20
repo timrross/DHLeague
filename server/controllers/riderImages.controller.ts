@@ -34,7 +34,7 @@ function resolveStoredPath(filename: string) {
 
 function getDisplayName(rider: { name: string; firstName: string | null; lastName: string | null }) {
   if (rider.lastName && rider.firstName) {
-    return `${rider.lastName} ${rider.firstName}`;
+    return `${rider.firstName} ${rider.lastName}`;
   }
   return rider.name;
 }
