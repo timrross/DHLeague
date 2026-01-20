@@ -67,6 +67,8 @@ jobs:
             dist/
             package.json
             package-lock.json
+            drizzle.config.ts
+            shared/schema.ts
 
   deploy:
     runs-on: ubuntu-latest
@@ -101,14 +103,18 @@ jobs:
       - name: Upload server bundle and manifests
         run: |
           rsync -rlvz --delete --no-perms --no-owner --no-group \
-            dist/index.* package.json package-lock.json \
+            dist/index.* package.json package-lock.json drizzle.config.ts \
             "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${APP_ROOT}/"
 
           rsync -rlvz --delete --no-perms --no-owner --no-group \
             dist/public/ \
             "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${APP_ROOT}/public/"
 
-      - name: Install production dependencies and restart service
+          rsync -rlvz --no-perms --no-owner --no-group \
+            shared/ \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${APP_ROOT}/shared/"
+
+      - name: Install dependencies, run migrations, and restart service
         run: |
           APP_ROOT="${APP_ROOT}"
           SERVICE_NAME="${SERVICE_NAME}"
@@ -116,5 +122,6 @@ jobs:
           set -euo pipefail
           cd "$APP_ROOT"
           npm ci --omit=dev
+          npx drizzle-kit push --force
           sudo systemctl restart "$SERVICE_NAME"
           EOF
