@@ -1,0 +1,26 @@
+id: 001-get-api-riders-mtb-2026-8725ac38
+meta:
+  startedDateTime: 2026-01-20T09:23:15.381Z
+  timeMs: 199.57799999121764
+  resourceType: document
+request:
+  method: GET
+  url: https://www.uci.org/api/riders/MTB/2026?page=1&format=DH&pagesize=500
+  query:
+    page: "1"
+    format: DH
+    pagesize: "500"
+  headers:
+    accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+    user-agent: Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N)
+      AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Mobile
+      Safari/537.36
+  body: null
+response:
+  status: 200
+  statusText: ""
+  mimeType: application/json
+  headers:
+    content-type: application/json; charset=utf-8
+  body:
+    file: 001-get-api-riders-mtb-2026-8725ac38.response.json

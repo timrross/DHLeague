@@ -1,0 +1,12 @@
+{
+  "sourceHar": "/Users/tim/Documents/Workspace/dhleague/docs/example-responses/uci-riders.har",
+  "createdAt": "2026-01-20T09:24:59.491Z",
+  "totalEntries": 2,
+  "xhrEntries": 1,
+  "fixtures": [
+    {
+      "fileStem": "001-get-api-riders-mtb-2026-8725ac38",
+      "url": "https://www.uci.org/api/riders/MTB/2026?page=1&format=DH&pagesize=500"
+    }
+  ]
+}
