@@ -1,104 +1,281 @@
 # Rider Data Ingest Process
 
-This document describes how rider data is imported and maintained in the DH League app.
+This document describes how rider data is imported, reconciled, and maintained in the DH League app.
 
-## Data Sources
+## Data Sources (Priority Order)
 
-### 1. UCI Riders API (Primary Filter)
+### 1. UCI Dataride API (Primary Truth)
+- **Purpose:** Authoritative source for participation and rankings identity
+- **Data:** Rankings lists, round start lists, results
+- **Fields:** UciId, Rank, Points, IndividualFullName, TeamName, CountryIsoCode2, etc.
+- **Code:** `src/integrations/uciDataride/syncRidersFromRankings.ts`
+
+### 2. Pinkbike Fantasy Athlete List (Secondary Roster Seed)
+- **Purpose:** Captures privateers and riders not in UCI rankings
+- **Data:** Season roster candidates from Pinkbike fantasy game
+- **Fields:** name, country, team, pinkbikeProfileUrl
+- **Schema:** `docs/api/schemas/pinkbike-dh-fantasy-athletes.schema.json`
+- **Fixture:** `docs/api/fixtures/pinkbike/pinkbike-dh-fantasy-athletes.json`
+
+### 3. UCI Rider API (Tertiary Enrichment Only)
 - **Endpoint:** `https://www.uci.org/api/riders/MTB/{year}?page=1&pagesize=500`
-- **Purpose:** Defines which riders are eligible to appear in the app
-- **Filter:** Only riders with `format === "DH"` are included
-- **Fields available:** givenName, familyName, countryCode, teamName, format, url
-- **Example response:** `docs/api/uci-riders/001-get-api-riders-mtb-2026-8725ac38.response.json`
-- **Typical count:** ~147 DH riders
+- **Purpose:** Optional enrichment (team names, images, metadata)
+- **Code:** `server/services/uciApi.ts` → `getMTBDownhillRiders()`
 
-### 2. UCI Dataride API (Primary Data Source)
-- **Endpoint:** UCI Dataride ObjectRankings API
-- **Purpose:** Provides detailed rider data including UCI rankings and points
-- **Fields available:** UciId, Rank, Points, IndividualFullName, TeamName, CountryIsoCode2, etc.
-- **Typical count:** 400+ riders (includes all UCI-registered riders, not just active DH)
+**CRITICAL:** UCI Rider API is **never** used as an allowlist. Never delete/filter riders based on this source.
 
-## Ingest Process
+## Key Rule
 
-The rider import follows this process:
+**Never delete or filter out riders because they are missing from the UCI Rider API.**
+
+UCI Rider API is optional enrichment, not a gatekeeper. Riders may be privateers, late entries, or simply not in the UCI system.
+
+## Data Model
+
+### Required Fields on Rider Entity
+
+```typescript
+interface Rider {
+  // Identity (at least one should be set)
+  uciId: string | null;              // Canonical when known
+  datarideId: number | null;         // Dataride ObjectId
+  pinkbikeProfileUrl: string | null; // Pinkbike profile link
+
+  // Source tracking
+  sourceFlags: {
+    dataride: boolean;
+    pinkbikeFantasy: boolean;
+    uciRiderApi: boolean;
+  };
+
+  // Display identity
+  name: string;                      // Original display name
+  firstName?: string;
+  lastName?: string;
+  country?: string;
+  gender?: 'male' | 'female' | 'unknown';
+
+  // Team & status
+  teamName: string | null;
+  isPrivateer: boolean | null;       // true if no team after merge
+
+  // Activation status
+  activeCandidate: boolean;          // In any source roster candidate set
+  activeThisSeason: boolean;         // Seen in round OR explicitly seeded
+  lastSeenRoundId?: string;
+
+  // Match resolution tracking
+  needsReview: boolean;              // Low confidence match, needs manual review
+  resolutionConfidence: number;      // 0-1 scale
+  resolutionMethod: 'uciId' | 'datarideId' | 'pbUrl' | 'nameCountryGender' | 'manual';
+
+  // Soft delete (never hard delete)
+  isArchived: boolean;               // Default false
+}
+```
+
+## Canonical Identity Strategy
+
+Match riders in this priority order:
+
+| Priority | Method | Confidence |
+|----------|--------|------------|
+| 1 | Exact match by `uciId` | 1.0 (best) |
+| 2 | Exact match by `datarideId` | 0.95 (strong) |
+| 3 | Match by `pinkbikeProfileUrl` | 0.9 (strong within Pinkbike) |
+| 4 | Match by normalized (name + country + gender) | 0.7 (medium) |
+| 5 | Create new record | 0.3 (low, mark `needsReview=true`) |
+
+### Name Normalization
+
+For matching purposes:
+1. Trim whitespace
+2. Collapse multiple spaces to single space
+3. Remove diacritics (store original display name separately)
+4. Uppercase for key comparisons
+
+Example: `"  Löïc  BRUNI "` → `"LOIC BRUNI"` (for matching key)
+
+## Reconciliation Steps
+
+### Step 0 — Load Inputs
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ Load Dataride riders (from rankings + round participants)       │
+│ Load Pinkbike athletes (from saved JSON fixture)                │
+│ Load UCI Rider API riders (for enrichment only)                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Step 1 — Upsert Dataride Riders (Primary)
+
+For each Dataride candidate:
+- Upsert using `uciId` if present, else `datarideId`
+- Set:
+  - `sourceFlags.dataride = true`
+  - `activeCandidate = true`
+- Do NOT clear `teamName` if missing; only update if value present
+
+### Step 2 — Upsert Pinkbike Riders (Secondary)
+
+For each Pinkbike athlete:
+1. Find match in DB via:
+   - `uciId` (if present in Pinkbike data)
+   - `pinkbikeProfileUrl`
+   - Normalized (name + country + gender)
+2. Upsert/create if not found
+3. Set:
+   - `sourceFlags.pinkbikeFantasy = true`
+   - `pinkbikeProfileUrl = ...`
+   - `activeCandidate = true`
+4. If no `teamName` after merge: set `isPrivateer = true`
+
+### Step 3 — Enrich from UCI Rider API (Tertiary)
+
+For each UCI Rider API rider:
+1. Match via:
+   - `uciId` (best)
+   - Normalized (name + country + gender) as fallback
+2. If matched:
+   - Set `sourceFlags.uciRiderApi = true`
+   - Enrich: `teamName`, `country`, `gender`, image URLs
+3. If NOT matched:
+   - OPTIONAL: Create record with `activeCandidate = false`
+   - These riders are not draftable unless also in Dataride/Pinkbike
+
+**CRITICAL:** UCI Rider API must NEVER remove riders or mark them inactive.
+
+### Step 4 — Season Activation & Pruning (Non-Destructive)
+
+Two boolean concepts:
+- `activeCandidate` = "in any source roster candidate set"
+- `activeThisSeason` = "seen participating in a round OR explicitly seeded"
+
+Rules:
+- If seen in round participants/results:
+  - Set `activeThisSeason = true`
+  - Set `lastSeenRoundId = <roundId>`
+- Else if in Dataride rankings OR Pinkbike list:
+  - Keep `activeCandidate = true`
+  - Allow drafting
+- **Never delete**; only archive riders absent for N seasons (manual job)
+
+## Ingest Flow Diagram
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                     RIDER IMPORT FLOW                            │
 └─────────────────────────────────────────────────────────────────┘
 
-1. Fetch UCI Riders API
-   └─→ Filter by format === "DH"
-   └─→ Result: ~147 eligible DH riders (the "allowlist")
-
-2. Fetch UCI Dataride API
+1. Fetch UCI Dataride API (PRIMARY)
    └─→ Get Elite Men + Elite Women rankings
-   └─→ Result: 400+ riders with detailed ranking data
+   └─→ Upsert all riders, set sourceFlags.dataride=true
+   └─→ Set activeCandidate=true
 
-3. Cross-reference
-   └─→ Match Dataride riders against allowlist by name
-   └─→ Only keep riders that appear in BOTH sources
-   └─→ Result: ~147 riders with full ranking data
+2. Load Pinkbike Fantasy Athletes (SECONDARY)
+   └─→ Read local JSON fixture
+   └─→ Match/upsert riders, set sourceFlags.pinkbikeFantasy=true
+   └─→ Set activeCandidate=true
+   └─→ Mark isPrivateer=true if no team
 
-4. Merge data
-   └─→ Primary data: Dataride (UciId, Rank, Points, etc.)
-   └─→ Override team name from UCI Riders API (more current)
+3. Fetch UCI Rider API (ENRICHMENT ONLY)
+   └─→ Filter by format === "DH"
+   └─→ Match existing riders by uciId or name
+   └─→ Enrich: teamName, country, images
+   └─→ Set sourceFlags.uciRiderApi=true
+   └─→ DO NOT delete or filter riders!
 
-5. Calculate derived fields
+4. Calculate derived fields
    └─→ points = 0 (start fresh each season)
    └─→ lastYearStanding = Dataride Rank
-   └─→ cost = 1,000,000 / (lastYearStanding ^ 0.7), min $10,000
-   └─→ if Dataride name has a leading `*`, mark rider as `junior`
+   └─→ cost = 500,000 / (lastYearStanding ^ 0.7), min $10,000
 
-6. Upsert to database
-   └─→ Insert new riders
-   └─→ Update existing riders (by uciId)
-
-7. Remove unlisted riders
-   └─→ Delete any riders in DB that aren't in the final allowlist
+5. No deletion step
+   └─→ Riders persist unless manually archived
 ```
-
-## Name Matching Strategy
-
-Since the UCI Riders API doesn't expose UciId directly, we match riders by normalized name:
-
-1. Normalize both names: lowercase, trim whitespace, remove accents
-   └─→ strip leading `*` before matching, but record junior status
-2. Build lookup key: `${firstName} ${lastName}` normalized
-3. Match Dataride riders against UCI Riders allowlist
 
 ## Code Locations
 
-- **UCI Riders API client:** `server/services/uciApi.ts` → `getMTBDownhillRiders()`
-- **Dataride API client:** `src/integrations/uciDataride/syncRidersFromRankings.ts`
-- **Rider normalization:** `src/integrations/uciDataride/normalize.ts`
-- **Admin import endpoint:** `server/controllers/admin.controller.ts`
+| Component | Location |
+|-----------|----------|
+| Dataride sync | `src/integrations/uciDataride/syncRidersFromRankings.ts` |
+| Dataride normalization | `src/integrations/uciDataride/normalize.ts` |
+| UCI riders sync script | `server/scripts/sync-uci-riders.ts` |
+| Pinkbike athletes sync | `server/scripts/sync-pinkbike-athletes.ts` |
+| Rider activation | `server/scripts/activate-top-riders.ts` |
+| UCI Rider API (enrichment) | `server/services/uciApi.ts` |
+| Riders storage | `server/storage.ts` |
+| Riders controller | `server/controllers/riders.controller.ts` |
+| Admin endpoints | `server/controllers/admin.controller.ts` |
+| Schema | `shared/schema.ts` |
+| Migration | `migrations/0003_add_rider_active_flag.sql` |
 
 ## Feature Flags
 
-- `JUNIOR_TEAM_ENABLED`: When false, only import Elite Men and Elite Women categories
+- `JUNIOR_TEAM_ENABLED`: When false, only import Elite Men and Elite Women categories from Dataride
 
 ## Running the Import
 
-### Via Admin API (SSE streaming)
+### Step 1: Sync UCI Dataride Riders (Primary)
+```bash
+npx tsx server/scripts/sync-uci-riders.ts
+# Options:
+#   --season=<id>   Specific season ID or "latest"
+#   --dry-run       Preview changes without writing
+#   --debug         Enable debug logging
+```
+
+### Step 2: Sync Pinkbike Athletes (Secondary)
+```bash
+npx tsx server/scripts/sync-pinkbike-athletes.ts
+# Options:
+#   --dry-run       Preview changes without writing
+```
+
+### Step 3: Activate Top Riders
+```bash
+npx tsx server/scripts/activate-top-riders.ts
+# Options:
+#   --limit=<n>     Number of riders per gender (default: 200)
+#   --dry-run       Preview changes without writing
+```
+
+### Dataride Only (via Admin API, SSE streaming)
 ```
 POST /api/admin/riders/sync-dataride
 ```
-Returns server-sent events with progress updates.
 
-### Programmatically
-```typescript
-import { syncRidersFromRankings } from './src/integrations/uciDataride/syncRidersFromRankings';
+## Schema Changes
 
-const summary = await syncRidersFromRankings({
-  log: console.log,
-  filterByUciRidersApi: true,  // Enable cross-reference filtering
-});
-```
+### Implemented
+- `active` (boolean, default false) - Only active riders are shown in team builder (top 200 per gender)
+
+### Future Enhancements (Optional)
+- `pinkbikeProfileUrl` (nullable string) - Link to Pinkbike profile
+- `sourceDataride` (boolean, default false) - Track if rider came from Dataride
+- `sourcePinkbikeFantasy` (boolean, default false) - Track if rider came from Pinkbike
+- `sourceUciRiderApi` (boolean, default false) - Track if enriched from UCI Rider API
+- `isPrivateer` (nullable boolean) - True if rider has no team
+- `lastSeenRoundId` (nullable string) - Last race where rider participated
+- `needsReview` (boolean, default false) - Flag for manual review
+- `resolutionConfidence` (numeric, default 1.0) - Match confidence score
+- `resolutionMethod` (string, nullable) - How the rider was matched
+- `isArchived` (boolean, default false) - Soft delete flag
+
+## Behavioral Changes from Previous System
+
+1. **REMOVED:** Logic that deletes riders based on UCI Rider API
+2. **REMOVED:** UCI Rider API as "allowlist filter"
+3. **CHANGED:** UCI Rider API is now "enrichment pass" only
+4. **ADDED:** Pinkbike athlete import step
+5. **ADDED:** Soft delete (`isArchived`) instead of hard delete
+6. **ADDED:** Source tracking flags per rider
+7. **ADDED:** Resolution confidence tracking
 
 ## Data Quality Notes
 
-1. **Team names:** UCI Riders API has more current team names than Dataride
+1. **Team names:** UCI Rider API has more current team names than Dataride
 2. **Name formatting:** Dataride uses "LASTNAME Firstname" format; normalize accordingly
-3. **Leading asterisks:** `*` indicates a junior rider. Remove the marker for matching but store the rider as `junior`.
+3. **Privateers:** Riders without a team after all sources merge get `isPrivateer=true`
 4. **Unranked riders:** Riders without a Dataride ranking get lastYearStanding=0 and minimum cost

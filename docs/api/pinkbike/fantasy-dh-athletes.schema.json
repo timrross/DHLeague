@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dhleague.app/schemas/pinkbike-dh-fantasy-athletes.schema.json",
+  "title": "Pinkbike DH Fantasy Athlete List",
+  "description": "Season-level candidate rider roster scraped from the Pinkbike DH Fantasy League athlete list. Used as a secondary seed source for rider ingestion.",
+  "type": "object",
+  "required": ["meta", "athletes"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["source", "season", "scrapedAt"],
+      "properties": {
+        "source": {
+          "type": "string",
+          "const": "pinkbike-dh-fantasy"
+        },
+        "season": {
+          "type": "string",
+          "description": "Season identifier, e.g. '2026'"
+        },
+        "scrapedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO timestamp when the list was scraped"
+        },
+        "sourceUrl": {
+          "type": "string",
+          "format": "uri",
+          "default": "https://www.pinkbike.com/contest/fantasy/dh/athletes/"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional free-form notes about the scrape or season"
+        }
+      },
+      "additionalProperties": false
+    },
+    "athletes": {
+      "type": "array",
+      "description": "List of athletes included in the Pinkbike DH Fantasy League for the season",
+      "items": {
+        "type": "object",
+        "required": ["name", "pinkbikeProfileUrl"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Athlete display name as shown on Pinkbike"
+          },
+          "pinkbikeProfileUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "Link to the athlete's Pinkbike profile"
+          },
+          "gender": {
+            "type": "string",
+            "enum": ["male", "female", "unknown"],
+            "default": "unknown",
+            "description": "Inferred or resolved gender (optional at ingest time)"
+          },
+          "country": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 3,
+            "description": "ISO 3166-1 alpha-2 or alpha-3 country code if known"
+          },
+          "uciId": {
+            "type": ["string", "null"],
+            "description": "Resolved UCI rider ID, if known"
+          },
+          "datarideId": {
+            "type": ["integer", "null"],
+            "description": "Resolved UCI Dataride internal athlete ID, if known"
+          },
+          "teamName": {
+            "type": ["string", "null"],
+            "description": "Team name if known; null for privateers"
+          },
+          "isPrivateer": {
+            "type": "boolean",
+            "description": "True if rider has no registered trade team"
+          },
+          "sourceFlags": {
+            "type": "object",
+            "required": ["pinkbikeFantasy"],
+            "properties": {
+              "pinkbikeFantasy": { "type": "boolean", "const": true },
+              "dataride": { "type": "boolean" },
+              "uciRidersApi": { "type": "boolean" }
+            },
+            "additionalProperties": false
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Optional confidence score for identity resolution (0–1)"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

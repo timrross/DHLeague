@@ -84,7 +84,8 @@ export const riders = pgTable("riders", {
   country: text("country"),
   points: integer("points").notNull().default(0),
   form: text("form").notNull().default("[]"), // JSON array of last 5 results
-  injured: boolean("injured").notNull().default(false)
+  injured: boolean("injured").notNull().default(false),
+  active: boolean("active").notNull().default(false) // Only active riders shown in team builder
 });
 
 export type Rider = typeof riders.$inferSelect;

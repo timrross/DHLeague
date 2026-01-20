@@ -8,7 +8,7 @@ import { createRiderSchema, updateRiderSchema } from "./riders.validation";
 export async function getRiders(req: Request, res: Response) {
   try {
     const filters: RiderFilters = {};
-    const { gender, category, team, search } = req.query;
+    const { gender, category, team, search, active } = req.query;
 
     if (gender && typeof gender === "string") {
       filters.gender = gender;
@@ -24,6 +24,16 @@ export async function getRiders(req: Request, res: Response) {
 
     if (search && typeof search === "string") {
       filters.search = search;
+    }
+
+    // Filter by active status - defaults to showing only active riders for team builder
+    if (active === "true" || active === "1") {
+      filters.active = true;
+    } else if (active === "false" || active === "0") {
+      filters.active = false;
+    } else if (active === undefined) {
+      // Default to active riders only for team builder use case
+      filters.active = true;
     }
 
     const parseNumberParam = (value: unknown, field: string) => {

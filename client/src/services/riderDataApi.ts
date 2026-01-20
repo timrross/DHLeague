@@ -25,6 +25,7 @@ export type RiderQueryParams = {
   search?: string;
   sortBy?: RiderSortField;
   sortDir?: RiderSortDir;
+  active?: boolean;
 };
 
 type QueryOptions<T> = Omit<UseQueryOptions<T>, "queryKey" | "queryFn">;
@@ -38,6 +39,7 @@ function buildRidersUrl(params?: RiderQueryParams) {
   if (params?.search) searchParams.set("search", params.search);
   if (params?.sortBy) searchParams.set("sortBy", params.sortBy);
   if (params?.sortDir) searchParams.set("sortDir", params.sortDir);
+  if (typeof params?.active === "boolean") searchParams.set("active", String(params.active));
   const queryString = searchParams.toString();
   return queryString ? `${riderDataEndpoints.riders}?${queryString}` : riderDataEndpoints.riders;
 }

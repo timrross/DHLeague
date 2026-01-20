@@ -37,6 +37,7 @@ export type RiderFilters = {
   maxCost?: number;
   team?: string;
   search?: string;
+  active?: boolean;
 };
 
 export type RiderSortField = "name" | "cost" | "points" | "lastYearStanding" | "team";
@@ -315,6 +316,10 @@ export class DatabaseStorage implements IStorage {
           ilike(riders.team, pattern)
         )
       );
+    }
+
+    if (typeof filters.active === "boolean") {
+      whereClauses.push(eq(riders.active, filters.active));
     }
 
     const whereStatement =
