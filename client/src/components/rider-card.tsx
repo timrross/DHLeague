@@ -1,6 +1,7 @@
 import { Rider } from "@shared/schema";
 import { Check, Plus } from "lucide-react";
 import RiderIdentity from "@/components/rider-identity";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface RiderCardProps {
   rider: Rider;
@@ -44,7 +45,7 @@ export default function RiderCard({
       ? 'border-red-400 bg-red-50' 
       : 'border-gray-200';
 
-  return (
+  const cardContent = (
     <div 
       className={`border ${cardBorderClass} rounded-md p-3 hover:bg-gray-50 transition duration-200 
       ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} 
@@ -104,17 +105,24 @@ export default function RiderCard({
             }}
             disabled={disabled}
             aria-label={isRiderSelected ? "Selected" : "Add rider"}
-            title={disabledReason || undefined}
           >
             {isRiderSelected ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
           </button>
         )}
       </div>
-      {disabledReason && (
-        <div className="mt-2 text-xs font-semibold text-amber-600">
-          {disabledReason}
-        </div>
-      )}
     </div>
+  );
+
+  if (!disabledReason) {
+    return cardContent;
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{cardContent}</TooltipTrigger>
+      <TooltipContent className="border-amber-200 bg-amber-50 text-amber-900 text-[13px]">
+        {disabledReason}
+      </TooltipContent>
+    </Tooltip>
   );
 }
