@@ -37,7 +37,11 @@ export async function getEditingWindow(
   const nextRace =
     raceRows.find((race) => new Date(race.startDate) > now) ?? null;
 
-  const readyForEdits = !lastStartedRace || lastStartedRace.gameStatus === "settled";
+  const lastRaceEnded = lastStartedRace
+    ? new Date(lastStartedRace.endDate) <= now
+    : true;
+  const readyForEdits =
+    !lastStartedRace || lastRaceEnded || lastStartedRace.gameStatus === "settled";
   const nextLockAt = nextRace?.lockAt ? new Date(nextRace.lockAt) : null;
   const nextStatus = String(nextRace?.gameStatus ?? "scheduled").toLowerCase();
 
