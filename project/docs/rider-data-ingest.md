@@ -47,7 +47,7 @@ The rider import follows this process:
 5. Calculate derived fields
    └─→ points = 0 (start fresh each season)
    └─→ lastYearStanding = Dataride Rank
-   └─→ cost = 500,000 / (lastYearStanding ^ 0.7), min $10,000
+   └─→ cost = 1,000,000 / (lastYearStanding ^ 0.7), min $10,000
    └─→ if Dataride name has a leading `*`, mark rider as `junior`
 
 6. Upsert to database

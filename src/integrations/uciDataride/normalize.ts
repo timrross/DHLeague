@@ -162,10 +162,10 @@ export function normalizeRiderRow(
   // Riders start with zero points; points are earned from race results.
   const points = 0;
   // Cost is derived from standing using a power law: higher ranked = more expensive.
-  // Formula: 500,000 / (position ^ 0.7), minimum $10,000
+  // Formula: 1,000,000 / (position ^ 0.7), minimum $10,000
   const cost =
     lastYearStanding > 0
-      ? Math.max(10000, Math.round(500000 / Math.pow(lastYearStanding, 0.7)))
+      ? Math.max(10000, Math.round(1000000 / Math.pow(lastYearStanding, 0.7)))
       : 10000;
   const uciId = String(row.UciId);
   const riderId = uciId;
