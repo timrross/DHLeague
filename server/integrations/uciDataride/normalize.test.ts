@@ -78,6 +78,11 @@ describe("normalizeRiderRow", () => {
     assert.equal(normalized.datarideTeamCode, "TCO");
   });
 
+  it("marks junior riders when a leading asterisk is present", () => {
+    const normalized = normalizeRiderRow(baseRow, "male", "elite");
+    assert.equal(normalized.category, "junior");
+  });
+
   it("sets points to zero and calculates cost from standing", () => {
     const normalized = normalizeRiderRow(baseRow, "male");
 

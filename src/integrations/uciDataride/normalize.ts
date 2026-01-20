@@ -90,9 +90,19 @@ export function normalizeCategoryToKey(category: {
   return null;
 }
 
-function stripLeadingAsterisk(value?: string | null) {
-  if (!value) return value ?? undefined;
-  return value.replace(/^\*\s*/, "").trim();
+function stripLeadingAsterisk(value?: string | null): {
+  value?: string;
+  hadAsterisk: boolean;
+} {
+  if (!value) return { value: value ?? undefined, hadAsterisk: false };
+  const trimmed = value.trim();
+  if (!trimmed.startsWith("*")) {
+    return { value: trimmed, hadAsterisk: false };
+  }
+  return {
+    value: trimmed.replace(/^\*\s*/, "").trim(),
+    hadAsterisk: true,
+  };
 }
 
 function isUppercaseToken(token: string): boolean {
@@ -144,7 +154,8 @@ export function normalizeRiderRow(
 ): NormalizedRider {
   const cleanedFullName = stripLeadingAsterisk(row.IndividualFullName);
   const displayName = stripLeadingAsterisk(row.DisplayName);
-  const name = (cleanedFullName || displayName || "").trim();
+  const name = (cleanedFullName.value || displayName.value || "").trim();
+  const isJunior = cleanedFullName.hadAsterisk || displayName.hadAsterisk;
   const team = row.TeamName ?? row.DisplayTeam ?? "";
   // Use UCI ranking position as lastYearStanding for cost calculation.
   const lastYearStanding = row.Rank ?? 0;
@@ -169,7 +180,7 @@ export function normalizeRiderRow(
     firstName: nameParts.firstName,
     lastName: nameParts.lastName,
     gender,
-    category,
+    category: isJunior ? "junior" : category,
     team,
     country: row.CountryIsoCode2,
     points,

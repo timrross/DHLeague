@@ -48,6 +48,7 @@ The rider import follows this process:
    └─→ points = 0 (start fresh each season)
    └─→ lastYearStanding = Dataride Rank
    └─→ cost = 500,000 / (lastYearStanding ^ 0.7), min $10,000
+   └─→ if Dataride name has a leading `*`, mark rider as `junior`
 
 6. Upsert to database
    └─→ Insert new riders
@@ -62,6 +63,7 @@ The rider import follows this process:
 Since the UCI Riders API doesn't expose UciId directly, we match riders by normalized name:
 
 1. Normalize both names: lowercase, trim whitespace, remove accents
+   └─→ strip leading `*` before matching, but record junior status
 2. Build lookup key: `${firstName} ${lastName}` normalized
 3. Match Dataride riders against UCI Riders allowlist
 
@@ -98,5 +100,5 @@ const summary = await syncRidersFromRankings({
 
 1. **Team names:** UCI Riders API has more current team names than Dataride
 2. **Name formatting:** Dataride uses "LASTNAME Firstname" format; normalize accordingly
-3. **Leading asterisks:** Some Dataride names have leading `*` (stripped during normalization)
+3. **Leading asterisks:** `*` indicates a junior rider. Remove the marker for matching but store the rider as `junior`.
 4. **Unranked riders:** Riders without a Dataride ranking get lastYearStanding=0 and minimum cost

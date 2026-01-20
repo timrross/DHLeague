@@ -4,7 +4,8 @@ import {
   type Rider,
 } from "../../../shared/schema";
 import { FEATURES } from "../../../server/services/features";
-import { eq } from "drizzle-orm";
+import { UCIApiService } from "../../../server/services/uciApi";
+import { eq, notInArray } from "drizzle-orm";
 
 import { BASE_URL, RACE_TYPES, SPORT } from "./constants";
 import { getJson, postForm } from "./http";
@@ -35,6 +36,8 @@ type DatarideHttpClient = {
 type SyncOptions = {
   seasonId?: number | "latest";
   rankingTypeId?: number;
+  uciSeasonYear?: number;
+  filterByUciRidersApi?: boolean;
   dryRun?: boolean;
   log?: Logger;
   httpClient?: DatarideHttpClient;
@@ -64,6 +67,50 @@ type RaceType = {
   Code?: string;
   DisplayText?: string;
 };
+
+type UciRiderProfile = {
+  givenName?: string;
+  familyName?: string;
+  teamName?: string;
+  countryCode?: string;
+  format?: string;
+  url?: string;
+};
+
+type UciAllowlistEntry = {
+  nameKey: string;
+  givenName: string;
+  familyName: string;
+  teamName?: string;
+  countryCode?: string;
+};
+
+function normalizeNameToken(value: string): string {
+  return value
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toLowerCase();
+}
+
+function buildNameKey(firstName: string, lastName: string): string {
+  return `${normalizeNameToken(firstName)}:${normalizeNameToken(lastName)}`;
+}
+
+function buildNameKeyFromFullName(name: string): string | null {
+  const tokens = name.split(/\s+/).filter(Boolean);
+  if (tokens.length < 2) return null;
+  return buildNameKey(tokens[0], tokens.slice(1).join(" "));
+}
+
+function buildNameKeyFromRider(rider: NormalizedRider): string | null {
+  const firstName = rider.firstName?.trim();
+  const lastName = rider.lastName?.trim();
+  if (firstName && lastName) {
+    return buildNameKey(firstName, lastName);
+  }
+  return buildNameKeyFromFullName(rider.name);
+}
 
 function resolveRaceTypeId(rt: RaceType): number | null {
   const raw =
@@ -115,6 +162,11 @@ type Summary = {
   ridersUpserted: number;
   ridersUpdated: number;
   skippedRows: number;
+  ridersFilteredOut: number;
+  ridersDeleted: number;
+  uciAllowlistCount: number;
+  uciAllowlistKeys: number;
+  ambiguousMatches: number;
   errors: number;
 };
 
@@ -122,6 +174,39 @@ function genderFromCategory(category: CategoryKey): "male" | "female" {
   return category === "ELITE_WOMEN" || category === "JUNIOR_WOMEN"
     ? "female"
     : "male";
+}
+
+async function fetchUciAllowlist(
+  log: Logger,
+  seasonYear?: number,
+): Promise<Map<string, UciAllowlistEntry[]>> {
+  const uciApi = new UCIApiService();
+  const label = seasonYear ? ` (${seasonYear})` : "";
+  log(`Fetching UCI riders allowlist${label}`);
+  const riders = (await uciApi.getMTBDownhillRiders(seasonYear)) as UciRiderProfile[];
+  const allowlist = new Map<string, UciAllowlistEntry[]>();
+
+  for (const rider of riders) {
+    const givenName = rider.givenName?.trim();
+    const familyName = rider.familyName?.trim();
+    if (!givenName || !familyName) {
+      continue;
+    }
+    const nameKey = buildNameKey(givenName, familyName);
+    const entry: UciAllowlistEntry = {
+      nameKey,
+      givenName,
+      familyName,
+      teamName: rider.teamName?.trim() || undefined,
+      countryCode: rider.countryCode?.trim() || undefined,
+    };
+    const entries = allowlist.get(nameKey) ?? [];
+    entries.push(entry);
+    allowlist.set(nameKey, entries);
+  }
+
+  log(`UCI allowlist loaded: ${allowlist.size} unique names`);
+  return allowlist;
 }
 
 async function fetchLatestSeasonId(
@@ -374,6 +459,48 @@ async function fetchRankingRows(
   return rows;
 }
 
+function applyUciAllowlist(
+  normalizedRows: NormalizedRider[],
+  allowlist: Map<string, UciAllowlistEntry[]>,
+  summary: Summary,
+  log: Logger,
+): NormalizedRider[] {
+  const filtered: NormalizedRider[] = [];
+
+  for (const rider of normalizedRows) {
+    const nameKey = buildNameKeyFromRider(rider);
+    if (!nameKey) {
+      summary.skippedRows += 1;
+      summary.ridersFilteredOut += 1;
+      continue;
+    }
+
+    const matches = allowlist.get(nameKey);
+    if (!matches || matches.length === 0) {
+      summary.ridersFilteredOut += 1;
+      continue;
+    }
+
+    if (matches.length > 1) {
+      summary.ambiguousMatches += 1;
+      summary.ridersFilteredOut += 1;
+      log(
+        `Skipping ${rider.name} due to ambiguous UCI allowlist matches (${matches.length}).`,
+      );
+      continue;
+    }
+
+    const match = matches[0];
+    if (match.teamName) {
+      filtered.push({ ...rider, team: match.teamName });
+    } else {
+      filtered.push(rider);
+    }
+  }
+
+  return filtered;
+}
+
 async function upsertRiders(
   database: AppDb,
   normalized: NormalizedRider[],
@@ -473,6 +600,11 @@ export async function syncRidersFromRankings(options: SyncOptions = {}): Promise
     ridersUpserted: 0,
     ridersUpdated: 0,
     skippedRows: 0,
+    ridersFilteredOut: 0,
+    ridersDeleted: 0,
+    uciAllowlistCount: 0,
+    uciAllowlistKeys: 0,
+    ambiguousMatches: 0,
     errors: 0,
   };
 
@@ -502,11 +634,31 @@ export async function syncRidersFromRankings(options: SyncOptions = {}): Promise
     `Processing ${raceTypes.length * relevantCategories.length} category/race type combinations`,
   );
 
+  const useUciAllowlist = options.filterByUciRidersApi === true;
+  const uciSeasonYear =
+    options.uciSeasonYear ??
+    (process.env.UCI_RIDERS_SEASON_YEAR
+      ? Number(process.env.UCI_RIDERS_SEASON_YEAR)
+      : undefined);
+  const uciAllowlist = useUciAllowlist
+    ? await fetchUciAllowlist(log, uciSeasonYear)
+    : null;
+
+  if (uciAllowlist) {
+    summary.uciAllowlistKeys = uciAllowlist.size;
+    summary.uciAllowlistCount = Array.from(uciAllowlist.values()).reduce(
+      (total, entries) => total + entries.length,
+      0,
+    );
+  }
+
   const existingRiders = new Map<string, Rider>();
   const existingRows = await database.select().from(riders);
   for (const rider of existingRows) {
     existingRiders.set(rider.uciId, rider);
   }
+
+  const allowlistedUciIds = new Set<string>();
 
   for (const raceType of raceTypes) {
     const raceTypeId = resolveRaceTypeId(raceType);
@@ -568,9 +720,19 @@ export async function syncRidersFromRankings(options: SyncOptions = {}): Promise
             normalizeRiderRow(row, normalizedGender, normalizedCategory),
           );
 
+          const rowsToUpsert = uciAllowlist
+            ? applyUciAllowlist(normalizedRows, uciAllowlist, summary, log)
+            : normalizedRows;
+
+          if (uciAllowlist) {
+            for (const rider of rowsToUpsert) {
+              allowlistedUciIds.add(rider.uciId);
+            }
+          }
+
           await upsertRiders(
             database,
-            normalizedRows,
+            rowsToUpsert,
             existingRiders,
             summary,
             options.dryRun,
@@ -582,6 +744,19 @@ export async function syncRidersFromRankings(options: SyncOptions = {}): Promise
           log(`Failed to process ranking ${rankingId}: ${error instanceof Error ? error.message : String(error)}`);
         }
       }
+    }
+  }
+
+  if (uciAllowlist && !options.dryRun) {
+    if (allowlistedUciIds.size === 0) {
+      log("Skipping rider cleanup because no allowlisted riders matched.");
+    } else {
+      const deleted = await database
+        .delete(riders)
+        .where(notInArray(riders.uciId, Array.from(allowlistedUciIds)))
+        .returning({ uciId: riders.uciId });
+      summary.ridersDeleted = deleted.length;
+      log(`Removed ${summary.ridersDeleted} riders not in UCI allowlist.`);
     }
   }
 

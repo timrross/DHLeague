@@ -215,6 +215,7 @@ export async function streamDatarideRiderSync(req: Request, res: Response) {
   try {
     const summary = await syncRidersFromRankings({
       log: message => sendEvent({ type: "log", message }),
+      filterByUciRidersApi: true,
     });
 
     sendEvent({ type: "summary", summary });
