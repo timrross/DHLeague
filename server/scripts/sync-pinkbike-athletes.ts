@@ -1,6 +1,5 @@
 import { db } from "../db";
 import { riders, type InsertRider, type Rider } from "../../shared/schema";
-import { eq, or, sql } from "drizzle-orm";
 import * as fs from "fs";
 import * as path from "path";
 

@@ -1,6 +1,6 @@
 import { db } from "../db";
 import { riders } from "../../shared/schema";
-import { eq, sql, desc, and, gt, asc } from "drizzle-orm";
+import { eq, sql, desc, asc } from "drizzle-orm";
 
 const RIDERS_PER_GENDER = 200;
 
