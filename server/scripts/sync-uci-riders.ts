@@ -31,4 +31,9 @@ async function main() {
   }
 }
 
-void main();
+// Only run main() when executed directly via tsx/node, not when bundled
+const isScript = process.argv[1]?.includes("sync-uci-riders");
+
+if (isScript) {
+  void main();
+}

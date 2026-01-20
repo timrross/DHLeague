@@ -1,5 +1,3 @@
-import path from "path";
-import { fileURLToPath } from "url";
 import { db } from "../db";
 import { riders } from "../../shared/schema";
 import { eq, sql, desc, asc, inArray } from "drizzle-orm";
@@ -142,10 +140,10 @@ async function main() {
   }
 }
 
-const __filename = fileURLToPath(import.meta.url);
-const isDirectRun = Boolean(process.argv[1]) && path.resolve(process.argv[1]) === __filename;
+// Only run main() when executed directly via tsx/node, not when bundled
+const isScript = process.argv[1]?.includes("activate-top-riders");
 
-if (isDirectRun) {
+if (isScript) {
   void main();
 }
 
