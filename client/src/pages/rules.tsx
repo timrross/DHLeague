@@ -43,10 +43,10 @@ export default function Rules() {
     <div className="min-h-screen bg-neutral">
       <div className="container mx-auto px-4 py-8 md:py-12">
         <h2 className="mb-3 text-2xl font-heading font-bold text-secondary md:text-3xl">
-          DHLeague - How the Game Works
+          MTB Fantasy - How the Game Works
         </h2>
         <p className="mb-6 text-gray-700">
-          Welcome to DHLeague, a fantasy Downhill MTB league where you build a team of riders and
+          Welcome to MTB Fantasy, a fantasy Downhill MTB league where you build a team of riders and
           score points based on real race results. This page explains how the game works, how
           scoring is calculated, and how transfers, substitutions, and budgets behave.
         </p>
@@ -57,7 +57,7 @@ export default function Rules() {
               <section>
                 <h3 className="mb-4 text-xl font-heading text-secondary">1. The Basics</h3>
                 <ul className="list-disc space-y-1 pl-5 text-gray-700">
-                  <li>DHLeague currently covers Downhill (DHI) racing only.</li>
+                  <li>MTB Fantasy currently covers Downhill (DHI) racing only.</li>
                   <li>Each race weekend is called a Round.</li>
                   <li>Each round has separate races for Elite Men and Elite Women.</li>
                   <li>Junior Men and Women will be added later.</li>
