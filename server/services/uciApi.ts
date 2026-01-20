@@ -210,7 +210,7 @@ export class UCIApiService {
     try {
       // Get riders from the first page to determine total pages
       const firstPageResponse = await axios.get(
-        "https://www.uci.org/api/riders/MTB/2025?page=1",
+        "https://www.uci.org/api/riders/MTB/2026?page=1&pagesize=500",
       );
 
       // Extract pagination information (new format)
