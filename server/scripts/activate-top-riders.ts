@@ -2,7 +2,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { db } from "../db";
 import { riders } from "../../shared/schema";
-import { eq, sql, desc, asc } from "drizzle-orm";
+import { eq, sql, desc, asc, inArray } from "drizzle-orm";
 
 const RIDERS_PER_GENDER = 200;
 
@@ -73,7 +73,7 @@ async function activateTopRiders(options: {
     await db
       .update(riders)
       .set({ active: true })
-      .where(sql`${riders.id} = ANY(${maleIds})`);
+      .where(inArray(riders.id, maleIds));
   }
   summary.maleActivated = topMales.length;
 
@@ -104,7 +104,7 @@ async function activateTopRiders(options: {
     await db
       .update(riders)
       .set({ active: true })
-      .where(sql`${riders.id} = ANY(${femaleIds})`);
+      .where(inArray(riders.id, femaleIds));
   }
   summary.femaleActivated = topFemales.length;
 
