@@ -60,7 +60,8 @@ const schemaStatements = [
     country TEXT,
     points INTEGER NOT NULL DEFAULT 0,
     form TEXT NOT NULL DEFAULT '[]',
-    injured BOOLEAN NOT NULL DEFAULT FALSE
+    injured BOOLEAN NOT NULL DEFAULT FALSE,
+    active BOOLEAN NOT NULL DEFAULT FALSE
   )`,
   `ALTER TABLE riders ADD COLUMN IF NOT EXISTS uci_id TEXT`,
   `ALTER TABLE riders ADD COLUMN IF NOT EXISTS dataride_object_id TEXT`,
@@ -79,6 +80,12 @@ const schemaStatements = [
   `UPDATE riders SET image_source = 'placeholder' WHERE image_source IS NULL`,
   `ALTER TABLE riders ALTER COLUMN image_source SET DEFAULT 'placeholder'`,
   `ALTER TABLE riders ALTER COLUMN image_source SET NOT NULL`,
+  `ALTER TABLE riders ADD COLUMN IF NOT EXISTS active BOOLEAN DEFAULT FALSE`,
+  `UPDATE riders SET active = false WHERE active IS NULL`,
+  `ALTER TABLE riders ALTER COLUMN active SET DEFAULT false`,
+  `ALTER TABLE riders ALTER COLUMN active SET NOT NULL`,
+  `CREATE INDEX IF NOT EXISTS idx_riders_active ON riders(active) WHERE active = true`,
+  `CREATE INDEX IF NOT EXISTS idx_riders_active_gender ON riders(active, gender)`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS joker_active_race_id INTEGER`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS joker_active_team_type VARCHAR`,
   `CREATE TABLE IF NOT EXISTS races (

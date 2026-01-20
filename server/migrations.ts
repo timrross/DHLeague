@@ -162,6 +162,36 @@ export async function runMigrations() {
     await db.execute(sql`UPDATE riders SET injured = false WHERE injured IS NULL`);
     await db.execute(sql`ALTER TABLE riders ALTER COLUMN injured SET DEFAULT false`);
     await db.execute(sql`ALTER TABLE riders ALTER COLUMN injured SET NOT NULL`);
+
+    const checkActiveColumn = await db.execute(sql`
+      SELECT column_name
+      FROM information_schema.columns 
+      WHERE table_name = 'riders' AND column_name = 'active'
+    `);
+
+    const hasActiveColumn = checkActiveColumn.rows.length > 0;
+
+    if (!hasActiveColumn) {
+      console.log('Adding active column to riders table...');
+      await db.execute(sql`
+        ALTER TABLE riders
+        ADD COLUMN active BOOLEAN DEFAULT FALSE
+      `);
+      console.log('active column added successfully.');
+    } else {
+      console.log('active column already exists, skipping migration.');
+    }
+
+    console.log('Aligning riders.active defaults with schema...');
+    await db.execute(sql`UPDATE riders SET active = false WHERE active IS NULL`);
+    await db.execute(sql`ALTER TABLE riders ALTER COLUMN active SET DEFAULT false`);
+    await db.execute(sql`ALTER TABLE riders ALTER COLUMN active SET NOT NULL`);
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_riders_active ON riders(active) WHERE active = true
+    `);
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_riders_active_gender ON riders(active, gender)
+    `);
     
     // Check if joker_card_used column exists in users table
     const checkJokerCardColumn = await db.execute(sql`
