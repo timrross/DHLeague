@@ -46,7 +46,7 @@ export default function Home() {
                 </div>
               </Link>
               <Link href="/rules">
-                <div className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white font-semibold py-3 px-8 rounded-md text-center backdrop-filter backdrop-blur-sm transition duration-200 text-lg font-body cursor-pointer">
+                <div className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white font-semibold py-3 px-8 rounded-md text-center backdrop-filter backdrop-blur-sm transition duration-200 text-lg font-heading cursor-pointer">
                   HOW IT WORKS
                 </div>
               </Link>
