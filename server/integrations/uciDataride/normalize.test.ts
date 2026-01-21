@@ -90,8 +90,8 @@ describe("normalizeRiderRow", () => {
     assert.equal(normalized.points, 0);
     // lastYearStanding is derived from UCI rank position
     assert.equal(normalized.lastYearStanding, 1);
-    // Cost is 1,000,000 / (position ^ 0.7), minimum $10,000
-    // For position 1: 1000000 / (1 ^ 0.7) = 1000000
+    // Cost is 1,000,000 / (position ^ 0.4), minimum $10,000
+    // For position 1: 1000000 / (1 ^ 0.4) = 1000000
     assert.equal(normalized.cost, 1000000);
   });
 
@@ -108,12 +108,12 @@ describe("normalizeRiderRow", () => {
     assert.equal(normalized50.lastYearStanding, 50);
     assert.equal(normalized200.lastYearStanding, 200);
 
-    // position 10: 1000000 / (10 ^ 0.7) ≈ 199526
-    assert.equal(normalized10.cost, Math.round(1000000 / Math.pow(10, 0.7)));
-    // position 50: 1000000 / (50 ^ 0.7) ≈ 64677
-    assert.equal(normalized50.cost, Math.round(1000000 / Math.pow(50, 0.7)));
-    // position 200: 1000000 / (200 ^ 0.7) ≈ 24898
-    assert.equal(normalized200.cost, Math.round(1000000 / Math.pow(200, 0.7)));
+    // position 10: 1000000 / (10 ^ 0.4) ≈ 398107
+    assert.equal(normalized10.cost, Math.round(1000000 / Math.pow(10, 0.4)));
+    // position 50: 1000000 / (50 ^ 0.4) ≈ 178680
+    assert.equal(normalized50.cost, Math.round(1000000 / Math.pow(50, 0.4)));
+    // position 200: 1000000 / (200 ^ 0.4) ≈ 98405
+    assert.equal(normalized200.cost, Math.round(1000000 / Math.pow(200, 0.4)));
   });
 
   it("applies minimum cost for unranked riders", () => {
