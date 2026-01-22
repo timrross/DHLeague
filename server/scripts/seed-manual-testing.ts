@@ -15,7 +15,22 @@ import { eq, desc, and } from "drizzle-orm";
 import { fileURLToPath } from "node:url";
 import { db, pool } from "../db";
 import { resetDatabase } from "./dbReset";
-import { seasons, users, riders, teams, teamMembers, races, type Rider } from "@shared/schema";
+import {
+  seasons,
+  users,
+  riders,
+  teams,
+  teamMembers,
+  races,
+  raceSnapshots,
+  raceResults,
+  raceResultImports,
+  raceResultSets,
+  raceScores,
+  riderCostUpdates,
+  teamSwaps,
+  type Rider,
+} from "@shared/schema";
 import { BUDGETS } from "../services/game/config";
 
 const TEST_USER_COUNT = 10;
@@ -205,39 +220,57 @@ async function createSeason(): Promise<number> {
 async function createRaces(seasonId: number): Promise<void> {
   console.log("Creating races...");
 
-  for (const race of RACE_CALENDAR) {
-    // Check if race already exists
-    const existing = await db
-      .select()
-      .from(races)
-      .where(
-        and(
-          eq(races.name, race.name),
-          eq(races.seasonId, seasonId)
-        )
-      )
-      .limit(1);
+  // First, check how many races already exist for this season
+  const existingRaces = await db
+    .select()
+    .from(races)
+    .where(eq(races.seasonId, seasonId));
 
-    if (existing.length > 0) {
-      console.log(`Race ${race.name} already exists`);
-      continue;
+  console.log(`Found ${existingRaces.length} existing races for season ${seasonId}`);
+
+  // Delete existing races and their dependencies for this season
+  if (existingRaces.length > 0) {
+    const raceIds = existingRaces.map((r) => r.id);
+    console.log("Deleting existing races and dependencies for this season...");
+
+    // Delete dependent records first (order matters for foreign keys)
+    for (const raceId of raceIds) {
+      await db.delete(raceSnapshots).where(eq(raceSnapshots.raceId, raceId));
+      await db.delete(raceResults).where(eq(raceResults.raceId, raceId));
+      await db.delete(raceResultImports).where(eq(raceResultImports.raceId, raceId));
+      await db.delete(raceResultSets).where(eq(raceResultSets.raceId, raceId));
+      await db.delete(raceScores).where(eq(raceScores.raceId, raceId));
+      await db.delete(riderCostUpdates).where(eq(riderCostUpdates.raceId, raceId));
+      await db.delete(teamSwaps).where(eq(teamSwaps.raceId, raceId));
     }
 
-    await db.insert(races).values({
-      seasonId,
-      name: race.name,
-      location: race.location,
-      country: race.country,
-      startDate: new Date(race.startDate),
-      endDate: new Date(race.endDate),
-      lockAt: new Date(race.lockAt),
-      discipline: "DHI",
-      gameStatus: "scheduled",
-      needsResettle: false,
-    });
-
-    console.log(`Created race: ${race.name}`);
+    // Now delete the races
+    await db.delete(races).where(eq(races.seasonId, seasonId));
   }
+
+  // Create all races
+  for (const race of RACE_CALENDAR) {
+    try {
+      await db.insert(races).values({
+        seasonId,
+        name: race.name,
+        location: race.location,
+        country: race.country,
+        startDate: new Date(race.startDate),
+        endDate: new Date(race.endDate),
+        lockAt: new Date(race.lockAt),
+        discipline: "DHI",
+        gameStatus: "scheduled",
+        needsResettle: false,
+      });
+      console.log(`Created race: ${race.name}`);
+    } catch (error) {
+      console.error(`Failed to create race ${race.name}:`, error);
+      throw error;
+    }
+  }
+
+  console.log(`Created ${RACE_CALENDAR.length} races`);
 }
 
 async function createTestUsers(): Promise<string[]> {
