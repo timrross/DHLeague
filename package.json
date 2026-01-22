@@ -13,6 +13,7 @@
     "lint:data": "tsc -p tsconfig.data.json",
     "test": "node server/scripts/runTests.js",
     "db:push": "drizzle-kit push",
+    "db:reset": "tsx server/scripts/dbReset.ts",
     "seed": "tsx server/scripts/seed.ts",
     "seed:manual-test": "tsx server/scripts/seed-manual-testing.ts",
     "sync:uci-riders": "tsx server/scripts/sync-uci-riders.ts",
