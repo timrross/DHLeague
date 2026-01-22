@@ -105,8 +105,16 @@ function formatUserEmail(index: number): string {
   return `testuser${String(index + 1).padStart(2, "0")}@dhleague.test`;
 }
 
-function formatUserName(index: number): string {
-  return `Test User ${String(index + 1).padStart(2, "0")}`;
+function formatUserFirstName(index: number): string {
+  const firstNames = [
+    "Alice", "Bob", "Charlie", "Diana", "Eve",
+    "Frank", "Grace", "Henry", "Ivy", "Jack"
+  ];
+  return firstNames[index % firstNames.length];
+}
+
+function formatUserLastName(index: number): string {
+  return `Tester${String(index + 1).padStart(2, "0")}`;
 }
 
 function formatTeamName(index: number): string {
@@ -281,7 +289,8 @@ async function createTestUsers(): Promise<string[]> {
   for (let i = 0; i < TEST_USER_COUNT; i++) {
     const userId = formatUserId(i);
     const email = formatUserEmail(i);
-    const name = formatUserName(i);
+    const firstName = formatUserFirstName(i);
+    const lastName = formatUserLastName(i);
 
     // Check if user already exists
     const existing = await db
@@ -299,15 +308,15 @@ async function createTestUsers(): Promise<string[]> {
     await db.insert(users).values({
       id: userId,
       email,
-      firstName: name.split(" ")[0],
-      lastName: name.split(" ").slice(1).join(" "),
+      firstName,
+      lastName,
       isAdmin: false,
       isActive: true,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
 
-    console.log(`Created user: ${userId}`);
+    console.log(`Created user: ${userId} (${firstName} ${lastName})`);
     userIds.push(userId);
   }
 
