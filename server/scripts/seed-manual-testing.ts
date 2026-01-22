@@ -6,15 +6,16 @@
  * - 10 test users: test-user-01 through test-user-10
  * - 10 elite teams with varied rosters (uses existing riders from DB)
  *
+ * Prerequisites:
+ *   Riders must already be synced: npm run sync:uci-riders
+ *
  * Usage:
- *   npm run seed:manual-test          # Seed data (riders must already be synced)
- *   npm run seed:manual-test -- --reset   # Reset DB first, then seed (will need re-sync after)
+ *   npm run seed:manual-test
  */
 
 import { eq, desc, and } from "drizzle-orm";
 import { fileURLToPath } from "node:url";
 import { db, pool } from "../db";
-import { resetDatabase } from "./dbReset";
 import {
   seasons,
   users,
@@ -520,20 +521,6 @@ async function verifySetup(seasonId: number): Promise<void> {
 }
 
 async function main() {
-  const args = process.argv.slice(2);
-  const shouldReset = args.includes("--reset");
-
-  if (shouldReset) {
-    console.log("Resetting database...");
-    // Set TEST_NOW_ISO to skip placeholder race seeding during migrations
-    process.env.TEST_NOW_ISO = new Date().toISOString();
-    await resetDatabase();
-    delete process.env.TEST_NOW_ISO;
-    console.log("Database reset complete. Note: You will need to run npm run sync:uci-riders before running this script again.\n");
-    await pool.end();
-    return;
-  }
-
   try {
     // Create season
     const seasonId = await createSeason();
