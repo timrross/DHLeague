@@ -1,6 +1,15 @@
 import { asc, eq } from "drizzle-orm";
 import { db } from "../../db";
-import { raceResults, races } from "@shared/schema";
+import {
+  raceResults,
+  races,
+  raceSnapshots,
+  raceResultImports,
+  raceResultSets,
+  raceScores,
+  riderCostUpdates,
+  teamSwaps,
+} from "@shared/schema";
 import type { ResultStatus } from "./config";
 import { assertRaceReadyForResults } from "./raceResultsValidation";
 import { now as clockNow } from "../../utils/clock";
@@ -81,5 +90,32 @@ export async function upsertRaceResults(input: UpsertRaceResultsInput) {
       .where(eq(races.id, input.raceId));
 
     return { raceId: input.raceId, updated: input.results.length };
+  });
+}
+
+export async function deleteRace(raceId: number) {
+  return await db.transaction(async (tx) => {
+    const [race] = await tx
+      .select()
+      .from(races)
+      .where(eq(races.id, raceId));
+
+    if (!race) {
+      throw new Error(`Race ${raceId} not found`);
+    }
+
+    // Delete all dependent records first (order matters for foreign keys)
+    await tx.delete(raceSnapshots).where(eq(raceSnapshots.raceId, raceId));
+    await tx.delete(raceResults).where(eq(raceResults.raceId, raceId));
+    await tx.delete(raceResultImports).where(eq(raceResultImports.raceId, raceId));
+    await tx.delete(raceResultSets).where(eq(raceResultSets.raceId, raceId));
+    await tx.delete(raceScores).where(eq(raceScores.raceId, raceId));
+    await tx.delete(riderCostUpdates).where(eq(riderCostUpdates.raceId, raceId));
+    await tx.delete(teamSwaps).where(eq(teamSwaps.raceId, raceId));
+
+    // Now delete the race
+    await tx.delete(races).where(eq(races.id, raceId));
+
+    return { deleted: true, raceId, name: race.name };
   });
 }

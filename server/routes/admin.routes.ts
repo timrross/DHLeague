@@ -24,6 +24,7 @@ import {
   settleRaceAdmin,
   upsertRaceResultsAdmin,
   importUciRaceResultsAdmin,
+  deleteRaceAdmin,
 } from "../controllers/gameRaces.controller";
 import { updateRiderImage } from "../controllers/riderImages.controller";
 
@@ -45,6 +46,7 @@ router.delete("/riders", requireAuth, isAdmin, clearAllRiders);
 router.post("/riders/:uciId/image", requireAuth, isAdmin, updateRiderImage);
 router.get("/seasons", requireAuth, isAdmin, listSeasonsAdmin);
 router.get("/races", requireAuth, isAdmin, listRacesAdmin);
+router.delete("/races/:raceId", requireAuth, isAdmin, deleteRaceAdmin);
 router.post("/races/:raceId/lock", requireAuth, isAdmin, lockRaceAdmin);
 router.post("/races/:raceId/unlock", requireAuth, isAdmin, unlockRaceAdmin);
 router.post("/races/:raceId/results", requireAuth, isAdmin, upsertRaceResultsAdmin);

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { upsertRaceResults } from "../services/game/races";
+import { upsertRaceResults, deleteRace } from "../services/game/races";
 import { lockRace } from "../services/game/lockRace";
 import { settleRace } from "../services/game/settleRace";
 import { getRaceLeaderboard as fetchRaceLeaderboard } from "../services/game/standings";
@@ -186,5 +186,22 @@ export async function runGameTickAdmin(req: Request, res: Response) {
     res
       .status(getErrorStatus(error))
       .json({ message: getErrorMessage(error, "Failed to run game tick") });
+  }
+}
+
+export async function deleteRaceAdmin(req: Request, res: Response) {
+  try {
+    const raceId = Number(req.params.raceId);
+    if (Number.isNaN(raceId)) {
+      return res.status(400).json({ message: "Invalid race ID" });
+    }
+
+    const result = await deleteRace(raceId);
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Error deleting race:", error);
+    res
+      .status(getErrorStatus(error))
+      .json({ message: getErrorMessage(error, "Failed to delete race") });
   }
 }
