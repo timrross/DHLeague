@@ -9,7 +9,7 @@ import {
   createRace,
   updateRace
 } from "../controllers/races.controller";
-import { getRaceLeaderboard } from "../controllers/gameRaces.controller";
+import { getRaceLeaderboard, deleteRaceAdmin } from "../controllers/gameRaces.controller";
 
 const router = Router();
 
@@ -23,5 +23,6 @@ router.get("/:id/leaderboard", getRaceLeaderboard);
 // Admin-only race routes
 router.post("/", requireAuth, isAdmin, createRace);
 router.put("/:id", requireAuth, isAdmin, updateRace);
+router.delete("/:id", requireAuth, isAdmin, deleteRaceAdmin);
 
 export default router;

@@ -191,7 +191,7 @@ export async function runGameTickAdmin(req: Request, res: Response) {
 
 export async function deleteRaceAdmin(req: Request, res: Response) {
   try {
-    const raceId = Number(req.params.raceId);
+    const raceId = Number(req.params.raceId ?? req.params.id);
     if (Number.isNaN(raceId)) {
       return res.status(400).json({ message: "Invalid race ID" });
     }
