@@ -8,6 +8,7 @@ import MyTeam from "@/pages/my-team";
 import Races from "@/pages/races";
 import RaceDetail from "@/pages/race-detail";
 import Leaderboard from "@/pages/leaderboard";
+import UserTeam from "@/pages/user-team";
 import Rules from "@/pages/rules";
 import Admin from "@/pages/admin";
 import Login from "@/pages/login";
@@ -33,6 +34,7 @@ function App() {
                   {(params) => <RaceDetail id={Number(params.id)} />}
                 </Route>
                 <Route path="/leaderboard" component={Leaderboard} />
+                <Route path="/users/:userId/team" component={UserTeam} />
                 <Route path="/rules" component={Rules} />
                 <Route path="/admin/:tab/:id" component={Admin} />
                 <Route path="/admin/:tab" component={Admin} />

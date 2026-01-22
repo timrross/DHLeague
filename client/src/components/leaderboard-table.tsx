@@ -1,5 +1,7 @@
+import type { KeyboardEvent } from "react";
 import { LeaderboardEntry } from "@shared/schema";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useLocation } from "wouter";
 
 interface LeaderboardTableProps {
   leaderboard: LeaderboardEntry[];
@@ -7,6 +9,8 @@ interface LeaderboardTableProps {
 }
 
 export default function LeaderboardTable({ leaderboard, userId }: LeaderboardTableProps) {
+  const [, setLocation] = useLocation();
+
   // Get initials for avatar fallback
   const getInitials = (name: string): string => {
     if (!name) return "U";
@@ -19,6 +23,17 @@ export default function LeaderboardTable({ leaderboard, userId }: LeaderboardTab
     if (rank === 2) return "nd";
     if (rank === 3) return "rd";
     return "th";
+  };
+
+  const navigateToUserTeam = (targetUserId: string) => {
+    setLocation(`/users/${targetUserId}/team`);
+  };
+
+  const handleRowKeyDown = (event: KeyboardEvent<HTMLTableRowElement>, targetUserId: string) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      navigateToUserTeam(targetUserId);
+    }
   };
 
   if (!leaderboard || leaderboard.length === 0) {
@@ -49,9 +64,15 @@ export default function LeaderboardTable({ leaderboard, userId }: LeaderboardTab
             return (
               <tr
                 key={entry.user.id}
-                className={`border-b border-gray-200 hover:bg-gray-50 transition ${
+                className={`border-b border-gray-200 hover:bg-gray-50 transition cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${
                   isCurrentUser ? 'bg-yellow-50' : ''
                 }`}
+                role="link"
+                tabIndex={0}
+                onClick={() => navigateToUserTeam(entry.user.id)}
+                onKeyDown={(event) => handleRowKeyDown(event, entry.user.id)}
+                aria-label={`View ${entry.user.firstName || entry.user.email || "user"} team`}
+                title={`View team for ${entry.user.firstName || entry.user.email || "user"}`}
               >
                 <td className="py-3 px-4">
                   <span className={`font-accent font-bold text-secondary inline-block w-8 h-8 rounded-full ${
