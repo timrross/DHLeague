@@ -67,14 +67,14 @@ export default function UserManagement({ currentUser }: UserManagementProps) {
     isActive: true
   });
 
-  // Fetch users
+  // Fetch users with their teams
   const {
     data: users = [] as UserWithTeam[],
     isLoading: isLoadingUsers,
     error: usersError,
     refetch: refetchUsers
   } = useQuery<UserWithTeam[]>({
-    queryKey: ['/api/admin/users'],
+    queryKey: ['/api/admin/users-with-teams'],
   });
 
   // Handle edit user button click

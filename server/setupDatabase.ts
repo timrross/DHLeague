@@ -27,9 +27,11 @@ const schemaStatements = [
     name TEXT NOT NULL,
     start_at TIMESTAMPTZ NOT NULL,
     end_at TIMESTAMPTZ NOT NULL,
+    is_active BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
   )`,
+  `ALTER TABLE seasons ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT FALSE`,
   `INSERT INTO seasons (name, start_at, end_at)
     SELECT
       'Season ' || EXTRACT(YEAR FROM NOW())::TEXT,

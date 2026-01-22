@@ -32,6 +32,7 @@ export const seasons = pgTable("seasons", {
   name: text("name").notNull(),
   startAt: timestamp("start_at").notNull(),
   endAt: timestamp("end_at").notNull(),
+  isActive: boolean("is_active").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

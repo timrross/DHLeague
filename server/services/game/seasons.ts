@@ -1,4 +1,4 @@
-import { and, desc, gte, lte } from "drizzle-orm";
+import { and, desc, eq, gte, lte } from "drizzle-orm";
 import { db } from "../../db";
 import { seasons } from "@shared/schema";
 import { now as clockNow } from "../../utils/clock";
@@ -49,6 +49,18 @@ export async function getSeasonIdForDate(date: Date): Promise<number> {
 }
 
 export async function getActiveSeasonId(): Promise<number> {
+  // First check for admin-set active season
+  const adminActive = await db
+    .select()
+    .from(seasons)
+    .where(eq(seasons.isActive, true))
+    .limit(1);
+
+  if (adminActive[0]) {
+    return adminActive[0].id;
+  }
+
+  // Fall back to date-based detection
   const now = clockNow();
 
   const active = await db
@@ -89,4 +101,20 @@ export async function getActiveSeasonId(): Promise<number> {
     .returning();
 
   return created.id;
+}
+
+export async function setActiveSeason(seasonId: number): Promise<void> {
+  await db.transaction(async (tx) => {
+    // Clear any existing active season
+    await tx
+      .update(seasons)
+      .set({ isActive: false })
+      .where(eq(seasons.isActive, true));
+
+    // Set the new active season
+    await tx
+      .update(seasons)
+      .set({ isActive: true })
+      .where(eq(seasons.id, seasonId));
+  });
 }

@@ -41,6 +41,28 @@ export async function getRaceLeaderboard(
 }
 
 export async function getSeasonStandings(seasonId: number): Promise<SeasonStandingEntry[]> {
+  // Get all teams for the season (to include teams with 0 points)
+  const teamRows = await db
+    .select({
+      userId: teams.userId,
+      createdAt: teams.createdAt,
+    })
+    .from(teams)
+    .where(eq(teams.seasonId, seasonId));
+
+  // Build map of earliest team creation date per user
+  const earliestByUser = new Map<string, Date>();
+  const allUserIds = new Set<string>();
+  for (const row of teamRows) {
+    allUserIds.add(row.userId);
+    if (!row.createdAt) continue;
+    const existing = earliestByUser.get(row.userId);
+    if (!existing || row.createdAt < existing) {
+      earliestByUser.set(row.userId, row.createdAt);
+    }
+  }
+
+  // Get race scores for users who have them
   const scoreRows = await db
     .select({
       raceId: raceScores.raceId,
@@ -58,6 +80,7 @@ export async function getSeasonStandings(seasonId: number): Promise<SeasonStandi
     racesById.set(row.raceId, list);
   }
 
+  // Initialize totals for ALL users with teams
   const totals = new Map<
     string,
     {
@@ -68,6 +91,17 @@ export async function getSeasonStandings(seasonId: number): Promise<SeasonStandi
     }
   >();
 
+  // Initialize all users with 0 stats
+  for (const userId of allUserIds) {
+    totals.set(userId, {
+      totalPoints: 0,
+      raceWins: 0,
+      highestSingleRaceScore: 0,
+      podiumFinishes: 0,
+    });
+  }
+
+  // Add scores for users who have them
   for (const [, rows] of racesById) {
     const ordered = [...rows].sort((a, b) => {
       if (a.totalPoints !== b.totalPoints) {
@@ -100,23 +134,6 @@ export async function getSeasonStandings(seasonId: number): Promise<SeasonStandi
 
       totals.set(row.userId, entry);
     });
-  }
-
-  const teamCreatedAtRows = await db
-    .select({
-      userId: teams.userId,
-      createdAt: teams.createdAt,
-    })
-    .from(teams)
-    .where(eq(teams.seasonId, seasonId));
-
-  const earliestByUser = new Map<string, Date>();
-  for (const row of teamCreatedAtRows) {
-    if (!row.createdAt) continue;
-    const existing = earliestByUser.get(row.userId);
-    if (!existing || row.createdAt < existing) {
-      earliestByUser.set(row.userId, row.createdAt);
-    }
   }
 
   const entries: SeasonStandingEntry[] = Array.from(totals.entries()).map(

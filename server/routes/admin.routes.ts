@@ -16,6 +16,7 @@ import {
 import {
   listRacesAdmin,
   listSeasonsAdmin,
+  setActiveSeasonAdmin,
 } from "../controllers/gameAdmin.controller";
 import {
   lockRaceAdmin,
@@ -45,6 +46,7 @@ router.get("/dataride/riders/stream", requireAuth, isAdmin, streamDatarideRiderS
 router.delete("/riders", requireAuth, isAdmin, clearAllRiders);
 router.post("/riders/:uciId/image", requireAuth, isAdmin, updateRiderImage);
 router.get("/seasons", requireAuth, isAdmin, listSeasonsAdmin);
+router.post("/seasons/:seasonId/activate", requireAuth, isAdmin, setActiveSeasonAdmin);
 router.get("/races", requireAuth, isAdmin, listRacesAdmin);
 router.delete("/races/:raceId", requireAuth, isAdmin, deleteRaceAdmin);
 router.post("/races/:raceId/lock", requireAuth, isAdmin, lockRaceAdmin);

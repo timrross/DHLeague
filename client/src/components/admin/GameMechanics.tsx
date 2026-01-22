@@ -240,6 +240,28 @@ export default function GameMechanics() {
     },
   });
 
+  const setActiveSeasonMutation = useMutation({
+    mutationFn: async (seasonId: number) => {
+      return apiRequest(`/api/admin/seasons/${seasonId}/activate`, {
+        method: "POST",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/seasons"] });
+      toast({
+        title: "Active season updated",
+        description: "The leaderboard will now show this season.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: `Failed to set active season: ${getErrorMessage(error)}`,
+        variant: "destructive",
+      });
+    },
+  });
+
   const importUciResultsMutation = useMutation({
     mutationFn: async (payload: {
       raceId: number;
@@ -366,21 +388,41 @@ export default function GameMechanics() {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
             <div className="space-y-2">
               <Label>Season</Label>
-              <Select
-                value={selectedSeasonId}
-                onValueChange={(value) => setSelectedSeasonId(value)}
-              >
-                <SelectTrigger className="w-[260px]">
-                  <SelectValue placeholder="Select season" />
-                </SelectTrigger>
-                <SelectContent>
-                  {seasons.map((season) => (
-                    <SelectItem key={season.id} value={String(season.id)}>
-                      {season.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex gap-2">
+                <Select
+                  value={selectedSeasonId}
+                  onValueChange={(value) => setSelectedSeasonId(value)}
+                >
+                  <SelectTrigger className="w-[260px]">
+                    <SelectValue placeholder="Select season" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {seasons.map((season) => (
+                      <SelectItem key={season.id} value={String(season.id)}>
+                        {season.name} {season.isActive ? "(Active)" : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={
+                    !selectedSeasonId ||
+                    setActiveSeasonMutation.isPending ||
+                    seasons.find((s) => String(s.id) === selectedSeasonId)?.isActive === true
+                  }
+                  onClick={() =>
+                    setActiveSeasonMutation.mutate(Number(selectedSeasonId))
+                  }
+                >
+                  {setActiveSeasonMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    "Set Active"
+                  )}
+                </Button>
+              </div>
             </div>
             <div className="flex flex-wrap gap-4">
               <div className="flex items-center gap-2">

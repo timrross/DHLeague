@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { listRaces } from "../services/game/races";
-import { listSeasons } from "../services/game/seasons";
+import { listSeasons, setActiveSeason } from "../services/game/seasons";
 
 export async function listSeasonsAdmin(_req: Request, res: Response) {
   try {
@@ -33,5 +33,20 @@ export async function listRacesAdmin(req: Request, res: Response) {
   } catch (error) {
     console.error("Error listing races:", error);
     res.status(500).json({ message: "Failed to fetch races" });
+  }
+}
+
+export async function setActiveSeasonAdmin(req: Request, res: Response) {
+  try {
+    const seasonId = Number(req.params.seasonId);
+    if (Number.isNaN(seasonId)) {
+      return res.status(400).json({ message: "Invalid season ID" });
+    }
+
+    await setActiveSeason(seasonId);
+    res.status(200).json({ message: "Active season updated", seasonId });
+  } catch (error) {
+    console.error("Error setting active season:", error);
+    res.status(500).json({ message: "Failed to set active season" });
   }
 }
