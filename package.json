@@ -14,6 +14,7 @@
     "test": "node server/scripts/runTests.js",
     "db:push": "drizzle-kit push",
     "seed": "tsx server/scripts/seed.ts",
+    "seed:manual-test": "tsx server/scripts/seed-manual-testing.ts",
     "sync:uci-riders": "tsx server/scripts/sync-uci-riders.ts",
     "verify:dataride": "node -r tsconfig-paths/register --loader ts-node/esm --experimental-specifier-resolution=node src/scripts/verify-dataride-import.ts"
   },
