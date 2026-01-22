@@ -303,6 +303,25 @@ export default function GameMechanics() {
     UCI_CATEGORY_OPTIONS.find((option) => option.value === uciCategory) ??
     UCI_CATEGORY_OPTIONS[0];
 
+  // Only locked races can have results updated
+  const lockedRaces = useMemo(
+    () => races.filter((race) => race.gameStatus !== "scheduled"),
+    [races]
+  );
+
+  // Reset selected race if it's no longer in the locked list
+  useEffect(() => {
+    if (lockedRaces.length === 0) {
+      return;
+    }
+    const stillValid = lockedRaces.some(
+      (race) => String(race.id) === selectedRaceId
+    );
+    if (!stillValid && lockedRaces.length > 0) {
+      setSelectedRaceId(String(lockedRaces[0].id));
+    }
+  }, [lockedRaces, selectedRaceId]);
+
   const handleImportUciResults = (event: React.FormEvent) => {
     event.preventDefault();
 
@@ -534,10 +553,15 @@ export default function GameMechanics() {
         <CardHeader>
           <CardTitle>Update Results</CardTitle>
           <CardDescription>
-            Load results from a UCI endpoint for the selected race.
+            Load results from a UCI endpoint for a locked race.
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {lockedRaces.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No locked races available. Lock a race first before updating results.
+            </p>
+          ) : (
           <form onSubmit={handleImportUciResults} className="space-y-4">
             <div className="grid gap-4 lg:grid-cols-4 lg:items-end">
               <div className="space-y-2 lg:col-span-2">
@@ -550,9 +574,9 @@ export default function GameMechanics() {
                     <SelectValue placeholder="Select race" />
                   </SelectTrigger>
                   <SelectContent>
-                    {races.map((race) => (
+                    {lockedRaces.map((race) => (
                       <SelectItem key={race.id} value={String(race.id)}>
-                        #{race.id} {race.location}, {race.country} — {race.name}
+                        #{race.id} {race.location}, {race.country} — {race.name} ({race.gameStatus})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -631,11 +655,11 @@ export default function GameMechanics() {
               )}
             </Button>
             <p className="text-xs text-muted-foreground">
-              Lock the race first, then paste the Men Elite and Women Elite UCI
-              endpoints to load both result sets. Settling requires both sets
-              to be marked final.
+              Paste the Men Elite and Women Elite UCI endpoints to load both
+              result sets. Settling requires both sets to be marked final.
             </p>
           </form>
+          )}
         </CardContent>
       </Card>
     </div>
