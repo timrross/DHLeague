@@ -525,7 +525,10 @@ async function main() {
 
   if (shouldReset) {
     console.log("Resetting database...");
+    // Set TEST_NOW_ISO to skip placeholder race seeding during migrations
+    process.env.TEST_NOW_ISO = new Date().toISOString();
     await resetDatabase();
+    delete process.env.TEST_NOW_ISO;
     console.log("Database reset complete. Note: You will need to run npm run sync:uci-riders before running this script again.\n");
     await pool.end();
     return;
