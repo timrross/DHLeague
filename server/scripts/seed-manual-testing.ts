@@ -32,10 +32,14 @@ import {
   teamSwaps,
   type Rider,
 } from "@shared/schema";
-import { BUDGETS } from "../services/game/config";
+import { BUDGETS, TEAM_RULES } from "../services/game/config";
 
 const TEST_USER_COUNT = 10;
 const BUDGET_CAP = BUDGETS.ELITE; // $2,000,000
+const MALE_STARTERS = TEAM_RULES.GENDER_SLOTS.male;
+const FEMALE_STARTERS = TEAM_RULES.GENDER_SLOTS.female;
+
+type TeamRoster = { starters: Rider[]; bench: Rider };
 
 // 2025 DHI World Cup calendar with 2026 lock dates (future dates allow team editing)
 const RACE_CALENDAR = [
@@ -121,73 +125,175 @@ function formatTeamName(index: number): string {
   return `Test Team ${String(index + 1).padStart(2, "0")}`;
 }
 
+function calculateRosterCost(roster: TeamRoster): number {
+  return roster.starters.reduce((sum, rider) => sum + rider.cost, 0) + roster.bench.cost;
+}
+
+function pickRidersWithOffset(
+  pool: Rider[],
+  count: number,
+  teamIndex: number,
+  teamCount: number,
+  selectedIds: Set<string>,
+): Rider[] {
+  const picks: Rider[] = [];
+
+  for (let index = teamIndex; index < pool.length && picks.length < count; index += teamCount) {
+    const rider = pool[index];
+    if (!selectedIds.has(rider.uciId)) {
+      selectedIds.add(rider.uciId);
+      picks.push(rider);
+    }
+  }
+
+  if (picks.length < count) {
+    for (const rider of pool) {
+      if (!selectedIds.has(rider.uciId)) {
+        selectedIds.add(rider.uciId);
+        picks.push(rider);
+      }
+      if (picks.length === count) {
+        break;
+      }
+    }
+  }
+
+  if (picks.length < count) {
+    throw new Error(`Not enough riders to fill ${count} slots.`);
+  }
+
+  return picks;
+}
+
+function pickCheapestRiders(
+  pool: Rider[],
+  count: number,
+  selectedIds: Set<string>,
+): Rider[] {
+  const picks: Rider[] = [];
+
+  for (const rider of pool) {
+    if (!selectedIds.has(rider.uciId)) {
+      selectedIds.add(rider.uciId);
+      picks.push(rider);
+    }
+    if (picks.length === count) {
+      break;
+    }
+  }
+
+  if (picks.length < count) {
+    throw new Error(`Not enough riders to fill ${count} slots.`);
+  }
+
+  return picks;
+}
+
+function pickBenchRider(pool: Rider[], selectedIds: Set<string>): Rider {
+  for (const rider of pool) {
+    if (!selectedIds.has(rider.uciId)) {
+      selectedIds.add(rider.uciId);
+      return rider;
+    }
+  }
+
+  throw new Error("Not enough riders to assign a bench rider.");
+}
+
+function buildRosterWithOffsets(
+  malePool: Rider[],
+  femalePool: Rider[],
+  benchPool: Rider[],
+  teamIndex: number,
+  teamCount: number,
+): TeamRoster {
+  const selectedIds = new Set<string>();
+  const maleStarters = pickRidersWithOffset(
+    malePool,
+    MALE_STARTERS,
+    teamIndex,
+    teamCount,
+    selectedIds,
+  );
+  const femaleStarters = pickRidersWithOffset(
+    femalePool,
+    FEMALE_STARTERS,
+    teamIndex,
+    teamCount,
+    selectedIds,
+  );
+  const bench = pickBenchRider(benchPool, selectedIds);
+
+  return {
+    starters: [...maleStarters, ...femaleStarters],
+    bench,
+  };
+}
+
+function buildCheapestRoster(
+  malePool: Rider[],
+  femalePool: Rider[],
+  benchPool: Rider[],
+): TeamRoster {
+  const selectedIds = new Set<string>();
+  const maleStarters = pickCheapestRiders(malePool, MALE_STARTERS, selectedIds);
+  const femaleStarters = pickCheapestRiders(femalePool, FEMALE_STARTERS, selectedIds);
+  const bench = pickBenchRider(benchPool, selectedIds);
+
+  return {
+    starters: [...maleStarters, ...femaleStarters],
+    bench,
+  };
+}
+
 /**
  * Distribute riders across teams to ensure variety while staying within budget.
  *
  * Strategy:
- * - Sort male riders by cost descending, divide into 10 groups
- * - Sort female riders by cost descending, divide into 10 groups
- * - Each team gets 4 male starters + 2 female starters + 1 male bench
+ * - Sort male riders by cost ascending, divide into 10 groups
+ * - Sort female riders by cost ascending, divide into 10 groups
+ * - Each team gets 4 male starters + 2 female starters + 1 bench rider
  * - Try to pick from different cost tiers to ensure variety
  */
 function distributeRidersToTeams(
   maleRiders: Rider[],
   femaleRiders: Rider[],
   teamCount: number
-): Array<{ starters: Rider[]; bench: Rider }> {
-  // Sort by cost descending
-  const sortedMales = [...maleRiders].sort((a, b) => b.cost - a.cost);
-  const sortedFemales = [...femaleRiders].sort((a, b) => b.cost - a.cost);
+): TeamRoster[] {
+  // Sort by cost ascending to keep seeded teams under budget.
+  const sortedMales = [...maleRiders].sort((a, b) => a.cost - b.cost);
+  const sortedFemales = [...femaleRiders].sort((a, b) => a.cost - b.cost);
+  const benchPool = [...sortedMales, ...sortedFemales].sort((a, b) => a.cost - b.cost);
 
-  const teams: Array<{ starters: Rider[]; bench: Rider }> = [];
+  const teams: TeamRoster[] = [];
 
   for (let i = 0; i < teamCount; i++) {
-    const maleStarters: Rider[] = [];
-    const femaleStarters: Rider[] = [];
-
-    // Pick 4 male starters from different tiers
-    // Each team gets riders from different positions to ensure variety
-    for (let slot = 0; slot < 4; slot++) {
-      // Use modular indexing to spread riders across teams
-      const baseIndex = i + slot * teamCount;
-      if (baseIndex < sortedMales.length) {
-        maleStarters.push(sortedMales[baseIndex]);
-      }
-    }
-
-    // Pick 2 female starters similarly
-    for (let slot = 0; slot < 2; slot++) {
-      const baseIndex = i + slot * teamCount;
-      if (baseIndex < sortedFemales.length) {
-        femaleStarters.push(sortedFemales[baseIndex]);
-      }
-    }
-
-    // Pick 1 male bench rider (from a different tier)
-    const benchIndex = i + 4 * teamCount;
-    const benchRider =
-      benchIndex < sortedMales.length
-        ? sortedMales[benchIndex]
-        : sortedMales[sortedMales.length - 1 - i]; // Fallback to cheaper riders
-
-    // Verify budget
-    const totalCost =
-      maleStarters.reduce((sum, r) => sum + r.cost, 0) +
-      femaleStarters.reduce((sum, r) => sum + r.cost, 0) +
-      benchRider.cost;
+    const roster = buildRosterWithOffsets(
+      sortedMales,
+      sortedFemales,
+      benchPool,
+      i,
+      teamCount,
+    );
+    const totalCost = calculateRosterCost(roster);
 
     if (totalCost > BUDGET_CAP) {
-      console.warn(
-        `Team ${i + 1} exceeds budget ($${totalCost}). Adjusting...`
-      );
-      // Try to pick cheaper riders if over budget
-      // This is a simple fallback - in practice we'd need more sophisticated selection
-    }
+      const fallbackRoster = buildCheapestRoster(sortedMales, sortedFemales, benchPool);
+      const fallbackCost = calculateRosterCost(fallbackRoster);
 
-    teams.push({
-      starters: [...maleStarters, ...femaleStarters],
-      bench: benchRider,
-    });
+      if (fallbackCost > BUDGET_CAP) {
+        throw new Error(
+          `Unable to build a valid roster under budget. Cheapest cost: $${fallbackCost}.`
+        );
+      }
+
+      console.warn(
+        `Team ${i + 1} exceeded budget ($${totalCost}). Using cheapest roster ($${fallbackCost}).`
+      );
+      teams.push(fallbackRoster);
+    } else {
+      teams.push(roster);
+    }
   }
 
   return teams;
@@ -400,14 +506,11 @@ async function createTeams(
       continue;
     }
 
-    // Calculate total cost
-    const startersCost = roster.starters.reduce((sum, r) => sum + r.cost, 0);
-    const benchCost = roster.bench.cost;
-    const totalCost = startersCost + benchCost;
+    const totalCost = calculateRosterCost(roster);
 
     if (totalCost > BUDGET_CAP) {
-      console.warn(
-        `Warning: Team ${teamName} costs $${totalCost} (over $${BUDGET_CAP} budget)`
+      throw new Error(
+        `Team ${teamName} costs $${totalCost} (over $${BUDGET_CAP} budget)`
       );
     }
 
