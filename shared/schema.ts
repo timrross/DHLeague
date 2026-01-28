@@ -5,6 +5,7 @@ export const users = pgTable("users", {
   id: varchar("id").primaryKey().notNull(),
   email: varchar("email").unique("users_email_key"),
   username: varchar("username").unique("users_username_key"),
+  usernameConfirmed: boolean("username_confirmed").notNull().default(false),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),

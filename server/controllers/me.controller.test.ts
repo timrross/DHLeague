@@ -11,6 +11,7 @@ const testUser: User = {
   id: "user-1",
   email: "sample@example.com",
   username: "sample",
+  usernameConfirmed: true,
   firstName: null,
   lastName: null,
   profileImageUrl: null,

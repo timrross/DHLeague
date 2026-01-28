@@ -6,6 +6,7 @@ const schemaStatements = [
     id VARCHAR PRIMARY KEY,
     email VARCHAR UNIQUE,
     username VARCHAR UNIQUE,
+    username_confirmed BOOLEAN DEFAULT FALSE,
     first_name VARCHAR,
     last_name VARCHAR,
     profile_image_url VARCHAR,
@@ -92,6 +93,10 @@ const schemaStatements = [
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS joker_active_race_id INTEGER`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS joker_active_team_type VARCHAR`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS username VARCHAR`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS username_confirmed BOOLEAN DEFAULT FALSE`,
+  `UPDATE users SET username_confirmed = FALSE WHERE username_confirmed IS NULL`,
+  `ALTER TABLE users ALTER COLUMN username_confirmed SET DEFAULT FALSE`,
+  `ALTER TABLE users ALTER COLUMN username_confirmed SET NOT NULL`,
   `CREATE UNIQUE INDEX IF NOT EXISTS users_username_key ON users(username)`,
   `CREATE TABLE IF NOT EXISTS races (
     id SERIAL PRIMARY KEY,

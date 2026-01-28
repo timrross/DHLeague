@@ -34,7 +34,10 @@ export default function Header() {
   };
 
   const emailPrefix = user?.email ? user.email.split("@")[0] : "";
-  const displayName = user?.username || emailPrefix || "User";
+  const displayName =
+    user?.usernameConfirmed && user.username
+      ? user.username
+      : emailPrefix || "User";
 
   return (
     <header className="bg-secondary shadow-md sticky top-0 z-50">

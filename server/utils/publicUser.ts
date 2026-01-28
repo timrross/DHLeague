@@ -6,7 +6,7 @@ const getEmailPrefix = (email?: string | null) => {
 };
 
 export const buildPublicUser = (user: User): PublicUser => {
-  const username = user.username?.trim() || null;
+  const username = user.usernameConfirmed ? user.username?.trim() || null : null;
   const fallback = getEmailPrefix(user.email) || "Anonymous";
   return {
     id: user.id,

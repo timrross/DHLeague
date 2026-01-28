@@ -21,7 +21,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 function App() {
   const { user, isAuthenticated } = useAuth();
-  const needsUsername = isAuthenticated && user && !user.username;
+  const needsUsername = isAuthenticated && user && !user.usernameConfirmed;
 
   return (
     <TooltipProvider>

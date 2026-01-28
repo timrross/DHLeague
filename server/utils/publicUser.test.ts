@@ -7,6 +7,7 @@ const baseUser: User = {
   id: "user-1",
   email: "rider@example.com",
   username: null,
+  usernameConfirmed: false,
   firstName: null,
   lastName: null,
   profileImageUrl: null,
@@ -21,7 +22,7 @@ const baseUser: User = {
 
 describe("publicUser", () => {
   it("prefers username when available", () => {
-    const user = { ...baseUser, username: "downhillfan" };
+    const user = { ...baseUser, username: "downhillfan", usernameConfirmed: true };
     const result = buildPublicUser(user);
 
     assert.equal(result.username, "downhillfan");
@@ -30,6 +31,14 @@ describe("publicUser", () => {
 
   it("falls back to email prefix when username is missing", () => {
     const result = buildPublicUser(baseUser);
+
+    assert.equal(result.username, null);
+    assert.equal(result.displayName, "rider");
+  });
+
+  it("ignores unconfirmed username for display", () => {
+    const user = { ...baseUser, username: "downhillfan", usernameConfirmed: false };
+    const result = buildPublicUser(user);
 
     assert.equal(result.username, null);
     assert.equal(result.displayName, "rider");

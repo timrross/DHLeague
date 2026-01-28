@@ -133,7 +133,10 @@ export async function updateMyUsername(req: any, res: Response) {
       return res.status(409).json({ message: "Username already taken" });
     }
 
-    const updated = await storage.updateUser(userId, { username });
+    const updated = await storage.updateUser(userId, {
+      username,
+      usernameConfirmed: true,
+    });
     return res.json({ username: updated?.username ?? username });
   } catch (error) {
     console.error("Error updating username:", error);
