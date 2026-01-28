@@ -17,6 +17,7 @@ let storageModule: typeof import("../storage");
 const testUser: User = {
   id: "user-1",
   email: "test@example.com",
+  username: "test",
   firstName: "Test",
   lastName: "User",
   profileImageUrl: null,
@@ -32,6 +33,7 @@ const testUser: User = {
 const otherUser: User = {
   id: "user-2",
   email: "other@example.com",
+  username: "other",
   firstName: "Other",
   lastName: "User",
   profileImageUrl: null,
@@ -118,7 +120,10 @@ describe("friends.controller", () => {
     });
 
     it("returns friends list", async () => {
-      const friendWithUser: FriendWithUser = { ...testFriend, user: otherUser };
+      const friendWithUser: FriendWithUser = {
+        ...testFriend,
+        user: { id: otherUser.id, username: otherUser.username ?? null },
+      };
       mock.method(storageModule.storage as any, "getFriends", async () => [friendWithUser]);
 
       const app = buildApp(getFriends);
@@ -133,7 +138,10 @@ describe("friends.controller", () => {
 
   describe("getPendingRequests", () => {
     it("returns pending requests", async () => {
-      const pendingWithUser: FriendWithUser = { ...pendingFriend, user: otherUser };
+      const pendingWithUser: FriendWithUser = {
+        ...pendingFriend,
+        user: { id: otherUser.id, username: otherUser.username ?? null },
+      };
       mock.method(storageModule.storage as any, "getPendingFriendRequests", async () => [pendingWithUser]);
 
       const app = buildApp(getPendingRequests);

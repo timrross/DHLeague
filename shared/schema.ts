@@ -4,6 +4,7 @@ import { pgTable, text, serial, varchar, timestamp, integer, jsonb, boolean } fr
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().notNull(),
   email: varchar("email").unique("users_email_key"),
+  username: varchar("username").unique("users_username_key"),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
@@ -18,6 +19,11 @@ export const users = pgTable("users", {
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
+
+export type PublicUser = {
+  id: string;
+  username: string | null;
+};
 
 // Session storage table for OIDC auth
 export const sessions = pgTable("sessions", {
@@ -256,7 +262,8 @@ export type RaceWithResults = Race & {
 
 export type LeaderboardEntry = {
   rank: number;
-  user: User;
+  user: PublicUser;
+  teamName: string | null;
   totalPoints: number;
   raceWins: number;
   highestSingleRaceScore: number;
@@ -284,5 +291,5 @@ export type Friend = typeof friends.$inferSelect;
 export type InsertFriend = typeof friends.$inferInsert;
 
 export type FriendWithUser = Friend & {
-  user: User;
+  user: PublicUser;
 };

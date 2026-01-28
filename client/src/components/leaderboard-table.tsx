@@ -1,6 +1,6 @@
 import type { KeyboardEvent } from "react";
 import { LeaderboardEntry } from "@shared/schema";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useLocation } from "wouter";
 import { FriendButton } from "@/components/friend-button";
 
@@ -13,10 +13,13 @@ interface LeaderboardTableProps {
 export default function LeaderboardTable({ leaderboard, userId, showFriendButton = false }: LeaderboardTableProps) {
   const [, setLocation] = useLocation();
 
-  // Get initials for avatar fallback
-  const getInitials = (name: string): string => {
-    if (!name) return "U";
-    return name.split(" ").map(n => n[0]).join("").toUpperCase();
+  const getInitials = (value: string | null | undefined): string => {
+    if (!value) return "U";
+    return value
+      .split(" ")
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase();
   };
 
   const navigateToUserTeam = (targetUserId: string) => {
@@ -45,7 +48,8 @@ export default function LeaderboardTable({ leaderboard, userId, showFriendButton
         <thead className="bg-gray-100">
           <tr>
             <th className="py-3 px-4 text-left font-heading font-bold text-gray-700">RANK</th>
-            <th className="py-3 px-4 text-left font-heading font-bold text-gray-700">MANAGER</th>
+            <th className="py-3 px-4 text-left font-heading font-bold text-gray-700">TEAM</th>
+            <th className="py-3 px-4 text-left font-heading font-bold text-gray-700">USERNAME</th>
             <th className="py-3 px-4 text-left font-heading font-bold text-gray-700">TOTAL</th>
             <th className="py-3 px-4 text-left font-heading font-bold text-gray-700">WINS</th>
             <th className="py-3 px-4 text-left font-heading font-bold text-gray-700">BEST RACE</th>
@@ -68,8 +72,8 @@ export default function LeaderboardTable({ leaderboard, userId, showFriendButton
                 tabIndex={0}
                 onClick={() => navigateToUserTeam(entry.user.id)}
                 onKeyDown={(event) => handleRowKeyDown(event, entry.user.id)}
-                aria-label={`View ${entry.user.firstName || entry.user.email || "user"} team`}
-                title={`View team for ${entry.user.firstName || entry.user.email || "user"}`}
+                aria-label={`View ${entry.teamName || "team"} details`}
+                title={`View ${entry.teamName || "team"} details`}
               >
                 <td className="py-3 px-4">
                   <span className={`font-accent font-bold text-secondary inline-block w-8 h-8 rounded-full ${
@@ -78,18 +82,19 @@ export default function LeaderboardTable({ leaderboard, userId, showFriendButton
                     {entry.rank}
                   </span>
                 </td>
+                <td className="py-3 px-4">
+                  <span className="text-gray-700 font-medium">
+                    {entry.teamName || "Unnamed Team"}
+                  </span>
+                </td>
                 <td className="py-3 px-4 flex items-center gap-2">
                   <Avatar className="h-6 w-6">
-                    <AvatarImage
-                      src={entry.user.profileImageUrl || undefined}
-                      alt={entry.user.firstName || "User"}
-                    />
                     <AvatarFallback className="bg-primary text-white text-xs">
-                      {getInitials(entry.user.firstName || entry.user.email || "User")}
+                      {getInitials(entry.user.username)}
                     </AvatarFallback>
                   </Avatar>
                   <span className="text-gray-700">
-                    {isCurrentUser ? 'You' : (entry.user.firstName || entry.user.email || 'Anonymous')}
+                    {isCurrentUser ? "You" : entry.user.username || "Anonymous"}
                   </span>
                 </td>
                 <td className="py-3 px-4 font-accent font-bold text-primary">
@@ -109,7 +114,7 @@ export default function LeaderboardTable({ leaderboard, userId, showFriendButton
                     {!isCurrentUser && (
                       <FriendButton
                         userId={entry.user.id}
-                        userName={entry.user.firstName || undefined}
+                        userName={entry.user.username || undefined}
                       />
                     )}
                   </td>

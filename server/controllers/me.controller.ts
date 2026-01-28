@@ -3,6 +3,10 @@ import { storage } from "../storage";
 import { FEATURES } from "../services/features";
 import { getTeamPerformance, type TeamPerformanceRound } from "../services/game/teamPerformance";
 
+const USERNAME_PATTERN = /^[a-z0-9_]{3,20}$/;
+
+const normalizeUsername = (value: string) => value.trim().toLowerCase();
+
 const parseSeasonId = (value: unknown) => {
   if (value === undefined || value === null || value === "") return undefined;
   const parsed = Number(value);
@@ -98,5 +102,41 @@ export async function getMyPerformance(req: any, res: Response) {
   } catch (error) {
     console.error("Error fetching my performance:", error);
     res.status(500).json({ message: "Failed to fetch performance" });
+  }
+}
+
+export async function updateMyUsername(req: any, res: Response) {
+  try {
+    const userId = req.oidc?.user?.sub;
+    if (!userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    const rawUsername =
+      typeof req.body?.username === "string" ? req.body.username : "";
+    const username = normalizeUsername(rawUsername);
+
+    if (!USERNAME_PATTERN.test(username)) {
+      return res.status(400).json({
+        message:
+          "Username must be 3-20 characters and contain only letters, numbers, or underscores.",
+      });
+    }
+
+    const existingUser = await storage.getUser(userId);
+    if (!existingUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const conflict = await storage.getUserByUsername(username);
+    if (conflict && conflict.id !== userId) {
+      return res.status(409).json({ message: "Username already taken" });
+    }
+
+    const updated = await storage.updateUser(userId, { username });
+    return res.json({ username: updated?.username ?? username });
+  } catch (error) {
+    console.error("Error updating username:", error);
+    return res.status(500).json({ message: "Failed to update username" });
   }
 }

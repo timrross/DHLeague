@@ -123,6 +123,7 @@ describe("DatabaseStorage.getRaceResults", () => {
 const testUser1: User = {
   id: "user-1",
   email: "test1@example.com",
+  username: "test1",
   firstName: "Test",
   lastName: "User1",
   profileImageUrl: null,
@@ -138,6 +139,7 @@ const testUser1: User = {
 const testUser2: User = {
   id: "user-2",
   email: "test2@example.com",
+  username: "test2",
   firstName: "Other",
   lastName: "User2",
   profileImageUrl: null,

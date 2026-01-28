@@ -1,7 +1,7 @@
 import { Link, useParams } from "wouter";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import TeamRosterPanel from "@/components/my-team/TeamRosterPanel";
 import PerformancePanel from "@/components/my-team/PerformancePanel";
 import { useFeatures } from "@/hooks/useFeatures";
@@ -31,17 +31,13 @@ export default function UserTeam() {
   const showJunior = juniorTeamEnabled;
   const user = teamsData?.user ?? performance?.user;
 
-  const getInitials = (firstName: string | null, lastName: string | null) => {
-    const first = firstName?.[0] ?? "";
-    const last = lastName?.[0] ?? "";
-    return (first + last).toUpperCase() || "U";
-  };
-
-  const getDisplayName = (firstName: string | null, lastName: string | null) => {
-    if (firstName && lastName) return `${firstName} ${lastName}`;
-    if (firstName) return firstName;
-    if (lastName) return lastName;
-    return "Unknown User";
+  const getInitials = (name: string | null) => {
+    if (!name) return "U";
+    return name
+      .split(" ")
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase();
   };
 
   if (!userId) {
@@ -103,18 +99,14 @@ export default function UserTeam() {
         <div className="flex items-center gap-4">
           {user && (
             <Avatar className="h-12 w-12">
-              <AvatarImage
-                src={user.profileImageUrl || undefined}
-                alt={getDisplayName(user.firstName, user.lastName)}
-              />
               <AvatarFallback className="bg-primary text-white">
-                {getInitials(user.firstName, user.lastName)}
+                {getInitials(user.username)}
               </AvatarFallback>
             </Avatar>
           )}
           <div>
             <h1 className="text-2xl md:text-3xl font-heading font-bold text-secondary">
-              {user ? getDisplayName(user.firstName, user.lastName) : "Loading..."}
+              {user?.username ?? "Loading..."}
             </h1>
             <p className="text-sm text-gray-500">
               Viewing team and performance

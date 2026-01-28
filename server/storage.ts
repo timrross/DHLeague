@@ -21,6 +21,7 @@ import {
   friends,
   type Friend,
   type FriendWithUser,
+  type PublicUser,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, asc, desc, sql, gte, lte, ilike, or, inArray } from "drizzle-orm";
@@ -200,7 +201,46 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const result = await db
+      .select()
+      .from(users)
+      .where(eq(users.username, username))
+      .limit(1);
+    return result[0];
+  }
+
+  async findAvailableUsername(base: string, maxLength = 20): Promise<string> {
+    const fallback = "user";
+    const normalizedBase = (base || fallback).slice(0, maxLength);
+    const safeBase = normalizedBase.length >= 3 ? normalizedBase : fallback;
+    let candidate = safeBase;
+    let suffix = 0;
+    while (true) {
+      const existing = await this.getUserByUsername(candidate);
+      if (!existing) {
+        return candidate;
+      }
+      suffix += 1;
+      const suffixText = String(suffix);
+      const trimmedBase = safeBase.slice(0, maxLength - suffixText.length);
+      candidate = `${trimmedBase}${suffixText}`;
+    }
+  }
+
   async upsertUser(userData: InsertUser): Promise<User> {
+    const updateValues: Partial<User> = {
+      updatedAt: new Date(),
+    };
+
+    (Object.entries(userData) as Array<
+      [keyof InsertUser, InsertUser[keyof InsertUser]]
+    >).forEach(([key, value]) => {
+      if (value !== undefined) {
+        (updateValues as Record<string, unknown>)[key] = value;
+      }
+    });
+
     const result = await db
       .insert(users)
       .values({
@@ -209,10 +249,7 @@ export class DatabaseStorage implements IStorage {
       })
       .onConflictDoUpdate({
         target: users.id,
-        set: {
-          ...userData,
-          updatedAt: new Date()
-        }
+        set: updateValues,
       })
       .returning();
     
@@ -1167,7 +1204,11 @@ export class DatabaseStorage implements IStorage {
       const otherUserId = friend.requesterId === userId ? friend.addresseeId : friend.requesterId;
       const user = await this.getUser(otherUserId);
       if (user) {
-        friendsWithUsers.push({ ...friend, user });
+        const publicUser: PublicUser = {
+          id: user.id,
+          username: user.username ?? null,
+        };
+        friendsWithUsers.push({ ...friend, user: publicUser });
       }
     }
 
@@ -1223,7 +1264,11 @@ export class DatabaseStorage implements IStorage {
     for (const request of pendingRows) {
       const user = await this.getUser(request.requesterId);
       if (user) {
-        requestsWithUsers.push({ ...request, user });
+        const publicUser: PublicUser = {
+          id: user.id,
+          username: user.username ?? null,
+        };
+        requestsWithUsers.push({ ...request, user: publicUser });
       }
     }
 

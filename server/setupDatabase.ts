@@ -5,6 +5,7 @@ const schemaStatements = [
   `CREATE TABLE IF NOT EXISTS users (
     id VARCHAR PRIMARY KEY,
     email VARCHAR UNIQUE,
+    username VARCHAR UNIQUE,
     first_name VARCHAR,
     last_name VARCHAR,
     profile_image_url VARCHAR,
@@ -90,6 +91,8 @@ const schemaStatements = [
   `CREATE INDEX IF NOT EXISTS idx_riders_active_gender ON riders(active, gender)`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS joker_active_race_id INTEGER`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS joker_active_team_type VARCHAR`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS username VARCHAR`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS users_username_key ON users(username)`,
   `CREATE TABLE IF NOT EXISTS races (
     id SERIAL PRIMARY KEY,
     season_id INTEGER NOT NULL REFERENCES seasons(id) ON DELETE CASCADE,

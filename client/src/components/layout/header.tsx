@@ -33,6 +33,8 @@ export default function Header() {
     return name.split(" ").map(n => n[0]).join("").toUpperCase();
   };
 
+  const displayName = user?.username || "User";
+
   return (
     <header className="bg-secondary shadow-md sticky top-0 z-50">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
@@ -61,9 +63,9 @@ export default function Header() {
           {isAuthenticated ? (
             <div className="hidden md:flex items-center gap-3">
               <Avatar className="h-8 w-8">
-                <AvatarImage src={safeImageUrl(user?.profileImageUrl)} alt={user?.firstName || "User"} />
+                <AvatarImage src={safeImageUrl(user?.profileImageUrl)} alt={displayName} />
                 <AvatarFallback className="bg-primary text-white">
-                  {getInitials(user?.firstName || "User")}
+                  {getInitials(displayName)}
                 </AvatarFallback>
               </Avatar>
               {isAdminUser && (
@@ -131,12 +133,12 @@ export default function Header() {
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center gap-3 px-2 py-2">
                         <Avatar className="h-8 w-8">
-                          <AvatarImage src={safeImageUrl(user?.profileImageUrl)} alt={user?.firstName || "User"} />
+                          <AvatarImage src={safeImageUrl(user?.profileImageUrl)} alt={displayName} />
                           <AvatarFallback className="bg-primary text-white">
-                            {getInitials(user?.firstName || "User")}
+                            {getInitials(displayName)}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="text-white font-semibold">{user?.firstName || "User"}</span>
+                        <span className="text-white font-semibold">{displayName}</span>
                       </div>
                       <a 
                         href="/api/logout" 

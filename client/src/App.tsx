@@ -12,12 +12,17 @@ import UserTeam from "@/pages/user-team";
 import Rules from "@/pages/rules";
 import Admin from "@/pages/admin";
 import Login from "@/pages/login";
+import UsernameSetup from "@/pages/username-setup";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import AdProvider from "@/components/layout/ad-provider";
 import AnalyticsProvider from "@/components/layout/analytics-provider";
+import { useAuth } from "@/hooks/useAuth";
 
 function App() {
+  const { user, isAuthenticated } = useAuth();
+  const needsUsername = isAuthenticated && user && !user.username;
+
   return (
     <TooltipProvider>
       <AnalyticsProvider>
@@ -25,23 +30,27 @@ function App() {
           <div className="flex flex-col min-h-screen">
             <Header />
             <main className="flex-grow">
-              <Switch>
-                <Route path="/" component={Home} />
-                <Route path="/my-team" component={MyTeam} />
-                <Route path="/team-builder" component={TeamBuilder} />
-                <Route path="/races" component={Races} />
-                <Route path="/races/:id">
-                  {(params) => <RaceDetail id={Number(params.id)} />}
-                </Route>
-                <Route path="/leaderboard" component={Leaderboard} />
-                <Route path="/users/:userId/team" component={UserTeam} />
-                <Route path="/rules" component={Rules} />
-                <Route path="/admin/:tab/:id" component={Admin} />
-                <Route path="/admin/:tab" component={Admin} />
-                <Route path="/admin" component={Admin} />
-                <Route path="/login" component={Login} />
-                <Route component={NotFound} />
-              </Switch>
+              {needsUsername ? (
+                <UsernameSetup />
+              ) : (
+                <Switch>
+                  <Route path="/" component={Home} />
+                  <Route path="/my-team" component={MyTeam} />
+                  <Route path="/team-builder" component={TeamBuilder} />
+                  <Route path="/races" component={Races} />
+                  <Route path="/races/:id">
+                    {(params) => <RaceDetail id={Number(params.id)} />}
+                  </Route>
+                  <Route path="/leaderboard" component={Leaderboard} />
+                  <Route path="/users/:userId/team" component={UserTeam} />
+                  <Route path="/rules" component={Rules} />
+                  <Route path="/admin/:tab/:id" component={Admin} />
+                  <Route path="/admin/:tab" component={Admin} />
+                  <Route path="/admin" component={Admin} />
+                  <Route path="/login" component={Login} />
+                  <Route component={NotFound} />
+                </Switch>
+              )}
             </main>
             <Footer />
           </div>

@@ -1,6 +1,6 @@
 import { Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   usePendingRequestsQuery,
   useAcceptFriendRequestMutation,
@@ -24,7 +24,7 @@ export function PendingFriendRequests() {
     return null;
   }
 
-  const getInitials = (name: string): string => {
+  const getInitials = (name: string | null): string => {
     if (!name) return "U";
     return name.split(" ").map(n => n[0]).join("").toUpperCase();
   };
@@ -42,16 +42,12 @@ export function PendingFriendRequests() {
           >
             <div className="flex items-center gap-3">
               <Avatar className="h-8 w-8">
-                <AvatarImage
-                  src={request.user.profileImageUrl || undefined}
-                  alt={request.user.firstName || "User"}
-                />
                 <AvatarFallback className="bg-primary text-white text-xs">
-                  {getInitials(request.user.firstName || request.user.email || "User")}
+                  {getInitials(request.user.username)}
                 </AvatarFallback>
               </Avatar>
               <span className="text-gray-700 font-medium">
-                {request.user.firstName || request.user.email || "Anonymous"}
+                {request.user.username || "Anonymous"}
               </span>
             </div>
             <div className="flex gap-2">

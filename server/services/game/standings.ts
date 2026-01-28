@@ -1,4 +1,4 @@
-import { asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { db } from "../../db";
 import { raceScores, races, teams } from "@shared/schema";
 
@@ -40,15 +40,21 @@ export async function getRaceLeaderboard(
   }));
 }
 
-export async function getSeasonStandings(seasonId: number): Promise<SeasonStandingEntry[]> {
+export async function getSeasonStandings(
+  seasonId: number,
+  teamType?: "elite" | "junior",
+): Promise<SeasonStandingEntry[]> {
   // Get all teams for the season (to include teams with 0 points)
+  const teamWhere = teamType
+    ? and(eq(teams.seasonId, seasonId), eq(teams.teamType, teamType))
+    : eq(teams.seasonId, seasonId);
   const teamRows = await db
     .select({
       userId: teams.userId,
       createdAt: teams.createdAt,
     })
     .from(teams)
-    .where(eq(teams.seasonId, seasonId));
+    .where(teamWhere);
 
   // Build map of earliest team creation date per user
   const earliestByUser = new Map<string, Date>();
@@ -63,6 +69,10 @@ export async function getSeasonStandings(seasonId: number): Promise<SeasonStandi
   }
 
   // Get race scores for users who have them
+  const scoreWhere = teamType
+    ? and(eq(races.seasonId, seasonId), eq(raceScores.teamType, teamType))
+    : eq(races.seasonId, seasonId);
+
   const scoreRows = await db
     .select({
       raceId: raceScores.raceId,
@@ -71,7 +81,7 @@ export async function getSeasonStandings(seasonId: number): Promise<SeasonStandi
     })
     .from(raceScores)
     .innerJoin(races, eq(raceScores.raceId, races.id))
-    .where(eq(races.seasonId, seasonId));
+    .where(scoreWhere);
 
   const racesById = new Map<number, typeof scoreRows>();
   for (const row of scoreRows) {

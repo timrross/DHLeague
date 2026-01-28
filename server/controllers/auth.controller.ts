@@ -1,12 +1,34 @@
 import { Response } from "express";
 import { storage } from "../storage";
 
+const USERNAME_ALLOWED = /[^a-z0-9_]/g;
+
+function normalizeUsername(value: string) {
+  return value.toLowerCase().replace(USERNAME_ALLOWED, "").slice(0, 20);
+}
+
+function deriveUsernameFromEmail(email?: string | null) {
+  if (!email) return null;
+  const base = normalizeUsername(email.split("@")[0] ?? "");
+  return base || null;
+}
+
 async function syncUserRecord(req: any) {
   const oidcUser = req.oidc?.user;
   if (oidcUser?.sub) {
+    const existingUser = await storage.getUser(oidcUser.sub);
+    let username: string | undefined;
+    if (existingUser && !existingUser.username) {
+      const base = deriveUsernameFromEmail(oidcUser.email ?? existingUser.email);
+      if (base) {
+        username = await storage.findAvailableUsername(base);
+      }
+    }
+
     await storage.upsertUser({
       id: oidcUser.sub,
       email: oidcUser.email,
+      username,
       firstName: oidcUser.given_name ?? oidcUser.name?.split?.(" ")?.[0],
       lastName: oidcUser.family_name ?? oidcUser.name?.split?.(" ")?.slice(1).join(" "),
       profileImageUrl: oidcUser.picture,

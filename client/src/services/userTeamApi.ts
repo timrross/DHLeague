@@ -5,9 +5,7 @@ import type { MyPerformanceResponse } from "./myTeamApi";
 
 export type UserInfo = {
   id: string;
-  firstName: string | null;
-  lastName: string | null;
-  profileImageUrl: string | null;
+  username: string | null;
 };
 
 export type UserTeamsResponse = {

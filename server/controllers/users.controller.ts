@@ -57,9 +57,7 @@ export async function getUserTeams(req: Request, res: Response) {
     res.json({
       user: {
         id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        profileImageUrl: user.profileImageUrl,
+        username: user.username ?? null,
       },
       eliteTeam: eliteTeam ?? null,
       juniorTeam: FEATURES.JUNIOR_TEAM_ENABLED ? juniorTeam ?? null : null,
@@ -109,9 +107,7 @@ export async function getUserPerformance(req: Request, res: Response) {
     res.json({
       user: {
         id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        profileImageUrl: user.profileImageUrl,
+        username: user.username ?? null,
       },
       totals: {
         elite: eliteTotal,
