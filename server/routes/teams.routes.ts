@@ -1,17 +1,21 @@
 import { Router } from "express";
 import { requireAuth } from "../auth";
-import { 
+import {
   getUserTeam,
   getUserTeamPerformance,
   createTeam,
   updateTeam,
   deleteTeam,
   useJokerCard,
-  swapTeamRider
+  swapTeamRider,
+  checkTeamNameAvailability
 } from "../controllers/teams.controller";
 import { getUserTeamsBySeason, upsertUserTeam } from "../controllers/gameTeams.controller";
 
 const router = Router();
+
+// Team name availability check (no auth required for UX)
+router.get("/check-name", checkTeamNameAvailability);
 
 // User team routes
 router.get("/user", requireAuth, getUserTeam);

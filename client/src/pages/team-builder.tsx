@@ -8,6 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useFeatures } from "@/hooks/useFeatures";
+import { useTeamNameCheckQuery } from "@/services/teamApi";
+import { generateRandomTeamName } from "@shared/teamNameGenerator";
+import { Dices, AlertCircle, CheckCircle2 } from "lucide-react";
 import JokerCardDialog from "@/components/joker-card-dialog";
 import JokerCardButton from "@/components/joker-card-button";
 import TeamStatusPanel from "@/components/team-builder/TeamStatusPanel";
@@ -40,7 +43,7 @@ export default function TeamBuilder() {
   const [selectedRiders, setSelectedRiders] = useState<Rider[]>([]);
   const [benchRider, setBenchRider] = useState<Rider | null>(null);
   const [benchMode, setBenchMode] = useState(false);
-  const [teamName, setTeamName] = useState("My DH Team");
+  const [teamName, setTeamName] = useState(() => generateRandomTeamName());
   const [draftInitialized, setDraftInitialized] = useState(false);
   const [swapMode, setSwapMode] = useState(false);
   const [swapRiderData, setSwapRiderData] = useState<Rider | null>(null);
@@ -113,6 +116,27 @@ export default function TeamBuilder() {
   });
 
   const activeTeam = userTeam;
+
+  // Team name validation
+  const {
+    data: teamNameCheck,
+    isLoading: isCheckingName,
+  } = useTeamNameCheckQuery(
+    teamName,
+    activeTeam?.id, // Exclude current team when updating
+    { enabled: teamName.trim().length >= 3 }
+  );
+
+  const teamNameError = useMemo(() => {
+    const trimmed = teamName.trim();
+    if (trimmed.length === 0) return "Team name is required";
+    if (trimmed.length < 3) return "Team name must be at least 3 characters";
+    if (trimmed.length > 50) return "Team name must be 50 characters or less";
+    if (teamNameCheck && !teamNameCheck.available) return teamNameCheck.reason;
+    return null;
+  }, [teamName, teamNameCheck]);
+
+  const isTeamNameValid = !teamNameError && teamNameCheck?.available === true;
   const isCreatingTeam = !isAuthenticated || !activeTeam;
   const invalidateUserTeams = () => {
     queryClient.invalidateQueries({ queryKey: [userTeamQueryKey] });
@@ -121,7 +145,7 @@ export default function TeamBuilder() {
     setDraftInitialized(false);
     setSelectedRiders([]);
     setBenchRider(null);
-    setTeamName("My DH Team");
+    setTeamName(generateRandomTeamName());
     setBenchMode(false);
     setSwapMode(false);
     setSwapRiderData(null);
@@ -284,16 +308,19 @@ export default function TeamBuilder() {
     );
   }, [activeTeam, selectedRiders, benchRider, teamName]);
 
-  const canSave = isAuthenticated && isTeamValid && (isCreatingTeam || hasChanges) && !isTeamLocked;
+  const canSave = isAuthenticated && isTeamValid && isTeamNameValid && (isCreatingTeam || hasChanges) && !isTeamLocked;
   const isSubmitting = createTeam.isPending || updateTeam.isPending;
   const statusIssues = useMemo(() => {
     const issues = [];
+    if (teamNameError) {
+      issues.push({ level: "error" as const, message: teamNameError });
+    }
     if (!benchIsValid) {
       issues.push({ level: "error" as const, message: "Bench rider must be different from starters" });
     }
     issues.push(...teamValidity.issues);
     return issues;
-  }, [benchIsValid, teamValidity.issues]);
+  }, [teamNameError, benchIsValid, teamValidity.issues]);
 
   const summaryLabel = useMemo(() => {
     const budgetLabel =
@@ -505,6 +532,15 @@ export default function TeamBuilder() {
       return;
     }
 
+    if (teamNameError) {
+      toast({
+        title: "Invalid team name",
+        description: teamNameError,
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!isTeamValid) {
       toast({
         title: "Invalid team",
@@ -671,13 +707,45 @@ export default function TeamBuilder() {
                   <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                     Team Name
                   </label>
-                  <Input
-                    value={teamName}
-                    onChange={(event) => setTeamName(event.target.value)}
-                    placeholder="Team Name"
-                    disabled={isTeamLocked && !isCreatingTeam}
-                    className="font-heading font-bold"
-                  />
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Input
+                        value={teamName}
+                        onChange={(event) => setTeamName(event.target.value)}
+                        placeholder="Team Name"
+                        disabled={isTeamLocked && !isCreatingTeam}
+                        className={`font-heading font-bold pr-10 ${
+                          teamNameError
+                            ? "border-red-500 focus-visible:ring-red-500"
+                            : isTeamNameValid
+                            ? "border-green-500 focus-visible:ring-green-500"
+                            : ""
+                        }`}
+                      />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        {isCheckingName ? (
+                          <div className="h-4 w-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                        ) : teamNameError ? (
+                          <AlertCircle className="h-4 w-4 text-red-500" />
+                        ) : isTeamNameValid ? (
+                          <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        ) : null}
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setTeamName(generateRandomTeamName())}
+                      disabled={isTeamLocked && !isCreatingTeam}
+                      title="Generate random team name"
+                    >
+                      <Dices className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {teamNameError && (
+                    <p className="text-xs text-red-500 mt-1">{teamNameError}</p>
+                  )}
                 </div>
 
                 <div className="grid gap-4 lg:grid-cols-2">

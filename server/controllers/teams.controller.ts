@@ -8,6 +8,40 @@ import { countTransfers } from "../services/game/transfers";
 import { useJokerCardForTeam } from "../services/game/joker";
 
 /**
+ * Check if a team name is available
+ */
+export async function checkTeamNameAvailability(req: any, res: Response) {
+  try {
+    const { name } = req.query;
+    const excludeTeamId = req.query.excludeTeamId ? Number(req.query.excludeTeamId) : undefined;
+
+    if (!name || typeof name !== "string") {
+      return res.status(400).json({ message: "Team name is required" });
+    }
+
+    const trimmedName = name.trim();
+    if (trimmedName.length < 3) {
+      return res.json({ available: false, reason: "Team name must be at least 3 characters" });
+    }
+
+    if (trimmedName.length > 50) {
+      return res.json({ available: false, reason: "Team name must be 50 characters or less" });
+    }
+
+    const isAvailable = await storage.isTeamNameAvailable(trimmedName, excludeTeamId);
+
+    if (isAvailable) {
+      return res.json({ available: true });
+    } else {
+      return res.json({ available: false, reason: "This team name is already taken" });
+    }
+  } catch (error) {
+    console.error("Error checking team name availability:", error);
+    res.status(500).json({ message: "Failed to check team name availability" });
+  }
+}
+
+/**
  * Get a user's team
  */
 export async function getUserTeam(req: any, res: Response) {
