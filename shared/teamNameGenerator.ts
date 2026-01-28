@@ -20,8 +20,8 @@ const nouns = [
 const formats = [
   (adj: string, noun: string) => `${adj} ${noun}`,
   (adj: string, noun: string) => `The ${adj} ${noun}`,
-  (adj: string, noun: string) => `Team ${adj}`,
-  (adj: string, noun: string) => `${noun} United`,
+  (adj: string, _noun: string) => `Team ${adj}`,
+  (_adj: string, noun: string) => `${noun} United`,
   (adj: string, noun: string) => `${adj} ${noun} Racing`,
 ];
 
