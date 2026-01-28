@@ -24,6 +24,10 @@ export default function UsernameSetup() {
   const queryClient = useQueryClient();
   const [username, setUsername] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [availability, setAvailability] = useState<{
+    status: "idle" | "checking" | "available" | "taken" | "invalid";
+    normalized: string;
+  }>({ status: "idle", normalized: "" });
 
   const suggestedUsername = useMemo(() => {
     if (!user?.email) return "";
@@ -55,6 +59,45 @@ export default function UsernameSetup() {
   const normalizedUsername = normalizeUsername(username);
   const isValid = USERNAME_PATTERN.test(normalizedUsername);
 
+  useEffect(() => {
+    if (!username) {
+      setAvailability({ status: "idle", normalized: "" });
+      return;
+    }
+
+    if (!isValid) {
+      setAvailability({ status: "invalid", normalized: normalizedUsername });
+      return;
+    }
+
+    let cancelled = false;
+    setAvailability({ status: "checking", normalized: normalizedUsername });
+
+    const handle = window.setTimeout(async () => {
+      try {
+        const response = await apiRequest<{
+          available: boolean;
+          normalized: string;
+          reason?: string;
+        }>(`/api/me/username/check?username=${encodeURIComponent(normalizedUsername)}`);
+
+        if (cancelled) return;
+        setAvailability({
+          status: response.available ? "available" : "taken",
+          normalized: response.normalized,
+        });
+      } catch {
+        if (cancelled) return;
+        setAvailability({ status: "invalid", normalized: normalizedUsername });
+      }
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(handle);
+    };
+  }, [username, normalizedUsername, isValid]);
+
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
@@ -66,8 +109,28 @@ export default function UsernameSetup() {
       return;
     }
 
+    if (availability.status === "taken") {
+      setError("That username is already taken.");
+      return;
+    }
+
     mutation.mutate(normalizedUsername);
   };
+
+  const availabilityMessage = (() => {
+    switch (availability.status) {
+      case "checking":
+        return "Checking availability…";
+      case "available":
+        return "Username available";
+      case "taken":
+        return "Username already taken";
+      case "invalid":
+        return "Invalid username format";
+      default:
+        return "";
+    }
+  })();
 
   return (
     <div className="min-h-[70vh] flex items-center justify-center px-4 py-10">
@@ -104,9 +167,31 @@ export default function UsernameSetup() {
             <p className="text-xs text-gray-500">
               3-20 characters • letters, numbers, underscores only
             </p>
+            {availabilityMessage && (
+              <p
+                className={`text-xs ${
+                  availability.status === "available"
+                    ? "text-green-600"
+                    : availability.status === "checking"
+                      ? "text-gray-500"
+                      : "text-red-600"
+                }`}
+              >
+                {availabilityMessage}
+              </p>
+            )}
           </div>
 
-          <Button type="submit" className="w-full" disabled={mutation.isPending}>
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={
+              mutation.isPending ||
+              availability.status === "checking" ||
+              availability.status === "taken" ||
+              availability.status === "invalid"
+            }
+          >
             {mutation.isPending ? "Saving…" : "Save username"}
           </Button>
         </form>

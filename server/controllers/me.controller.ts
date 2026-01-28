@@ -140,3 +140,30 @@ export async function updateMyUsername(req: any, res: Response) {
     return res.status(500).json({ message: "Failed to update username" });
   }
 }
+
+export async function checkUsernameAvailability(req: any, res: Response) {
+  try {
+    const userId = req.oidc?.user?.sub;
+    if (!userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    const rawUsername =
+      typeof req.query?.username === "string" ? req.query.username : "";
+    const username = normalizeUsername(rawUsername);
+
+    if (!USERNAME_PATTERN.test(username)) {
+      return res.json({ available: false, normalized: username, reason: "invalid" });
+    }
+
+    const existing = await storage.getUserByUsername(username);
+    if (!existing || existing.id === userId) {
+      return res.json({ available: true, normalized: username });
+    }
+
+    return res.json({ available: false, normalized: username, reason: "taken" });
+  } catch (error) {
+    console.error("Error checking username availability:", error);
+    return res.status(500).json({ message: "Failed to check username" });
+  }
+}
