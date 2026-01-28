@@ -52,5 +52,6 @@ export default function request(app: Express) {
       performRequest<T>(app, "POST", path, body),
     put: <T = unknown>(path: string, body?: unknown) =>
       performRequest<T>(app, "PUT", path, body),
+    delete: <T = unknown>(path: string) => performRequest<T>(app, "DELETE", path),
   };
 }

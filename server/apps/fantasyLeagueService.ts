@@ -11,6 +11,7 @@ import featuresRoutes from "../routes/features.routes";
 import meRoutes from "../routes/me.routes";
 import roundsRoutes from "../routes/rounds.routes";
 import usersRoutes from "../routes/users.routes";
+import friendsRoutes from "../routes/friends.routes";
 import { requireAuth } from "../auth";
 import { isAdmin } from "../middleware/auth.middleware";
 import { downloadImage, processImage, upload } from "../imageUpload";
@@ -37,6 +38,7 @@ export async function createFantasyLeagueService() {
   app.use("/auth", authRoutes);
   app.use("/leaderboard", leaderboardRoutes);
   app.use("/users", usersRoutes);
+  app.use("/friends", friendsRoutes);
 
   const uploadsDir = path.resolve(process.cwd(), "uploads");
   const legacyUploadsDir = path.resolve(process.cwd(), "public/uploads");

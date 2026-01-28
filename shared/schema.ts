@@ -269,3 +269,20 @@ export type RiderImageSource =
   | "manual_copied"
   | "scraped"
   | "unknown";
+
+// Friends table
+export const friends = pgTable("friends", {
+  id: serial("id").primaryKey(),
+  requesterId: varchar("requester_id").notNull().references(() => users.id),
+  addresseeId: varchar("addressee_id").notNull().references(() => users.id),
+  status: text("status").notNull().default("pending"), // "pending" | "accepted"
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type Friend = typeof friends.$inferSelect;
+export type InsertFriend = typeof friends.$inferInsert;
+
+export type FriendWithUser = Friend & {
+  user: User;
+};

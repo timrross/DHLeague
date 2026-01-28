@@ -17,7 +17,10 @@ import {
   type TeamWithRiders,
   type RaceWithResults,
   teamSwaps,
-  type InsertUser
+  type InsertUser,
+  friends,
+  type Friend,
+  type FriendWithUser,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, asc, desc, sql, gte, lte, ilike, or, inArray } from "drizzle-orm";
@@ -145,6 +148,19 @@ export interface IStorage {
   updateUser(id: string, userData: Partial<User>): Promise<User | undefined>;
   deleteUser(id: string): Promise<boolean>;
   getUsersWithTeams(): Promise<(User & { team?: TeamWithRiders })[]>;
+
+  // Team name operations
+  isTeamNameAvailable(name: string, excludeTeamId?: number): Promise<boolean>;
+
+  // Friend operations
+  getFriends(userId: string): Promise<FriendWithUser[]>;
+  getFriendStatus(userId: string, otherUserId: string): Promise<"none" | "pending_sent" | "pending_received" | "accepted">;
+  getPendingFriendRequests(userId: string): Promise<FriendWithUser[]>;
+  sendFriendRequest(requesterId: string, addresseeId: string): Promise<Friend>;
+  acceptFriendRequest(userId: string, requestId: number): Promise<Friend>;
+  rejectFriendRequest(userId: string, requestId: number): Promise<boolean>;
+  removeFriend(userId: string, friendId: number): Promise<boolean>;
+  getPendingRequestCount(userId: string): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -936,6 +952,28 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async isTeamNameAvailable(name: string, excludeTeamId?: number): Promise<boolean> {
+    const normalizedName = name.trim();
+    if (!normalizedName) {
+      return false;
+    }
+
+    const conditions = [eq(teams.name, normalizedName)];
+
+    const result = await db
+      .select({ id: teams.id })
+      .from(teams)
+      .where(excludeTeamId ? and(...conditions) : conditions[0])
+      .limit(1);
+
+    // If excludeTeamId is provided, check if the found team is the same one
+    if (result.length > 0 && excludeTeamId && result[0].id === excludeTeamId) {
+      return true; // The name belongs to the team being updated
+    }
+
+    return result.length === 0;
+  }
+
   // Race operations
   async getRaces(): Promise<Race[]> {
     return await db.select().from(races);
@@ -1107,6 +1145,212 @@ export class DatabaseStorage implements IStorage {
       });
   }
 
+  // Friend operations
+  async getFriends(userId: string): Promise<FriendWithUser[]> {
+    // Get accepted friendships where user is either requester or addressee
+    const friendRows = await db
+      .select()
+      .from(friends)
+      .where(
+        and(
+          eq(friends.status, "accepted"),
+          or(
+            eq(friends.requesterId, userId),
+            eq(friends.addresseeId, userId)
+          )
+        )
+      );
+
+    // Get the other user's info for each friendship
+    const friendsWithUsers: FriendWithUser[] = [];
+    for (const friend of friendRows) {
+      const otherUserId = friend.requesterId === userId ? friend.addresseeId : friend.requesterId;
+      const user = await this.getUser(otherUserId);
+      if (user) {
+        friendsWithUsers.push({ ...friend, user });
+      }
+    }
+
+    return friendsWithUsers;
+  }
+
+  async getFriendStatus(
+    userId: string,
+    otherUserId: string
+  ): Promise<"none" | "pending_sent" | "pending_received" | "accepted"> {
+    // Check for any relationship between these users
+    const relationship = await db
+      .select()
+      .from(friends)
+      .where(
+        or(
+          and(eq(friends.requesterId, userId), eq(friends.addresseeId, otherUserId)),
+          and(eq(friends.requesterId, otherUserId), eq(friends.addresseeId, userId))
+        )
+      )
+      .limit(1);
+
+    if (relationship.length === 0) {
+      return "none";
+    }
+
+    const friend = relationship[0];
+    if (friend.status === "accepted") {
+      return "accepted";
+    }
+
+    // It's pending - determine direction
+    if (friend.requesterId === userId) {
+      return "pending_sent";
+    }
+    return "pending_received";
+  }
+
+  async getPendingFriendRequests(userId: string): Promise<FriendWithUser[]> {
+    // Get pending requests where user is the addressee
+    const pendingRows = await db
+      .select()
+      .from(friends)
+      .where(
+        and(
+          eq(friends.addresseeId, userId),
+          eq(friends.status, "pending")
+        )
+      );
+
+    // Get requester info for each request
+    const requestsWithUsers: FriendWithUser[] = [];
+    for (const request of pendingRows) {
+      const user = await this.getUser(request.requesterId);
+      if (user) {
+        requestsWithUsers.push({ ...request, user });
+      }
+    }
+
+    return requestsWithUsers;
+  }
+
+  async sendFriendRequest(requesterId: string, addresseeId: string): Promise<Friend> {
+    // Check if relationship already exists
+    const existing = await db
+      .select()
+      .from(friends)
+      .where(
+        or(
+          and(eq(friends.requesterId, requesterId), eq(friends.addresseeId, addresseeId)),
+          and(eq(friends.requesterId, addresseeId), eq(friends.addresseeId, requesterId))
+        )
+      )
+      .limit(1);
+
+    if (existing.length > 0) {
+      throw new Error("Friend relationship already exists");
+    }
+
+    const [newFriend] = await db
+      .insert(friends)
+      .values({
+        requesterId,
+        addresseeId,
+        status: "pending",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+
+    return newFriend;
+  }
+
+  async acceptFriendRequest(userId: string, requestId: number): Promise<Friend> {
+    // Verify this is a pending request to this user
+    const request = await db
+      .select()
+      .from(friends)
+      .where(
+        and(
+          eq(friends.id, requestId),
+          eq(friends.addresseeId, userId),
+          eq(friends.status, "pending")
+        )
+      )
+      .limit(1);
+
+    if (request.length === 0) {
+      throw new Error("Friend request not found or already processed");
+    }
+
+    const [updated] = await db
+      .update(friends)
+      .set({
+        status: "accepted",
+        updatedAt: new Date(),
+      })
+      .where(eq(friends.id, requestId))
+      .returning();
+
+    return updated;
+  }
+
+  async rejectFriendRequest(userId: string, requestId: number): Promise<boolean> {
+    // Verify this is a pending request to this user
+    const request = await db
+      .select()
+      .from(friends)
+      .where(
+        and(
+          eq(friends.id, requestId),
+          eq(friends.addresseeId, userId),
+          eq(friends.status, "pending")
+        )
+      )
+      .limit(1);
+
+    if (request.length === 0) {
+      return false;
+    }
+
+    await db.delete(friends).where(eq(friends.id, requestId));
+    return true;
+  }
+
+  async removeFriend(userId: string, friendId: number): Promise<boolean> {
+    // Verify this is an accepted friendship where user is involved
+    const friendship = await db
+      .select()
+      .from(friends)
+      .where(
+        and(
+          eq(friends.id, friendId),
+          eq(friends.status, "accepted"),
+          or(
+            eq(friends.requesterId, userId),
+            eq(friends.addresseeId, userId)
+          )
+        )
+      )
+      .limit(1);
+
+    if (friendship.length === 0) {
+      return false;
+    }
+
+    await db.delete(friends).where(eq(friends.id, friendId));
+    return true;
+  }
+
+  async getPendingRequestCount(userId: string): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(friends)
+      .where(
+        and(
+          eq(friends.addresseeId, userId),
+          eq(friends.status, "pending")
+        )
+      );
+
+    return Number(result[0]?.count ?? 0);
+  }
 }
 
 export const storage = new DatabaseStorage();

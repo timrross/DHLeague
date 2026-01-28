@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { LeaderboardEntry } from "@shared/schema";
 import LeaderboardTable from "@/components/leaderboard-table";
@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { FooterAd } from "@/components/ui/google-ad";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { PendingFriendRequests } from "@/components/pending-friend-requests";
+import { useFriendsQuery, usePendingCountQuery } from "@/services/friendsApi";
 
 export default function Leaderboard() {
   const [viewMode, setViewMode] = useState<'global' | 'leagues' | 'friends'>('global');
@@ -15,16 +17,34 @@ export default function Leaderboard() {
     queryKey: ['/api/leaderboard'],
   });
 
-  let filteredLeaderboard = leaderboard as LeaderboardEntry[];
-  
-  // For demonstration, add mock filtering for the other views
-  if (viewMode === 'leagues' && filteredLeaderboard) {
-    // In a real app, this would filter to leagues the user is part of
-    filteredLeaderboard = filteredLeaderboard.slice(0, 3);
-  } else if (viewMode === 'friends' && filteredLeaderboard) {
-    // In a real app, this would filter to the user's friends
-    filteredLeaderboard = filteredLeaderboard.slice(0, 2);
-  }
+  const { data: friends } = useFriendsQuery({ enabled: isAuthenticated });
+  const { data: pendingCountData } = usePendingCountQuery({ enabled: isAuthenticated });
+  const pendingCount = pendingCountData?.count ?? 0;
+
+  // Build set of friend user IDs for filtering
+  const friendUserIds = useMemo(() => {
+    if (!friends) return new Set<string>();
+    return new Set(friends.map((f) => f.user.id));
+  }, [friends]);
+
+  const filteredLeaderboard = useMemo(() => {
+    const entries = leaderboard as LeaderboardEntry[] | undefined;
+    if (!entries) return [];
+
+    if (viewMode === 'leagues') {
+      // In a real app, this would filter to leagues the user is part of
+      return entries.slice(0, 3);
+    }
+
+    if (viewMode === 'friends') {
+      // Filter to friends + current user
+      return entries.filter(
+        (entry) => friendUserIds.has(entry.user.id) || entry.user.id === user?.id
+      );
+    }
+
+    return entries;
+  }, [leaderboard, viewMode, friendUserIds, user?.id]);
 
   return (
     <div className="min-h-screen bg-neutral">
@@ -47,11 +67,16 @@ export default function Leaderboard() {
               MY LEAGUES
             </Button>
             <Button
-              className={viewMode === 'friends' ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}
+              className={`relative ${viewMode === 'friends' ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
               onClick={() => setViewMode('friends')}
               disabled={!isAuthenticated}
             >
               FRIENDS
+              {pendingCount > 0 && (
+                <span className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center bg-red-500 text-white text-xs font-bold rounded-full">
+                  {pendingCount > 9 ? '9+' : pendingCount}
+                </span>
+              )}
             </Button>
           </div>
           
@@ -73,10 +98,15 @@ export default function Leaderboard() {
             </Alert>
           )}
 
+          {viewMode === 'friends' && isAuthenticated && (
+            <PendingFriendRequests />
+          )}
+
           {!isLoading && !isError && filteredLeaderboard && filteredLeaderboard.length > 0 && (
             <LeaderboardTable
               leaderboard={filteredLeaderboard}
               userId={isAuthenticated ? user?.id : undefined}
+              showFriendButton={isAuthenticated && viewMode === 'global'}
             />
           )}
 

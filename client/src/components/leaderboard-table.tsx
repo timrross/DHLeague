@@ -2,13 +2,15 @@ import type { KeyboardEvent } from "react";
 import { LeaderboardEntry } from "@shared/schema";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useLocation } from "wouter";
+import { FriendButton } from "@/components/friend-button";
 
 interface LeaderboardTableProps {
   leaderboard: LeaderboardEntry[];
   userId?: string;
+  showFriendButton?: boolean;
 }
 
-export default function LeaderboardTable({ leaderboard, userId }: LeaderboardTableProps) {
+export default function LeaderboardTable({ leaderboard, userId, showFriendButton = false }: LeaderboardTableProps) {
   const [, setLocation] = useLocation();
 
   // Get initials for avatar fallback
@@ -56,6 +58,9 @@ export default function LeaderboardTable({ leaderboard, userId }: LeaderboardTab
             <th className="py-3 px-4 text-left font-heading font-bold text-gray-700">WINS</th>
             <th className="py-3 px-4 text-left font-heading font-bold text-gray-700">BEST RACE</th>
             <th className="py-3 px-4 text-left font-heading font-bold text-gray-700">PODIUMS</th>
+            {showFriendButton && (
+              <th className="py-3 px-4 text-center font-heading font-bold text-gray-700">FRIEND</th>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -107,6 +112,16 @@ export default function LeaderboardTable({ leaderboard, userId }: LeaderboardTab
                 <td className="py-3 px-4 font-accent font-medium text-gray-700">
                   {entry.podiumFinishes}
                 </td>
+                {showFriendButton && (
+                  <td className="py-3 px-4 text-center">
+                    {!isCurrentUser && (
+                      <FriendButton
+                        userId={entry.user.id}
+                        userName={entry.user.firstName || undefined}
+                      />
+                    )}
+                  </td>
+                )}
               </tr>
             );
           })}

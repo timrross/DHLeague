@@ -246,7 +246,19 @@ const schemaStatements = [
     removed_rider_id INTEGER NOT NULL REFERENCES riders(id) ON DELETE CASCADE,
     added_rider_id INTEGER NOT NULL REFERENCES riders(id) ON DELETE CASCADE,
     swapped_at TIMESTAMPTZ DEFAULT NOW()
-  )`
+  )`,
+  `CREATE TABLE IF NOT EXISTS friends (
+    id SERIAL PRIMARY KEY,
+    requester_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    addressee_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    status TEXT NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE (requester_id, addressee_id)
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_friends_requester_id ON friends(requester_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_friends_addressee_id ON friends(addressee_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_friends_status ON friends(status)`
 ];
 
 export async function ensureDatabaseSchema() {
