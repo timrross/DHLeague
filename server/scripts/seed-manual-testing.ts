@@ -570,11 +570,6 @@ async function createTeams(
 async function verifySetup(seasonId: number): Promise<void> {
   console.log("\n--- Verification ---");
 
-  const userCount = await db
-    .select()
-    .from(users)
-    .where(eq(users.id, formatUserId(0)));
-
   const allTestUsers = await db
     .select()
     .from(users)
