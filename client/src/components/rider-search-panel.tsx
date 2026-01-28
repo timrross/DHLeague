@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Rider } from "@shared/schema";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, RefreshCw } from "lucide-react";
 import RiderCard from "@/components/rider-card";
 

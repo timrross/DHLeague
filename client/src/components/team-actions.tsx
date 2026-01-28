@@ -2,7 +2,6 @@ import { Link } from "wouter";
 import { Rider, TeamWithRiders } from "@shared/schema";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
 import CountdownTimer from "@/components/countdown-timer";
 import TeamSummary from "@/components/team-summary";
 import JokerCardButton from "@/components/joker-card-button";

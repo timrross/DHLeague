@@ -34,7 +34,8 @@ export function EnhancedImageUpload({
 }: EnhancedImageUploadProps) {
   // Prioritize traditional props if both are provided
   const finalImage = currentImage || value || "";
-  const finalChangeHandler = onImageChange || onChange || ((url: string) => {});
+  const noop: (url: string) => void = () => {};
+  const finalChangeHandler = onImageChange || onChange || noop;
   
   return (
     <ImageUpload

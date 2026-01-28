@@ -1,7 +1,6 @@
 import path from "path";
 import { drizzle } from "drizzle-orm/pglite";
 import { PGlite } from "@electric-sql/pglite";
-import { eq } from "drizzle-orm";
 import { loadDatarideFixtures, LoadedDatarideFixture } from "../fixtures/loadDatarideFixtures";
 import { extractRidersFromResponse } from "../integrations/uciDataride/extractRidersFromResponse";
 import {

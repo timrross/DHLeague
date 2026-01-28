@@ -25,7 +25,7 @@ export default function ImportData() {
         method: 'POST'
       });
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/riders'] });
       queryClient.invalidateQueries({ queryKey: ['/api/races'] });
       

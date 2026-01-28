@@ -24,15 +24,14 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
-import { Loader2, UserCog, Edit, Trash, Check, X } from 'lucide-react';
-import { 
+import { Loader2, Edit, Trash } from 'lucide-react';
+import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 
@@ -72,7 +71,6 @@ export default function UserManagement({ currentUser }: UserManagementProps) {
     data: users = [] as UserWithTeam[],
     isLoading: isLoadingUsers,
     error: usersError,
-    refetch: refetchUsers
   } = useQuery<UserWithTeam[]>({
     queryKey: ['/api/admin/users-with-teams'],
   });

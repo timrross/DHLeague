@@ -1,4 +1,4 @@
-import { UserPlus, UserCheck, Clock, UserMinus } from "lucide-react";
+import { UserPlus, UserCheck, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   useFriendStatusQuery,

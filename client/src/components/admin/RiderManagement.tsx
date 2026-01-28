@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Rider } from "@shared/schema";
-import RiderForm from "./RiderForm";
 import { SimpleRiderForm } from "./SimpleRiderForm";
 
 // Debounce hook for search input

@@ -24,9 +24,9 @@ export default function RiderCard({
   onClick, 
   swapMode, 
   onSwap, 
-  showRemoveIcon,
+  showRemoveIcon: _showRemoveIcon,
   disabled,
-  showSelectIcon,
+  showSelectIcon: _showSelectIcon,
   disabledReason,
   showLockedBadge = false,
 }: RiderCardProps) {

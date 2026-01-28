@@ -54,11 +54,6 @@ export default function TeamSummary({
   const maleRidersCount = externalMaleCount !== undefined ? externalMaleCount : calculatedMaleRidersCount;
   const femaleRidersCount = externalFemaleCount !== undefined ? externalFemaleCount : calculatedFemaleRidersCount;
   
-  // Determine if composition is valid
-  const isCompositionValid = selectedRiders.length <= 6 && 
-                            maleRidersCount <= 4 && 
-                            (selectedRiders.length === 6 ? femaleRidersCount >= 2 : true);
-
   return (
     <div className="w-full">
       {/* Team composition */}

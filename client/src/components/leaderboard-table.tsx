@@ -19,14 +19,6 @@ export default function LeaderboardTable({ leaderboard, userId, showFriendButton
     return name.split(" ").map(n => n[0]).join("").toUpperCase();
   };
 
-  // Get ordinal suffix for rank
-  const getOrdinalSuffix = (rank: number): string => {
-    if (rank === 1) return "st";
-    if (rank === 2) return "nd";
-    if (rank === 3) return "rd";
-    return "th";
-  };
-
   const navigateToUserTeam = (targetUserId: string) => {
     setLocation(`/users/${targetUserId}/team`);
   };
