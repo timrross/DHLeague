@@ -198,7 +198,7 @@ export default function UsernameSetup() {
 
         <div className="text-center">
           <a
-            href="/api/logout"
+            href="/api/auth/logout"
             className="text-xs text-gray-500 hover:text-gray-700"
           >
             Sign out

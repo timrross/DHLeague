@@ -77,7 +77,7 @@ export default function Header() {
                   </div>
                 </Link>
               )}
-              <a href="/api/logout" className="text-white hover:text-primary font-body font-semibold transition duration-200">
+              <a href="/api/auth/logout" className="text-white hover:text-primary font-body font-semibold transition duration-200">
                 Logout
               </a>
             </div>
@@ -142,7 +142,7 @@ export default function Header() {
                         <span className="text-white font-semibold">{displayName}</span>
                       </div>
                       <a 
-                        href="/api/logout" 
+                        href="/api/auth/logout" 
                         className="bg-primary hover:bg-red-700 text-white font-heading font-bold px-4 py-2 rounded-md transition duration-200 text-center"
                       >
                         SIGN OUT
