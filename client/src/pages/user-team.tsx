@@ -100,13 +100,13 @@ export default function UserTeam() {
           {user && (
             <Avatar className="h-12 w-12">
               <AvatarFallback className="bg-primary text-white">
-                {getInitials(user.username)}
+                {getInitials(user.displayName)}
               </AvatarFallback>
             </Avatar>
           )}
           <div>
             <h1 className="text-2xl md:text-3xl font-heading font-bold text-secondary">
-              {user?.username ?? "Loading..."}
+              {user?.displayName ?? "Loading..."}
             </h1>
             <p className="text-sm text-gray-500">
               Viewing team and performance

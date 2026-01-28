@@ -5,6 +5,7 @@ import { getTeamPerformance, type TeamPerformanceRound } from "../services/game/
 import { db } from "../db";
 import { users } from "@shared/schema";
 import { eq } from "drizzle-orm";
+import { buildPublicUser } from "../utils/publicUser";
 
 const parseSeasonId = (value: unknown) => {
   if (value === undefined || value === null || value === "") return undefined;
@@ -55,10 +56,7 @@ export async function getUserTeams(req: Request, res: Response) {
     ]);
 
     res.json({
-      user: {
-        id: user.id,
-        username: user.username ?? null,
-      },
+      user: buildPublicUser(user),
       eliteTeam: eliteTeam ?? null,
       juniorTeam: FEATURES.JUNIOR_TEAM_ENABLED ? juniorTeam ?? null : null,
     });
@@ -105,10 +103,7 @@ export async function getUserPerformance(req: Request, res: Response) {
     const juniorTotal = junior?.totalPoints ?? 0;
 
     res.json({
-      user: {
-        id: user.id,
-        username: user.username ?? null,
-      },
+      user: buildPublicUser(user),
       totals: {
         elite: eliteTotal,
         junior: juniorTotal,

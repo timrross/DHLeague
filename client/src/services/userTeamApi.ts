@@ -6,6 +6,7 @@ import type { MyPerformanceResponse } from "./myTeamApi";
 export type UserInfo = {
   id: string;
   username: string | null;
+  displayName: string;
 };
 
 export type UserTeamsResponse = {

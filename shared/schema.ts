@@ -23,6 +23,7 @@ export type InsertUser = typeof users.$inferInsert;
 export type PublicUser = {
   id: string;
   username: string | null;
+  displayName: string;
 };
 
 // Session storage table for OIDC auth

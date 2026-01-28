@@ -122,7 +122,11 @@ describe("friends.controller", () => {
     it("returns friends list", async () => {
       const friendWithUser: FriendWithUser = {
         ...testFriend,
-        user: { id: otherUser.id, username: otherUser.username ?? null },
+        user: {
+          id: otherUser.id,
+          username: otherUser.username ?? null,
+          displayName: otherUser.username ?? "Anonymous",
+        },
       };
       mock.method(storageModule.storage as any, "getFriends", async () => [friendWithUser]);
 
@@ -140,7 +144,11 @@ describe("friends.controller", () => {
     it("returns pending requests", async () => {
       const pendingWithUser: FriendWithUser = {
         ...pendingFriend,
-        user: { id: otherUser.id, username: otherUser.username ?? null },
+        user: {
+          id: otherUser.id,
+          username: otherUser.username ?? null,
+          displayName: otherUser.username ?? "Anonymous",
+        },
       };
       mock.method(storageModule.storage as any, "getPendingFriendRequests", async () => [pendingWithUser]);
 

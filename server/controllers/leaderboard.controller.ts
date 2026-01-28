@@ -4,6 +4,7 @@ import { db } from "../db";
 import { teams, users } from "@shared/schema";
 import { getActiveSeasonId } from "../services/game/seasons";
 import { getSeasonStandings } from "../services/game/standings";
+import { buildAnonymousPublicUser, buildPublicUser } from "../utils/publicUser";
 
 /**
  * Get the leaderboard data
@@ -28,19 +29,16 @@ export async function getLeaderboard(_req: Request, res: Response) {
         ])
       : [[], []];
 
-    const usernamesById = new Map(
-      userRows.map((user) => [user.id, user.username ?? null]),
-    );
+    const usersById = new Map(userRows.map((user) => [user.id, user]));
     const teamNameByUserId = new Map(
       teamRows.map((team) => [team.userId, team.teamName]),
     );
 
     const leaderboard = standings.map((entry) => ({
       rank: entry.rank,
-      user: {
-        id: entry.userId,
-        username: usernamesById.get(entry.userId) ?? null,
-      },
+      user: usersById.get(entry.userId)
+        ? buildPublicUser(usersById.get(entry.userId)!)
+        : buildAnonymousPublicUser(entry.userId),
       teamName: teamNameByUserId.get(entry.userId) ?? null,
       totalPoints: entry.totalPoints,
       raceWins: entry.raceWins,

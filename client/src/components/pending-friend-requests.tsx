@@ -43,11 +43,11 @@ export function PendingFriendRequests() {
             <div className="flex items-center gap-3">
               <Avatar className="h-8 w-8">
                 <AvatarFallback className="bg-primary text-white text-xs">
-                  {getInitials(request.user.username)}
+                  {getInitials(request.user.displayName)}
                 </AvatarFallback>
               </Avatar>
               <span className="text-gray-700 font-medium">
-                {request.user.username || "Anonymous"}
+                {request.user.displayName || "Anonymous"}
               </span>
             </div>
             <div className="flex gap-2">

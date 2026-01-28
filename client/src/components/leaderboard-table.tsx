@@ -90,11 +90,11 @@ export default function LeaderboardTable({ leaderboard, userId, showFriendButton
                 <td className="py-3 px-4 flex items-center gap-2">
                   <Avatar className="h-6 w-6">
                     <AvatarFallback className="bg-primary text-white text-xs">
-                      {getInitials(entry.user.username)}
+                      {getInitials(entry.user.displayName)}
                     </AvatarFallback>
                   </Avatar>
                   <span className="text-gray-700">
-                    {isCurrentUser ? "You" : entry.user.username || "Anonymous"}
+                    {isCurrentUser ? "You" : entry.user.displayName || "Anonymous"}
                   </span>
                 </td>
                 <td className="py-3 px-4 font-accent font-bold text-primary">
@@ -114,7 +114,7 @@ export default function LeaderboardTable({ leaderboard, userId, showFriendButton
                     {!isCurrentUser && (
                       <FriendButton
                         userId={entry.user.id}
-                        userName={entry.user.username || undefined}
+                        userName={entry.user.displayName || undefined}
                       />
                     )}
                   </td>

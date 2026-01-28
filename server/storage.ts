@@ -21,7 +21,6 @@ import {
   friends,
   type Friend,
   type FriendWithUser,
-  type PublicUser,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, asc, desc, sql, gte, lte, ilike, or, inArray } from "drizzle-orm";
@@ -29,6 +28,7 @@ import { getEditingWindow } from "./services/game/editingWindow";
 import { getActiveSeasonId, getSeasonIdForDate } from "./services/game/seasons";
 import { scoreRiderResult } from "./services/game/scoring/scoreTeamSnapshot";
 import type { ResultStatus } from "./services/game/config";
+import { buildPublicUser } from "./utils/publicUser";
 
 export type RiderWithLastRoundPoints = Rider & {
   lastRoundPoints?: number;
@@ -1204,11 +1204,7 @@ export class DatabaseStorage implements IStorage {
       const otherUserId = friend.requesterId === userId ? friend.addresseeId : friend.requesterId;
       const user = await this.getUser(otherUserId);
       if (user) {
-        const publicUser: PublicUser = {
-          id: user.id,
-          username: user.username ?? null,
-        };
-        friendsWithUsers.push({ ...friend, user: publicUser });
+        friendsWithUsers.push({ ...friend, user: buildPublicUser(user) });
       }
     }
 
@@ -1264,11 +1260,7 @@ export class DatabaseStorage implements IStorage {
     for (const request of pendingRows) {
       const user = await this.getUser(request.requesterId);
       if (user) {
-        const publicUser: PublicUser = {
-          id: user.id,
-          username: user.username ?? null,
-        };
-        requestsWithUsers.push({ ...request, user: publicUser });
+        requestsWithUsers.push({ ...request, user: buildPublicUser(user) });
       }
     }
 
