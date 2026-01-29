@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { storage } from "../storage";
+import { sendFriendRequestEmail } from "../services/email/friendRequests";
 
 /**
  * Get the current user's friends list
@@ -108,6 +109,22 @@ export async function sendFriendRequest(req: Request, res: Response) {
     }
 
     const friend = await storage.sendFriendRequest(userId, addresseeId);
+
+    if (addressee.email) {
+      try {
+        const requester = await storage.getUser(userId);
+        const requesterName =
+          requester?.usernameConfirmed && requester.username
+            ? requester.username
+            : null;
+        await sendFriendRequestEmail({
+          requesterName,
+          recipientEmail: addressee.email,
+        });
+      } catch (emailError) {
+        console.warn("Friend request email failed:", emailError);
+      }
+    }
     res.status(201).json(friend);
   } catch (error) {
     if (error instanceof Error && error.message === "Friend relationship already exists") {

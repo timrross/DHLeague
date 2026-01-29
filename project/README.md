@@ -45,6 +45,9 @@ At runtime the app expects the following environment variables:
 - `AUTH_PUBLIC_PATH`: Path segment where the auth routes are exposed (defaults to `/api/auth`).
 - `ISSUER_URL`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_TOKEN_ENDPOINT_AUTH_METHOD`, `OIDC_CALLBACK_URL`: OIDC values required for login; ask the admin
   for the tenant-specific credentials before deploying. In production the callback should be `https://mtbfantasy.com/api/callback`.
+- `RESEND_API_KEY`: API key for Resend transactional email delivery.
+- `RESEND_FROM`: Verified Resend sender address used for transactional emails.
+- `PUBLIC_BASE_URL`: Public site base URL used in email links (falls back to `AUTH_BASE_URL`).
 
 Client build environment variables (Vite):
 

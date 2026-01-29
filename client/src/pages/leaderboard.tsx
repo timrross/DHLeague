@@ -106,7 +106,7 @@ export default function Leaderboard() {
             <LeaderboardTable
               leaderboard={filteredLeaderboard}
               userId={isAuthenticated ? user?.id : undefined}
-              showFriendButton={isAuthenticated && viewMode === 'global'}
+              showFriendButton={isAuthenticated}
             />
           )}
 

@@ -62,6 +62,8 @@ export default function LeaderboardTable({ leaderboard, userId, showFriendButton
         <tbody>
           {leaderboard.map((entry) => {
             const isCurrentUser = userId && entry.user.id === userId;
+            const usernameLabel = entry.user.username ?? "Hidden";
+            const displayLabel = isCurrentUser ? "You" : usernameLabel;
             return (
               <tr
                 key={entry.user.id}
@@ -90,11 +92,11 @@ export default function LeaderboardTable({ leaderboard, userId, showFriendButton
                 <td className="py-3 px-4 flex items-center gap-2">
                   <Avatar className="h-6 w-6">
                     <AvatarFallback className="bg-primary text-white text-xs">
-                      {getInitials(entry.user.displayName)}
+                      {getInitials(displayLabel)}
                     </AvatarFallback>
                   </Avatar>
                   <span className="text-gray-700">
-                    {isCurrentUser ? "You" : entry.user.displayName || "Anonymous"}
+                    {displayLabel}
                   </span>
                 </td>
                 <td className="py-3 px-4 font-accent font-bold text-primary">
@@ -114,7 +116,7 @@ export default function LeaderboardTable({ leaderboard, userId, showFriendButton
                     {!isCurrentUser && (
                       <FriendButton
                         userId={entry.user.id}
-                        userName={entry.user.displayName || undefined}
+                        userName={entry.user.username || undefined}
                       />
                     )}
                   </td>
