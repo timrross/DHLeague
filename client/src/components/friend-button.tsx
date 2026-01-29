@@ -6,6 +6,7 @@ import {
   useRemoveFriendMutation,
   useFriendsQuery,
 } from "@/services/friendsApi";
+import { trackEvent } from "@/lib/analytics";
 import {
   Tooltip,
   TooltipContent,
@@ -37,8 +38,10 @@ export function FriendButton({ userId, userName }: FriendButtonProps) {
     e.preventDefault();
 
     if (status === "none") {
+      trackEvent("friend_request_sent", { source: "leaderboard" });
       sendRequest.mutate(userId);
     } else if (status === "accepted" && friendRecord) {
+      trackEvent("friend_removed", { source: "leaderboard" });
       removeFriend.mutate(friendRecord.id);
     }
     // For pending states, clicking does nothing

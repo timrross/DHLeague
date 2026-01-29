@@ -54,6 +54,9 @@ Client build environment variables (Vite):
 - `VITE_GOOGLE_ADSENSE_CLIENT_ID`: AdSense client ID used to load ads in production.
 - `VITE_GA4_MEASUREMENT_ID`: GA4 measurement ID used to send client-side analytics.
 
+Analytics notes:
+- The client reports SPA page views (including hash changes), internal/outbound link clicks, and key user actions (login start, logout, team created/updated, joker card use, username set, and friend request lifecycle events).
+
 ## Configurable paths and service name
 
 You can adjust deployment targets by editing the env values at the top of the workflow:

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
+import { trackEvent } from "@/lib/analytics";
 
 const USERNAME_PATTERN = /^[a-z0-9_]{3,20}$/;
 
@@ -48,6 +49,9 @@ export default function UsernameSetup() {
         body: JSON.stringify({ username: value }),
       }),
     onSuccess: async () => {
+      trackEvent("username_set", {
+        used_suggestion: normalizedUsername === suggestedUsername,
+      });
       setError(null);
       await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
     },

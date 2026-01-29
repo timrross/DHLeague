@@ -11,6 +11,7 @@ import { useFeatures } from "@/hooks/useFeatures";
 import { useTeamNameCheckQuery } from "@/services/teamApi";
 import { generateRandomTeamName } from "@shared/teamNameGenerator";
 import { Dices, AlertCircle, CheckCircle2 } from "lucide-react";
+import { trackEvent } from "@/lib/analytics";
 import JokerCardDialog from "@/components/joker-card-dialog";
 import JokerCardButton from "@/components/joker-card-button";
 import TeamStatusPanel from "@/components/team-builder/TeamStatusPanel";
@@ -160,7 +161,11 @@ export default function TeamBuilder() {
         headers: { 'Content-Type': 'application/json' }
       });
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
+      trackEvent("team_created", {
+        team_type: variables.teamType ?? teamType,
+        rider_count: variables.riderIds.length,
+      });
       toast({
         title: "Team created successfully!",
         description: "Your fantasy team has been created.",
@@ -186,7 +191,11 @@ export default function TeamBuilder() {
         headers: { 'Content-Type': 'application/json' }
       });
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
+      trackEvent("team_updated", {
+        team_type: teamType,
+        rider_count: variables.riderIds.length,
+      });
       toast({
         title: "Team updated successfully!",
         description: "Your fantasy team has been updated.",
@@ -210,6 +219,7 @@ export default function TeamBuilder() {
       });
     },
     onSuccess: () => {
+      trackEvent("joker_card_used", { team_type: teamType });
       toast({
         title: "Joker card used",
         description: "Your team has been reset. Build a new team to continue.",

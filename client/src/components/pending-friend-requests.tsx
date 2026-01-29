@@ -6,6 +6,7 @@ import {
   useAcceptFriendRequestMutation,
   useRejectFriendRequestMutation,
 } from "@/services/friendsApi";
+import { trackEvent } from "@/lib/analytics";
 
 export function PendingFriendRequests() {
   const { data: pendingRequests, isLoading } = usePendingRequestsQuery();
@@ -54,7 +55,10 @@ export function PendingFriendRequests() {
               <Button
                 variant="default"
                 size="sm"
-                onClick={() => acceptRequest.mutate(request.id)}
+                onClick={() => {
+                  trackEvent("friend_request_accepted", { source: "friends_panel" });
+                  acceptRequest.mutate(request.id);
+                }}
                 disabled={acceptRequest.isPending || rejectRequest.isPending}
                 className="bg-green-600 hover:bg-green-700"
               >
@@ -64,7 +68,10 @@ export function PendingFriendRequests() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => rejectRequest.mutate(request.id)}
+                onClick={() => {
+                  trackEvent("friend_request_rejected", { source: "friends_panel" });
+                  rejectRequest.mutate(request.id);
+                }}
                 disabled={acceptRequest.isPending || rejectRequest.isPending}
                 className="text-red-600 border-red-300 hover:bg-red-50"
               >
