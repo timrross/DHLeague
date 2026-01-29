@@ -12,8 +12,11 @@ import {
   useMyTeamsQuery,
   useNextRoundsQuery,
 } from "@/services/myTeamApi";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 export default function MyTeam() {
+  usePageTitle("My Team");
+
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { juniorTeamEnabled, isLoading: featuresLoading } = useFeatures();
 

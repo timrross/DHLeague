@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   buildPagePath,
   buildPageViewPayload,
+  buildDocumentTitle,
   getLinkClickEvent,
 } from "@shared/analytics";
 
@@ -32,6 +33,18 @@ describe("analytics helpers", () => {
       "https://mtbfantasy.com/leaderboard?season=2025#top",
     );
     assert.equal(payload.page_title, "Leaderboard");
+  });
+
+  it("builds document titles with prefixes", () => {
+    assert.equal(
+      buildDocumentTitle("My Team"),
+      "My Team - MTB Fantasy | UCI Downhill World Cup",
+    );
+    assert.equal(buildDocumentTitle(""), "MTB Fantasy | UCI Downhill World Cup");
+    assert.equal(
+      buildDocumentTitle(null),
+      "MTB Fantasy | UCI Downhill World Cup",
+    );
   });
 
   it("creates navigation click payload for internal links", () => {

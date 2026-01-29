@@ -6,6 +6,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { trackEvent } from "@/lib/analytics";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 const USERNAME_PATTERN = /^[a-z0-9_]{3,20}$/;
 
@@ -21,6 +22,8 @@ const extractErrorMessage = (error: unknown) => {
 };
 
 export default function UsernameSetup() {
+  usePageTitle("Choose Username");
+
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [username, setUsername] = useState("");

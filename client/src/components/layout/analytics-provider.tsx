@@ -46,13 +46,20 @@ export default function AnalyticsProvider({ children }: AnalyticsProviderProps) 
       return;
     }
 
-    const payload = buildCurrentPageViewPayload();
-    if (!payload.page_path || payload.page_path === lastPagePath.current) {
-      return;
-    }
+    const schedule =
+      typeof window !== "undefined" && "requestAnimationFrame" in window
+        ? window.requestAnimationFrame
+        : (callback: FrameRequestCallback) => window.setTimeout(callback, 0);
 
-    lastPagePath.current = payload.page_path;
-    window.gtag?.("event", "page_view", payload);
+    schedule(() => {
+      const payload = buildCurrentPageViewPayload();
+      if (!payload.page_path || payload.page_path === lastPagePath.current) {
+        return;
+      }
+
+      lastPagePath.current = payload.page_path;
+      window.gtag?.("event", "page_view", payload);
+    });
   }, [isEnabled]);
 
   useEffect(() => {

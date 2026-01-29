@@ -7,8 +7,11 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useRacesQuery, useRidersQuery } from "@/services/riderDataApi";
 import { Rider } from "@shared/schema";
 import RaceLabel from "@/components/race-label";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 export default function Home() {
+  usePageTitle("Home");
+
   const { data: races, isLoading: racesLoading, isError: racesError, error: racesErrorDetail } = useRacesQuery();
 
   const { data: riders, isLoading: ridersLoading, isError: ridersError, error: ridersErrorDetail } = useRidersQuery();

@@ -10,6 +10,7 @@ import {
   useUserPerformanceQuery,
 } from "@/services/userTeamApi";
 import { ArrowLeft } from "lucide-react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 export default function UserTeam() {
   const params = useParams<{ userId: string }>();
@@ -30,6 +31,9 @@ export default function UserTeam() {
 
   const showJunior = juniorTeamEnabled;
   const user = teamsData?.user ?? performance?.user;
+  const titlePrefix = user?.displayName ? `${user.displayName} Team` : "User Team";
+
+  usePageTitle(titlePrefix);
 
   const getInitials = (name: string | null) => {
     if (!name) return "U";

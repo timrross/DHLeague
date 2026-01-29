@@ -8,8 +8,11 @@ import { FooterAd } from "@/components/ui/google-ad";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { PendingFriendRequests } from "@/components/pending-friend-requests";
 import { useFriendsQuery, usePendingCountQuery } from "@/services/friendsApi";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 export default function Leaderboard() {
+  usePageTitle("Leaderboard");
+
   const [viewMode, setViewMode] = useState<'global' | 'leagues' | 'friends'>('global');
   const { user, isAuthenticated } = useAuth();
 

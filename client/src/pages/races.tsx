@@ -4,8 +4,11 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useRacesQuery } from "@/services/riderDataApi";
 import { useMemo } from "react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 export default function Races() {
+  usePageTitle("Races");
+
   const { data: races, isLoading, isError, error, refetch } = useRacesQuery();
   const scheduleLabel = useMemo(() => {
     if (!races || races.length === 0) {

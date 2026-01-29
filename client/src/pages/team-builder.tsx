@@ -32,8 +32,11 @@ import {
   getGenderCounts,
   getTeamValidity,
 } from "@/lib/team-builder";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 export default function TeamBuilder() {
+  usePageTitle("Team Builder");
+
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { juniorTeamEnabled } = useFeatures();
   const { toast } = useToast();

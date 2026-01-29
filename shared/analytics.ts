@@ -25,12 +25,22 @@ export interface LinkClickEvent {
   };
 }
 
+export const SITE_TITLE = "MTB Fantasy | UCI Downhill World Cup";
+
 const ALLOWED_PROTOCOLS = new Set(["http:", "https:"]);
 
 export const buildPagePath = ({ pathname, search, hash }: PageViewInput) => {
   const safeSearch = search ?? "";
   const safeHash = hash ?? "";
   return `${pathname}${safeSearch}${safeHash}`;
+};
+
+export const buildDocumentTitle = (prefix?: string | null) => {
+  const safePrefix = prefix?.trim();
+  if (!safePrefix) {
+    return SITE_TITLE;
+  }
+  return `${safePrefix} - ${SITE_TITLE}`;
 };
 
 export const buildPageViewPayload = ({

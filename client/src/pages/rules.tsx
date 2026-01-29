@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 const pointsTable = [
   { position: "1st", points: "200" },
@@ -39,6 +40,8 @@ const priceChangeTable = [
 ];
 
 export default function Rules() {
+  usePageTitle("Rules");
+
   return (
     <div className="min-h-screen bg-neutral">
       <div className="container mx-auto px-4 py-8 md:py-12">

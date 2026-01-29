@@ -10,6 +10,7 @@ import {
 } from "@/services/riderDataApi";
 import { formatRiderDisplayName } from "@shared/utils";
 import RaceLabel from "@/components/race-label";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 interface RaceDetailProps {
   id: number;
@@ -106,6 +107,8 @@ export default function RaceDetail({ id }: RaceDetailProps) {
     isLoading: raceLoading,
     isError,
   } = useRaceQuery(id);
+
+  usePageTitle(race?.name ?? "Race Details");
 
   const { data: results, isLoading: resultsLoading } = useRaceResultsQuery(id, {
     enabled: !!race,

@@ -15,6 +15,7 @@ import RaceManagement from '@/components/admin/RaceManagement';
 import RiderManagement from '@/components/admin/RiderManagement';
 import RiderImages from '@/components/admin/RiderImages';
 import GameMechanics from '@/components/admin/GameMechanics';
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 const ADMIN_TABS = [
   "users",
@@ -26,6 +27,15 @@ const ADMIN_TABS = [
 ] as const;
 
 type AdminTab = (typeof ADMIN_TABS)[number];
+
+const ADMIN_TAB_TITLES: Record<AdminTab, string> = {
+  users: "Admin - Users",
+  import: "Admin - Import",
+  races: "Admin - Races",
+  riders: "Admin - Riders",
+  images: "Admin - Rider Images",
+  game: "Admin - Game",
+};
 
 const getTabFromPath = (path: string): AdminTab => {
   const match = path.match(/^\/admin(?:\/([^/?#]+))?/);
@@ -50,6 +60,8 @@ export default function Admin() {
   const [location, setLocation] = useLocation();
   const activeTab = getTabFromPath(location);
   const selectedRaceId = getRaceIdFromPath(location);
+
+  usePageTitle(ADMIN_TAB_TITLES[activeTab]);
   
   if (!isAuthenticated || !user?.isAdmin) {
     return (

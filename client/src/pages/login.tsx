@@ -1,8 +1,11 @@
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 export default function Login() {
+  usePageTitle("Sign In");
+
   useEffect(() => {
     trackEvent("login_start", { source: "login_page" });
     // Redirect to the server-side auth endpoint to start the login flow
