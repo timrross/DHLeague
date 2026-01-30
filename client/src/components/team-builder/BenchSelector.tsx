@@ -60,9 +60,6 @@ export default function BenchSelector({
               </PopoverContent>
             </Popover>
           </div>
-          <p className="text-xs text-gray-500">
-            Bench rider only scores if a same-gender starter DNS. One auto-sub per round.
-          </p>
         </div>
         {!isTeamLocked && onSelectBench && (
           <Button variant="outline" size="sm" onClick={onSelectBench}>
