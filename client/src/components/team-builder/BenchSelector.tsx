@@ -3,7 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import RiderIdentity from "@/components/rider-identity";
 import { formatRiderDisplayName } from "@shared/utils";
-import { X } from "lucide-react";
+import { X, HelpCircle } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 type BenchSelectorProps = {
   benchRider: Rider | null;
@@ -24,9 +29,37 @@ export default function BenchSelector({
     <div className="rounded-lg border border-gray-200 bg-white p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h3 className="font-heading text-sm font-bold text-secondary">
-            Bench
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-heading text-sm font-bold text-secondary">
+              Bench
+            </h3>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                  <HelpCircle className="h-3.5 w-3.5" />
+                  How does this work?
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 text-sm">
+                <h4 className="mb-2 font-semibold">Bench Rider</h4>
+                <p className="mb-2 text-gray-600">
+                  Your bench rider is a backup who only scores if one of your starters
+                  doesn't race (DNS, DNF, or DNQ).
+                </p>
+                <ul className="mb-2 list-disc space-y-1 pl-4 text-gray-600">
+                  <li>Only substitutes for the <strong>same gender</strong></li>
+                  <li>Maximum <strong>one substitution</strong> per round</li>
+                  <li>Never adds extra points—only replaces missing ones</li>
+                </ul>
+                <p className="text-gray-500 text-xs">
+                  Tip: Choose a bench rider who matches the gender most likely to miss a race.
+                </p>
+              </PopoverContent>
+            </Popover>
+          </div>
           <p className="text-xs text-gray-500">
             Bench rider only scores if a same-gender starter DNS. One auto-sub per round.
           </p>
