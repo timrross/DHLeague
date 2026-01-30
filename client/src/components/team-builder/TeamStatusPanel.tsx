@@ -1,7 +1,12 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { type TeamIssue } from "@/lib/team-builder";
-import { AlertTriangle, CheckCircle2, Lock } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Lock, HelpCircle } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 type TeamStatusPanelProps = {
   lockStatusLabel: string;
@@ -58,12 +63,41 @@ export default function TeamStatusPanel({
       <div className="mt-4 space-y-2">
         {displayIssues.map((issue, index) => {
           const Icon = issueIcon[issue.level];
+          const isBenchWarning = issue.message === "Bench rider not selected";
           return (
             <div key={`${issue.message}-${index}`} className="flex items-start gap-2">
               <Icon className={cn("mt-0.5 h-4 w-4", issueTone[issue.level])} />
               <p className={cn("text-sm font-medium", issueTone[issue.level])}>
                 {issue.message}
               </p>
+              {isBenchWarning && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                    >
+                      <HelpCircle className="h-3.5 w-3.5" />
+                      How does this work?
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 text-sm">
+                    <h4 className="mb-2 font-semibold">Bench Rider</h4>
+                    <p className="mb-2 text-gray-600">
+                      Your bench rider is a backup who only scores if one of your starters
+                      doesn't race (DNS, DNF, or DNQ).
+                    </p>
+                    <ul className="mb-2 list-disc space-y-1 pl-4 text-gray-600">
+                      <li>Only substitutes for the <strong>same gender</strong></li>
+                      <li>Maximum <strong>one substitution</strong> per round</li>
+                      <li>Never adds extra points—only replaces missing ones</li>
+                    </ul>
+                    <p className="text-gray-500 text-xs">
+                      Tip: Choose a bench rider who matches the gender most likely to miss a race.
+                    </p>
+                  </PopoverContent>
+                </Popover>
+              )}
             </div>
           );
         })}
