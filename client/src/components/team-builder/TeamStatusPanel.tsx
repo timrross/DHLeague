@@ -103,12 +103,8 @@ export default function TeamStatusPanel({
         })}
       </div>
 
-      <div className="mt-4 space-y-1 text-xs text-gray-600">
+      <div className="mt-4 text-xs text-gray-600">
         <p>After lock, changes will not affect this round.</p>
-        <p>
-          Bench auto-subs only if a same-gender starter DNS. One auto-sub per
-          round.
-        </p>
       </div>
     </div>
   );
