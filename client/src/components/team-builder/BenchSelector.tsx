@@ -57,6 +57,9 @@ export default function BenchSelector({
                 <p className="text-gray-500 text-xs">
                   Tip: Choose a bench rider who matches the gender most likely to miss a race.
                 </p>
+                <p className="mt-2 text-gray-600 text-xs">
+                  To add a bench rider, click <strong>Add Bench</strong> then select a rider from the list.
+                </p>
               </PopoverContent>
             </Popover>
           </div>
