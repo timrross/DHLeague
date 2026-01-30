@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { Rider } from "@shared/schema";
 import RiderCard from "@/components/rider-card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowUpDown, RefreshCw, Search } from "lucide-react";
 
 type RiderListProps = {
@@ -16,6 +18,7 @@ type RiderListProps = {
   sortBy: "rank" | "name" | "cost";
   onSortChange: (value: "rank" | "name" | "cost") => void;
   onSelectRider: (rider: Rider) => void;
+  onRemoveRider?: (rider: Rider) => void;
   isSelected: (rider: Rider) => boolean;
   getDisabledReason: (rider: Rider) => string | null;
   isTeamLocked: boolean;
@@ -34,6 +37,7 @@ export default function RiderList({
   sortBy,
   onSortChange,
   onSelectRider,
+  onRemoveRider,
   isSelected,
   getDisabledReason,
   isTeamLocked,
@@ -41,7 +45,16 @@ export default function RiderList({
   benchMode,
   rosterFull,
 }: RiderListProps) {
+  const [showOnlyAvailable, setShowOnlyAvailable] = useState(true);
   const showRosterFull = rosterFull && !benchMode && !swapMode;
+
+  const unavailableReasons = new Set(["Over budget", "Too many men", "Too many women"]);
+  const filteredRiders = showOnlyAvailable
+    ? riders.filter((rider) => {
+        const reason = getDisabledReason(rider);
+        return !reason || !unavailableReasons.has(reason);
+      })
+    : riders;
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
@@ -116,6 +129,20 @@ export default function RiderList({
         </div>
       </div>
 
+      <div className="mt-4 flex items-center gap-2">
+        <Checkbox
+          id="show-available"
+          checked={showOnlyAvailable}
+          onCheckedChange={(checked) => setShowOnlyAvailable(checked === true)}
+        />
+        <label
+          htmlFor="show-available"
+          className="text-sm text-gray-700 cursor-pointer select-none"
+        >
+          Only show available riders
+        </label>
+      </div>
+
       {isLoading ? (
         <div className="flex items-center justify-center py-10">
           <RefreshCw className="h-6 w-6 animate-spin text-primary" />
@@ -123,12 +150,14 @@ export default function RiderList({
         </div>
       ) : (
         <div className="mt-4 space-y-3 max-h-[70vh] overflow-y-auto pr-1">
-          {riders.length === 0 ? (
+          {filteredRiders.length === 0 ? (
             <div className="rounded-md border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-500">
-              No riders found.
+              {showOnlyAvailable && riders.length > 0
+                ? "No available riders found. Uncheck the filter to see all riders."
+                : "No riders found."}
             </div>
           ) : (
-            riders.map((rider) => {
+            filteredRiders.map((rider) => {
               const disabledReason = getDisabledReason(rider);
               const displayReason =
                 showRosterFull && disabledReason === "Roster full"
@@ -141,6 +170,7 @@ export default function RiderList({
                   rider={rider}
                   selected={selected}
                   onClick={() => onSelectRider(rider)}
+                  onRemove={onRemoveRider ? () => onRemoveRider(rider) : undefined}
                   disabled={Boolean(disabledReason)}
                   disabledReason={displayReason ?? undefined}
                   showSelectIcon

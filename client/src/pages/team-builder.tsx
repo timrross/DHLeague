@@ -832,6 +832,7 @@ export default function TeamBuilder() {
               sortBy={sortBy}
               onSortChange={setSortBy}
               onSelectRider={handleRiderSelect}
+              onRemoveRider={handleRemoveStarter}
               isSelected={(rider) => selectedRiders.some((item) => item.id === rider.id)}
               getDisabledReason={getDisabledReasonForRider}
               isTeamLocked={isTeamLocked}
@@ -862,6 +863,7 @@ export default function TeamBuilder() {
               sortBy={sortBy}
               onSortChange={setSortBy}
               onSelectRider={handleRiderSelect}
+              onRemoveRider={handleRemoveStarter}
               isSelected={(rider) => selectedRiders.some((item) => item.id === rider.id)}
               getDisabledReason={getDisabledReasonForRider}
               isTeamLocked={isTeamLocked}

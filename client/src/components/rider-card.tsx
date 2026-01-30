@@ -1,5 +1,6 @@
+import { useState, useEffect } from "react";
 import { Rider } from "@shared/schema";
-import { Check, Plus } from "lucide-react";
+import { Check, Plus, X } from "lucide-react";
 import RiderIdentity from "@/components/rider-identity";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -8,6 +9,7 @@ interface RiderCardProps {
   isSelected?: boolean;
   selected?: boolean;  // For backward compatibility
   onClick: () => void;
+  onRemove?: () => void;
   swapMode?: boolean;
   onSwap?: () => void;
   showRemoveIcon?: boolean;
@@ -17,21 +19,29 @@ interface RiderCardProps {
   showLockedBadge?: boolean;
 }
 
-export default function RiderCard({ 
-  rider, 
-  isSelected, 
-  selected, 
-  onClick, 
-  swapMode, 
-  onSwap, 
+export default function RiderCard({
+  rider,
+  isSelected,
+  selected,
+  onClick,
+  onRemove,
+  swapMode,
+  onSwap,
   showRemoveIcon: _showRemoveIcon,
   disabled,
   showSelectIcon: _showSelectIcon,
   disabledReason,
   showLockedBadge = false,
 }: RiderCardProps) {
+  const [isHoveringSelected, setIsHoveringSelected] = useState(false);
   // For backward compatibility, use either isSelected or selected
   const isRiderSelected = isSelected !== undefined ? isSelected : (selected || false);
+  const canRemove = isRiderSelected && onRemove && !showLockedBadge;
+
+  // Reset hover state when selection changes to prevent showing X immediately after adding
+  useEffect(() => {
+    setIsHoveringSelected(false);
+  }, [isRiderSelected]);
   // Format cost as currency
   const formatCost = (cost: number) => {
     return `$${cost.toLocaleString()}`;
@@ -95,18 +105,36 @@ export default function RiderCard({
         
         {/* Standard add/remove button */}
         {(!swapMode || !isRiderSelected || !onSwap) && (
-          <button 
-            className={`${isRiderSelected ? 'bg-green-500' : 'bg-primary'} text-white w-11 h-11 rounded-full flex items-center justify-center transition duration-200 ${isRiderSelected ? 'hover:bg-green-600' : 'hover:bg-red-700'}`}
+          <button
+            className={`${
+              isRiderSelected
+                ? canRemove && isHoveringSelected
+                  ? 'bg-red-500 hover:bg-red-600'
+                  : 'bg-green-500 hover:bg-green-600'
+                : 'bg-primary hover:bg-red-700'
+            } text-white w-11 h-11 rounded-full flex items-center justify-center transition duration-200`}
             onClick={(e) => {
-              e.stopPropagation(); // Prevent event bubbling
-              if (!disabled) {
+              e.stopPropagation();
+              if (canRemove) {
+                onRemove();
+              } else if (!disabled) {
                 onClick();
               }
             }}
-            disabled={disabled}
-            aria-label={isRiderSelected ? "Selected" : "Add rider"}
+            onMouseEnter={() => setIsHoveringSelected(true)}
+            onMouseLeave={() => setIsHoveringSelected(false)}
+            disabled={disabled && !canRemove}
+            aria-label={isRiderSelected ? (canRemove ? "Remove rider" : "Selected") : "Add rider"}
           >
-            {isRiderSelected ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+            {isRiderSelected ? (
+              canRemove && isHoveringSelected ? (
+                <X className="h-4 w-4" />
+              ) : (
+                <Check className="h-4 w-4" />
+              )
+            ) : (
+              <Plus className="h-4 w-4" />
+            )}
           </button>
         )}
       </div>
