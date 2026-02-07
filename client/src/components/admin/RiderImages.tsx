@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Rider } from "@shared/schema";
 import { formatRiderDisplayName } from "@shared/utils";
@@ -22,7 +22,26 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2 } from "lucide-react";
+import { ArrowUpDown, Loader2 } from "lucide-react";
+
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
+type SortField = "name" | "cost";
+type SortDir = "asc" | "desc";
 
 type ImageMode = "external" | "copy" | "reset";
 
@@ -46,15 +65,30 @@ function sourceBadgeVariant(source?: string | null) {
 
 export default function RiderImages() {
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<SortField>("name");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [urlInputs, setUrlInputs] = useState<Record<string, string>>({});
   const [activeUciId, setActiveUciId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
+  const debouncedSearch = useDebounce(search, 300);
+
+  const ridersQueryKey = ["/api/riders", "admin-images", debouncedSearch, sortBy, sortDir];
   const { data: ridersData, isLoading, error: ridersError } = useQuery<any>({
-    queryKey: ["/api/riders"],
-    queryFn: () => apiRequest("/api/riders"),
+    queryKey: ridersQueryKey,
+    queryFn: () => {
+      const params = new URLSearchParams({
+        pageSize: "200",
+        sortBy,
+        sortDir,
+      });
+      if (debouncedSearch.trim()) {
+        params.set("search", debouncedSearch.trim());
+      }
+      return apiRequest(`/api/riders?${params.toString()}`);
+    },
   });
 
   const riders = useMemo<Rider[]>(() => {
@@ -67,18 +101,16 @@ export default function RiderImages() {
     return [];
   }, [ridersData]);
 
-  const filteredRiders = useMemo(() => {
-    if (!search.trim()) return riders;
-    const term = search.toLowerCase();
-    return riders.filter((rider) => {
-      return (
-        rider.name.toLowerCase().includes(term) ||
-        rider.team?.toLowerCase().includes(term) ||
-        rider.uciId.toLowerCase().includes(term) ||
-        rider.country?.toLowerCase().includes(term)
-      );
-    });
-  }, [riders, search]);
+  const totalRiders = ridersData?.total ?? riders.length;
+
+  const toggleSort = (field: SortField) => {
+    if (sortBy === field) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(field);
+      setSortDir(field === "cost" ? "desc" : "asc");
+    }
+  };
 
   const mutation = useMutation({
     mutationFn: async (payload: { uciId: string; mode: ImageMode; url?: string }) => {
@@ -90,7 +122,7 @@ export default function RiderImages() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/riders"] });
+      queryClient.invalidateQueries({ queryKey: ridersQueryKey });
     },
   });
 
@@ -153,7 +185,16 @@ export default function RiderImages() {
             placeholder="Search riders by name, UCI ID, team, or country"
             className="max-w-xl"
           />
-          {renderStatus()}
+          <div className="flex items-center gap-3">
+            {renderStatus()}
+            {!isLoading && !ridersError && (
+              <span className="text-sm text-muted-foreground whitespace-nowrap">
+                {debouncedSearch
+                  ? `${riders.length} of ${totalRiders} riders`
+                  : `${riders.length} riders`}
+              </span>
+            )}
+          </div>
         </div>
 
         {message && <div className="text-sm text-green-600">{message}</div>}
@@ -163,8 +204,31 @@ export default function RiderImages() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Rider</TableHead>
+                <TableHead>
+                  <button
+                    className="flex items-center gap-1 hover:text-foreground"
+                    onClick={() => toggleSort("name")}
+                  >
+                    Rider
+                    <ArrowUpDown className="h-3 w-3" />
+                    {sortBy === "name" && (
+                      <span className="text-xs">({sortDir})</span>
+                    )}
+                  </button>
+                </TableHead>
                 <TableHead>Country</TableHead>
+                <TableHead>
+                  <button
+                    className="flex items-center gap-1 hover:text-foreground"
+                    onClick={() => toggleSort("cost")}
+                  >
+                    Cost
+                    <ArrowUpDown className="h-3 w-3" />
+                    {sortBy === "cost" && (
+                      <span className="text-xs">({sortDir})</span>
+                    )}
+                  </button>
+                </TableHead>
                 <TableHead>Image Source</TableHead>
                 <TableHead>Image URL</TableHead>
                 <TableHead>Updated</TableHead>
@@ -172,7 +236,7 @@ export default function RiderImages() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredRiders.map((rider) => {
+              {riders.map((rider) => {
                 const displayName = formatRiderDisplayName(rider) || rider.name;
                 const currentUrl =
                   urlInputs[rider.uciId] ??
@@ -199,6 +263,9 @@ export default function RiderImages() {
                       ) : (
                         <Badge variant="outline">Unknown</Badge>
                       )}
+                    </TableCell>
+                    <TableCell className="text-sm tabular-nums">
+                      {rider.cost != null ? rider.cost : "—"}
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col gap-1">
